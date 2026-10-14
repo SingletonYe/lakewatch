@@ -59,8 +59,61 @@ candidates from 61 probes, while the robustness sweep produced **391 findings** 
 minutes — but clustering collapses them to 20 root causes, all known. Volume is not value;
 root-cause clustering is.
 
+## 2026-10-14 17:00 — slot 3 (first scheduled run)
+
+Probes: **364 functions / 1874 invocations** (Tier-A) and **61 probes** (semantic) ·
+Oracle: DuckDB 1.5.6 · DataFusion 55.2.0
+
+| sweep | result |
+|---|---|
+| Tier-A `df_robust.py` | 391 findings, **20 root causes**, 0 panics — identical to the baseline, nothing new |
+| Semantic `df_diff.py` | 52 OK, 7 known-difference, 2 both-error, **0 candidates** — identical to the baseline |
+| Health gate | 7/7 stages PASS |
+
+Nothing new to triage, so the slot went to the instruction's number-one Tier-A target.
+
+### Acted on: the `OneOf` signature-mismatch error path
+
+`datafusion/expr/src/type_coercion/functions.rs` returned `internal_err!` when every
+`OneOf` branch rejected the arguments. That is a user mistake, but the message told the
+user *"This issue was likely caused by a bug in DataFusion's code. Please help us to
+resolve this by filing a bug report"*. Attribution was measured, not guessed: **353 of the
+391 Tier-A findings (13 of 20 clusters) come from this single call site.**
+
+Fix: one line, `internal_err!` → `plan_err!`, plus a unit test that mirrors `substr`'s real
+signature and **fails on `main`**, plus the ten `sqllogictest` expectations that asserted the
+old user-visible text (`array/array_range.slt`, `spark/math/round.slt`, `errors.slt`,
+`math.slt`).
+
+Deliberately out of scope — the reason apache/datafusion#21032 died was scope: the message
+is still verbose and still lacks separators (#19004), and the arity phrasing suggested by a
+maintainer is a separate improvement.
+
+* Branch pushed: `SingletonYe/datafusion:fix/oneof-signature-mismatch-plan-error` (1fd13a7)
+* Verified: `cargo test -p datafusion-expr --lib` → 282 passed; the new test fails when the
+  fix is reverted; `cargo fmt --all --check` clean; audited every other assertion on this
+  message.
+
+### Blocker: apache/* writes are blocked for this OAuth app
+
+`gh pr create --repo apache/datafusion` fails with:
+
+> the `apache` organization has enabled OAuth App access restrictions, meaning that data
+> access to third-parties is limited
+
+So the CLI cannot open the PR, and it cannot open an issue on an apache/* repository either.
+The fork and the branch are public and ready; the PR needs one click in a browser:
+
+```text
+https://github.com/apache/datafusion/compare/main...SingletonYe:fix/oneof-signature-mismatch-plan-error?expand=1
+```
+
+The workflow instruction has been updated so every later slot stops at "push the branch and
+hand over the compare URL" instead of retrying the blocked API call.
+
 ### Next
 
+* Add a `--session-option key=value` path
 * Add a `--session-option key=value` path so probes can run under
   `enable_ansi_mode=true` and assert the documented overflow error.
 * Add a generated-data fuzz mode (random tables, random queries) checked for
