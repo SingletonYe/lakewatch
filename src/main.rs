@@ -48,6 +48,10 @@ struct Cli {
     )]
     root: PathBuf,
 
+    /// DataFusion target partitions (default: one per core, capped at 8).
+    #[arg(long, global = true, value_name = "N")]
+    partitions: Option<usize>,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -205,7 +209,7 @@ async fn run(cli: Cli) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let engine = Engine::open(&cli.root).await?;
+    let engine = Engine::open(&cli.root, cli.partitions).await?;
     let code = match cli.command {
         Command::Functions => Option::None,
         Command::Tables(args) => Some(cmd_tables(&engine, args).await?),

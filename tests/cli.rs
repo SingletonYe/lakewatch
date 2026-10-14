@@ -300,6 +300,51 @@ fn discover_splits_partitioned_and_root_level_files() {
     assert_eq!(orders["files"], serde_json::json!(2));
 }
 
+/// The custom UDAFs must survive DataFusion's partial -> final aggregation
+/// protocol, which is exactly what `--partitions 4` forces (the plan switches to
+/// `AggregateExec: mode=Partial` plus `mode=FinalPartitioned`).
+#[test]
+fn udafs_agree_across_partition_layouts() {
+    let query = "SELECT channel, mode(status) AS m, null_ratio(customer_email) AS nr \
+                 FROM orders GROUP BY channel ORDER BY channel";
+
+    let single = run(
+        &sample_lake(),
+        &["--partitions", "1", "sql", query, "-f", "json"],
+    );
+    let multi = run(
+        &sample_lake(),
+        &["--partitions", "4", "sql", query, "-f", "json"],
+    );
+    assert!(single.status.success(), "{}", stderr_of(&single));
+    assert!(multi.status.success(), "{}", stderr_of(&multi));
+
+    let single = json_of(&single);
+    let multi = json_of(&multi);
+    assert_eq!(single, multi, "partitioning must not change the answer");
+    assert_eq!(single.as_array().unwrap().len(), 4);
+
+    // ground truth for one group, computed without any custom function
+    let truth = run(
+        &sample_lake(),
+        &[
+            "sql",
+            "SELECT status FROM (SELECT status, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, status) AS rn \
+             FROM orders WHERE channel = 'partner_api' GROUP BY status) WHERE rn = 1",
+            "-f",
+            "json",
+        ],
+    );
+    let truth = json_of(&truth);
+    let partner = multi
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["channel"] == "partner_api")
+        .unwrap();
+    assert_eq!(partner["m"], truth[0]["status"]);
+}
+
 #[test]
 fn csv_columns_follow_the_schema_order() {
     // Regression: iterating a JSON object gave alphabetically sorted columns,

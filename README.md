@@ -108,7 +108,8 @@ elapsed: 0.021s
 | `check` | evaluate a data-quality rules file; exit 1 on failure |
 | `functions` | list the UDFs/UDAFs lakewatch adds to SQL |
 
-Global: `--root <DIR>` (or `-C`) selects the lake; it defaults to the current directory.
+Global flags: `--root <DIR>` (or `-C`) selects the lake and defaults to the current directory;
+`--partitions <N>` sets DataFusion's target partition count (default: one per core, capped at 8).
 
 Exit codes: `0` success · `1` a data-quality rule failed · `2` usage or runtime error.
 
@@ -291,7 +292,21 @@ $ lakewatch --root data sql "
 `mode` is a full `AggregateUDFImpl`: it keeps a per-group histogram and implements `state()` /
 `merge_batch()`, so it is correct under the partial→final aggregation protocol too — not just in
 single-partition plans. Tie-breaks are resolved on the smallest rendered value, so results are
-deterministic across runs and across partition layouts.
+deterministic across runs and across partition layouts. You can watch the plans change:
+
+```console
+$ lakewatch --root data sql "SELECT channel, mode(status) FROM orders GROUP BY channel" --explain \
+    | grep -oE 'AggregateExec: mode=[A-Za-z]+' | sort -u
+AggregateExec: mode=Single
+
+$ lakewatch --root data --partitions 4 sql "SELECT channel, mode(status) FROM orders GROUP BY channel" --explain \
+    | grep -oE 'AggregateExec: mode=[A-Za-z]+' | sort -u
+AggregateExec: mode=FinalPartitioned
+AggregateExec: mode=Partial
+```
+
+Both layouts return the same rows, and a test asserts it (`udafs_agree_across_partition_layouts`),
+comparing the multi-partition answer against a ground truth computed without any custom function.
 
 ---
 
@@ -333,10 +348,14 @@ scripts/gen_sample_data.py  regenerates data/ deterministically
 tests/cli.rs        end-to-end tests driving the real binary
 ```
 
+The unit tests cover the parts that are easy to get subtly wrong: email validation and masking, table
+naming, and the accumulator protocol (`mode` merging two partial histograms, deterministic tie-breaks,
+`null_ratio` merging partial counts).
+
 ## Development
 
 ```bash
-cargo test           # 7 unit + 10 end-to-end tests
+cargo test           # 14 unit + 11 end-to-end tests
 cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 cargo run -- --root data check --rules rules/quality.json

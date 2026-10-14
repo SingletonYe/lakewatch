@@ -23,7 +23,10 @@ pub struct Engine {
 
 impl Engine {
     /// Discover a lake rooted at `root` and register every dataset it contains.
-    pub async fn open(root: &Path) -> Result<Self> {
+    ///
+    /// `partitions` overrides the number of target partitions (`None` = one per
+    /// core, capped at eight).
+    pub async fn open(root: &Path, partitions: Option<usize>) -> Result<Self> {
         let root = root
             .canonicalize()
             .with_context(|| format!("cannot resolve lake root `{}`", root.display()))?;
@@ -38,8 +41,15 @@ impl Engine {
         // One partition per core keeps scans parallel without over-subscribing a
         // laptop; the planner still picks the cheapest plan for each query.
         let cfg = SessionConfig::new()
-            .with_target_partitions(default_partitions())
-            .with_information_schema(true);
+            .with_target_partitions(
+                partitions
+                    .filter(|n| *n > 0)
+                    .unwrap_or_else(default_partitions),
+            )
+            .with_information_schema(true)
+            // A lake on a laptop is read from local disk; spreading one file over
+            // several partitions costs more in scheduling than it saves.
+            .with_repartition_file_scans(false);
 
         let ctx = SessionContext::new_with_config(cfg);
         functions::register(&ctx);
