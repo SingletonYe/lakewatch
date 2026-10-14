@@ -94,6 +94,23 @@ maintainer is a separate improvement.
   fix is reverted; `cargo fmt --all --check` clean; audited every other assertion on this
   message.
 
+### PR opened: apache/datafusion#26329
+
+The user opened it manually from the compare URL (2026-10-14T21:13Z):
+
+```text
+https://github.com/apache/datafusion/pull/26329
+```
+
+Auto-labelled `logical-expr`, `sqllogictest` by the repo's Labeler. Every other workflow sits
+at `action_required` — GitHub holds CI for a first-time contributor until a maintainer
+approves the run. **That is not a failure and nothing on our side can unblock it.**
+
+Capability boundary measured at the same time: we can read the PR and its logs, and we can
+push to the branch on the fork, but we cannot comment, edit the PR body, or open issues on
+apache/* (org OAuth restrictions plus a token without `read:org`). So fixes are ours and the
+words on the thread are the user's — every push must be handed over with a suggested reply.
+
 ### Blocker: apache/* writes are blocked for this OAuth app
 
 `gh pr create --repo apache/datafusion` fails with:
