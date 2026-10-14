@@ -111,6 +111,27 @@ push to the branch on the fork, but we cannot comment, edit the PR body, or open
 apache/* (org OAuth restrictions plus a token without `read:org`). So fixes are ours and the
 words on the thread are the user's — every push must be handed over with a suggested reply.
 
+### Fast response: what is wired up, and what is not
+
+Goal: notice CI failures and review comments in minutes, not up to six hours — a slow reply
+is the exact mechanism that killed apache/datafusion#21032. Measured on 2026-10-14:
+
+| channel | status |
+|---|---|
+| Gmail trigger, `from` contains `github.com` **and** subject contains `26329` | **enabled** |
+| `github-workflow-run-completed` for apache/datafusion | **impossible** — silent no-op. It needs the Okou GitHub App installed by the repo owner, and apache will not install a third-party app. |
+| 4 scheduled slots (09/13/17/21) | enabled, so the worst case is a 4-hour delay |
+
+Caveat worth remembering: this mailbox holds ~200 GitHub mails, **all of them account and
+security notices from `noreply@github.com`** — no PR or CI notification has ever arrived, and
+Gmail has nothing matching `subject:datafusion`. So the trigger is unproven until the first
+review comment lands. If nothing fires when a comment appears, the fix is on the GitHub side
+(Settings → Emails must list this address; Settings → Notifications → "Participating and
+@mentions" must stay on), not in the workflow.
+
+Note also that GitHub does not email CI outcomes by default, so a red CI run is caught by the
+next scheduled slot rather than by this trigger.
+
 ### Blocker: apache/* writes are blocked for this OAuth app
 
 `gh pr create --repo apache/datafusion` fails with:
