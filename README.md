@@ -267,6 +267,8 @@ mask_email       scalar    (utf8) -> utf8     Keep the first character and the d
 normalize_text   scalar    (utf8) -> utf8     Trim, lowercase and collapse internal whitespace
 mode             aggregate (any) -> utf8      Most frequent non-null value in the group, rendered as text
 null_ratio       aggregate (any) -> float64   Fraction of NULL values in the group
+
+They are plain SQL, e.g. `lakewatch sql "SELECT mode(status) FROM orders"`.
 ```
 
 They are ordinary SQL from any query or rule:
@@ -307,6 +309,7 @@ lakewatch --root /tmp sql "SELECT COUNT(*) AS paid_orders FROM paid_orders"
 ```
 
 Parquet output is a DataFusion sink, so the target is a **directory** with one file per partition.
+Every format emits columns in schema order, so `csv` rows always line up with the header.
 
 ---
 
@@ -333,7 +336,7 @@ tests/cli.rs        end-to-end tests driving the real binary
 ## Development
 
 ```bash
-cargo test           # 7 unit + 9 end-to-end tests
+cargo test           # 7 unit + 10 end-to-end tests
 cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 cargo run -- --root data check --rules rules/quality.json

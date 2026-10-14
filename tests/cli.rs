@@ -301,6 +301,37 @@ fn discover_splits_partitioned_and_root_level_files() {
 }
 
 #[test]
+fn csv_columns_follow_the_schema_order() {
+    // Regression: iterating a JSON object gave alphabetically sorted columns,
+    // so CSV rows no longer lined up with the header.
+    let output = run(
+        &sample_lake(),
+        &[
+            "sql",
+            "SELECT 'x' AS alpha, 42 AS beta, 1.5 AS gamma",
+            "--format",
+            "csv",
+        ],
+    );
+    assert!(output.status.success(), "{}", stderr_of(&output));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout).trim(),
+        "alpha,beta,gamma\nx,42,1.5"
+    );
+
+    let output = run(&sample_lake(), &["tables", "--format", "csv"]);
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let mut lines = stdout.trim().lines();
+    assert_eq!(lines.next().unwrap(), "table,format,path,files,bytes");
+    let first: Vec<&str> = lines.next().unwrap().split(',').collect();
+    assert_eq!(first.len(), 5);
+    assert_eq!(first[0], "customers");
+    assert_eq!(first[1], "csv");
+    assert_eq!(first[3], "1");
+    assert!(first[4].parse::<u64>().is_ok(), "bytes should be numeric");
+}
+
+#[test]
 fn limit_csv_output_and_stdin_sql_all_work() {
     let output = run(
         &sample_lake(),
