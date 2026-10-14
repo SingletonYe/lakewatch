@@ -1,0 +1,46 @@
+[package]
+name = "lakewatch"
+version = "0.1.0"
+edition = "2021"
+description = "SQL analytics and data-quality checks for local CSV/Parquet lakes, powered by Apache DataFusion"
+license = "Apache-2.0"
+repository = "https://github.com/SingletonYe/lakewatch"
+homepage = "https://github.com/SingletonYe/lakewatch"
+keywords = ["datafusion", "sql", "parquet", "csv", "data-quality"]
+categories = ["command-line-utilities", "database"]
+
+[lib]
+name = "lakewatch"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lakewatch"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+clap = { version = "4", features = ["derive"] }
+datafusion = { version = "55", default-features = false, features = [
+    "parquet",
+    "nested_expressions",
+    "datetime_expressions",
+    "math_expressions",
+    "regex_expressions",
+    "string_expressions",
+    "unicode_expressions",
+    "sql",
+    "recursive_protection",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[profile.dev]
+# DataFusion's dependency graph is large; dropping debug info keeps the
+# incremental build fast and the target directory small.
+debug = 0
+
+[profile.release]
+lto = "thin"
+strip = true

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  build:
+    name: fmt, clippy, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: rustfmt
+        run: cargo fmt --all --check
+
+      - name: clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: tests
+        run: cargo test --all-targets
+
+  quality-gate:
+    name: data-quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build
+
+      # The sample lake is deliberately dirty, so the gate must FAIL. Proving
+      # that it fails is how this job proves the checks are actually wired up.
+      - name: Gate must catch the planted defects
+        run: |
+          set +e
+          ./target/debug/lakewatch --root data check --rules rules/quality.json \
+            --format json > report.json
+          code=$?
+          set -e
+          echo "check exited with $code"
+          cat report.json
+          test "$code" -eq 1
+          grep -q '"ok": false' report.json
+
+      - name: Gate must pass on a clean lake
+        run: |
+          mkdir -p /tmp/clean-lake/orders
+          printf 'order_id,amount\nO1,10\nO2,20\n' > /tmp/clean-lake/orders/part.csv
+          printf '%s' '{"version":1,"rules":[
+            {"name":"unique","table":"orders","type":"unique","columns":["order_id"]},
+            {"name":"positive","table":"orders","type":"expression","predicate":"amount > 0"},
+            {"name":"size","table":"orders","type":"row_count","min":2,"max":2}]}' > /tmp/clean-rules.json
+          ./target/debug/lakewatch --root /tmp/clean-lake check --rules /tmp/clean-rules.json
+
+      - name: Profile every sample table
+        run: |
+          for table in customers orders products; do
+            ./target/debug/lakewatch --root data profile "$table" --format json > /dev/null
+          done

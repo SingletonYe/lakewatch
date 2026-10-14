@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "name": "ecommerce-core",
+  "rules": [
+    {
+      "name": "orders.order_id_is_unique",
+      "table": "orders",
+      "type": "unique",
+      "columns": ["order_id"],
+      "severity": "error",
+      "description": "order_id is the primary key; duplicates would double-count revenue."
+    },
+    {
+      "name": "orders.customer_id_is_not_null",
+      "table": "orders",
+      "type": "not_null",
+      "columns": ["customer_id"],
+      "severity": "error",
+      "description": "Every order must be attributable to a customer."
+    },
+    {
+      "name": "orders.amount_is_positive",
+      "table": "orders",
+      "type": "expression",
+      "predicate": "amount > 0",
+      "severity": "error",
+      "description": "Order amounts are gross positive values; refunds are modelled by `status`."
+    },
+    {
+      "name": "orders.status_is_known",
+      "table": "orders",
+      "type": "accepted_values",
+      "column": "status",
+      "values": ["paid", "pending", "refunded", "cancelled"],
+      "severity": "error"
+    },
+    {
+      "name": "orders.channel_is_known",
+      "table": "orders",
+      "type": "accepted_values",
+      "column": "channel",
+      "values": ["web", "ios", "android", "partner_api"],
+      "severity": "warn"
+    },
+    {
+      "name": "orders.customer_email_is_valid",
+      "table": "orders",
+      "type": "expression",
+      "predicate": "is_email(customer_email)",
+      "severity": "warn",
+      "description": "Uses the lakewatch `is_email` UDF exposed to plain SQL."
+    },
+    {
+      "name": "orders.row_count_is_plausible",
+      "table": "orders",
+      "type": "row_count",
+      "min": 200,
+      "severity": "error",
+      "description": "Guards against a truncated load: the lake should hold ~240 orders."
+    },
+    {
+      "name": "customers.email_is_well_formed",
+      "table": "customers",
+      "type": "expression",
+      "predicate": "email IS NULL OR is_email(email)",
+      "severity": "warn"
+    },
+    {
+      "name": "products.unit_price_is_positive",
+      "table": "products",
+      "type": "expression",
+      "predicate": "unit_price > 0",
+      "severity": "error"
+    }
+  ]
+}

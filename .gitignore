@@ -1,0 +1,12 @@
+# Rust
+/target
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local scratch output
+/report.json
+/out/
