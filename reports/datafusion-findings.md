@@ -30,6 +30,35 @@ The point of an oracle is that it also audits the tool.
 | `render.rs` divided by zero rendering a nanosecond timestamp in JSON output | **every** `CAST(... AS TIMESTAMP)` query panicked under `-f json`; DataFusion's default precision is nanoseconds | round-tripped through `i128` nanoseconds; covered by `renders_every_timestamp_precision` and `renders_timestamps_beyond_the_i64_nanosecond_range` |
 | `serde_json` sorted object keys, so CSV columns did not match the header | every `--format csv` run | enabled `preserve_order`; covered by `csv_columns_follow_the_schema_order` |
 
+## 2026-10-14 — Tier-A robustness sweep (baseline)
+
+`scripts/df_robust.py`: **364 scalar functions · 1874 invocations · 0 panics · 391
+findings across 20 distinct root causes**
+
+The clustering is the result, not the raw count:
+
+| cluster | functions | repro |
+|---|---|---|
+| `Internal error: Function 'FN' failed to match any signature …` (75) | `date_trunc` | `SELECT date_trunc(DATE '2024-01-01', DATE '2024-01-01')` |
+| same, alias (75) | `datetrunc` | `SELECT datetrunc(…)` |
+| same (50) | `generate_series`, `range` | `SELECT generate_series(DATE '2024-01-01')` |
+| same (36) | `round`, `trunc` | `SELECT round(DATE '2024-01-01')` |
+| same (30) | `regexp_like`, `string_to_array` | `SELECT regexp_like(DATE '2024-01-01', …)` |
+| … 15 more clusters of the same family | `btrim`, `ltrim`, `rtrim`, `date_part`, `substr`, `element_at`, `log`, `trim`, … | |
+| `Unsupported data type Date32 for function FN` (11) | `to_time`, `to_timestamp*` | `SELECT to_time(DATE '2024-01-01')` |
+| `Function FN(UserDefined)` (10) | `gcd`, `lcm` | `SELECT gcd('', '')` |
+
+**Verdict: no novel bug today.** All 20 root causes are the same known family —
+apache/datafusion#20501 (type-signature errors leak internals, open) and #19004 (coercion
+error messages, open). apache/datafusion#21032 attempted exactly this fix and was **closed on
+2026-06-24 without being merged**; the behaviour still reproduces on `main`. That PR is now
+the workflow's number-one Tier-A target, with `df_robust.py` as the acceptance test.
+
+Note the contrast that justified building this tool: the semantic harness produced **0**
+candidates from 61 probes, while the robustness sweep produced **391 findings** in about two
+minutes — but clustering collapses them to 20 root causes, all known. Volume is not value;
+root-cause clustering is.
+
 ### Next
 
 * Add a `--session-option key=value` path so probes can run under
