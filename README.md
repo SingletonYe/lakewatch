@@ -328,6 +328,34 @@ Every format emits columns in schema order, so `csv` rows always line up with th
 
 ---
 
+## Hunting DataFusion bugs
+
+This project doubles as a harness that puts Apache DataFusion under pressure its own
+test suite does not create, and a daily workflow turns what it finds into upstream
+reports:
+
+```console
+$ python3 scripts/df_diff.py
+------------------------------------------------------------------------
+oracle: duckdb | probes: 61 | binary: target/debug/lakewatch
+results: BOTH_ERROR=2, KNOWN_DIFF=7, OK=52
+candidates needing triage: 0
+```
+
+Each probe runs three ways: against **DuckDB** as an independent oracle, against
+DataFusion with **1 and 4 target partitions** (a mismatch needs no oracle at all), and
+against **pinned expectations** for answers the SQL standard fixes. Known dialect
+differences are recorded in the catalogue instead of being re-reported every day.
+
+Findings, triage verdicts and upstream references live in
+[`reports/datafusion-findings.md`](reports/datafusion-findings.md); the procedure and
+the quality bar for filing anything upstream are in
+[`docs/upstream-datafusion.md`](docs/upstream-datafusion.md).
+
+On its first run this harness found two bugs in lakewatch itself: a division by zero
+rendering nanosecond timestamps (every `CAST(... AS TIMESTAMP)` with `-f json`
+panicked) and CSV columns emitted in alphabetical order rather than schema order.
+
 ## Repository layout
 
 ```text
@@ -342,6 +370,9 @@ src/
 ├── render.rs       RecordBatch -> table/json/ndjson/csv
 ├── sqlutil.rs      identifier and literal quoting
 └── main.rs         clap CLI
+probes/             differential-test catalogue + its data
+docs/               DataFusion triage procedure and quality bar
+reports/            findings log
 data/               sample lake (synthetic, deliberately dirty)
 rules/quality.json  the gate that runs in CI
 scripts/gen_sample_data.py  regenerates data/ deterministically

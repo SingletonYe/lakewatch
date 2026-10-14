@@ -1,0 +1,399 @@
+{
+  "version": 1,
+  "note": "Edge cases where query engines most often disagree. Every probe is deterministic: it orders its own output, aliases every projection, and avoids anything the SQL standard leaves open, unless `known_difference` records the divergence on purpose.",
+  "probes": [
+    {
+      "id": "not_in_with_null",
+      "category": "null_semantics",
+      "sql": "SELECT 3 AS probe WHERE 3 NOT IN (1, 2, NULL)",
+      "expect_rows": [],
+      "why": "Three-valued logic: `x NOT IN (1, 2, NULL)` can never be TRUE, so the row must be filtered out."
+    },
+    {
+      "id": "not_in_with_null_column",
+      "category": "null_semantics",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values WHERE v_int NOT IN (1, 2, NULL)",
+      "expect_rows": [
+        [
+          "0"
+        ]
+      ],
+      "why": "Same three-valued rule applied to a column; any engine returning a count here is wrong."
+    },
+    {
+      "id": "empty_group_sum",
+      "category": "null_semantics",
+      "sql": "SELECT SUM(v_int) AS s, COUNT(v_int) AS c, COUNT(*) AS n FROM probe_values WHERE FALSE",
+      "expect_rows": [
+        [
+          "NULL",
+          "0",
+          "0"
+        ]
+      ],
+      "why": "SUM over an empty set is NULL while COUNT is 0."
+    },
+    {
+      "id": "null_equals_null",
+      "category": "null_semantics",
+      "sql": "SELECT (NULL = NULL) AS r",
+      "expect_rows": [
+        [
+          "NULL"
+        ]
+      ],
+      "why": "Equality with NULL is unknown, not true."
+    },
+    {
+      "id": "null_concat",
+      "category": "null_semantics",
+      "sql": "SELECT (v_text || 'x') AS r FROM probe_values WHERE id = 4",
+      "expect_rows": [
+        [
+          "NULL"
+        ]
+      ],
+      "why": "`||` propagates NULL."
+    },
+    {
+      "id": "count_distinct_with_nulls",
+      "category": "null_semantics",
+      "sql": "SELECT COUNT(DISTINCT v_int) AS c FROM probe_values",
+      "why": "DISTINCT ignores NULLs."
+    },
+    {
+      "id": "distinct_keeps_one_null",
+      "category": "null_semantics",
+      "sql": "SELECT COUNT(*) AS c FROM (SELECT DISTINCT g FROM probe_values) t",
+      "why": "DISTINCT collapses NULLs to a single group."
+    },
+    {
+      "id": "nulls_first",
+      "category": "null_semantics",
+      "sql": "SELECT id FROM probe_values ORDER BY g ASC NULLS FIRST, id ASC LIMIT 3",
+      "ordered": true,
+      "why": "Explicit NULLS FIRST placement."
+    },
+    {
+      "id": "nulls_last_desc",
+      "category": "null_semantics",
+      "sql": "SELECT id FROM probe_values ORDER BY g DESC NULLS LAST, id ASC LIMIT 3",
+      "ordered": true,
+      "why": "Explicit NULLS LAST placement on a DESC key."
+    },
+    {
+      "id": "default_null_order_asc",
+      "category": "null_semantics",
+      "sql": "SELECT id FROM probe_values ORDER BY g ASC, id ASC LIMIT 3",
+      "ordered": true,
+      "why": "The implicit NULL placement must match the documented default."
+    },
+    {
+      "id": "order_by_expression_alias",
+      "category": "sql_surface",
+      "sql": "SELECT v_int * 2 AS doubled FROM probe_values WHERE v_int IS NOT NULL ORDER BY doubled DESC, v_int ASC",
+      "ordered": true,
+      "why": "ORDER BY on a projection alias."
+    },
+    {
+      "id": "group_by_null_group",
+      "category": "null_semantics",
+      "sql": "SELECT g, COUNT(*) AS n FROM probe_values GROUP BY g ORDER BY g NULLS FIRST",
+      "ordered": true,
+      "why": "NULL forms its own group."
+    },
+    {
+      "id": "int_division",
+      "category": "arithmetic",
+      "sql": "SELECT 7 / 2 AS r",
+      "known_difference": "DuckDB's `/` always yields DOUBLE; DataFusion follows the standard's integer division. Compare manually.",
+      "why": "Kept in the catalogue as documentation of a deliberate dialect divergence."
+    },
+    {
+      "id": "modulo_negative_left",
+      "category": "arithmetic",
+      "sql": "SELECT (-7) % 3 AS r",
+      "why": "Sign of the remainder follows the dividend in the standard."
+    },
+    {
+      "id": "modulo_negative_right",
+      "category": "arithmetic",
+      "sql": "SELECT 7 % (-3) AS r"
+    },
+    {
+      "id": "float_rounding_sum",
+      "category": "arithmetic",
+      "sql": "SELECT 0.1 + 0.2 AS r"
+    },
+    {
+      "id": "cast_float_to_int_half",
+      "category": "casts",
+      "sql": "SELECT CAST(2.5 AS INT) AS a, CAST(3.5 AS INT) AS b, CAST(-2.5 AS INT) AS c",
+      "known_difference": "Known upstream: #11886 'Float to int cast behaviour'. DataFusion truncates toward zero (2.5 -> 2, 1.999 -> 1) while the standard/PostgreSQL/DuckDB round half away from zero."
+    },
+    {
+      "id": "cast_string_with_spaces",
+      "category": "casts",
+      "sql": "SELECT CAST('  12  ' AS INT) AS r"
+    },
+    {
+      "id": "cast_invalid_string",
+      "category": "casts",
+      "sql": "SELECT CAST('abc' AS INT) AS r",
+      "why": "Both engines should reject this; the probe is here to catch a silent 0 or NULL."
+    },
+    {
+      "id": "cast_scientific_string",
+      "category": "casts",
+      "sql": "SELECT CAST('1e3' AS DOUBLE) AS r"
+    },
+    {
+      "id": "cast_invalid_date",
+      "category": "casts",
+      "sql": "SELECT CAST('2024-02-30' AS DATE) AS r",
+      "why": "2024-02-30 does not exist; a silent wrap to 2024-03-01 would be a bug."
+    },
+    {
+      "id": "cast_null_to_int",
+      "category": "casts",
+      "sql": "SELECT CAST(NULL AS INT) AS r"
+    },
+    {
+      "id": "round_half",
+      "category": "arithmetic",
+      "sql": "SELECT ROUND(2.5) AS a, ROUND(-2.5) AS b, ROUND(2.567, 2) AS c, ROUND(1.005, 2) AS d",
+      "known_difference": "Literal typing: DuckDB parses a bare `1.005` as DECIMAL and rounds exactly, DataFusion as DOUBLE where 1.005 is really 1.00499..., so ROUND gives 1.00. Not an arithmetic bug."
+    },
+    {
+      "id": "floor_ceil_negative",
+      "category": "arithmetic",
+      "sql": "SELECT FLOOR(-2.5) AS f, CEIL(-2.5) AS c, TRUNC(-2.5) AS t"
+    },
+    {
+      "id": "integer_overflow",
+      "category": "arithmetic",
+      "sql": "SELECT 9223372036854775807 + 1 AS r",
+      "why": "Must raise an overflow error rather than wrap around.",
+      "known_difference": "Not a bug: DataFusion defaults to `datafusion.execution.enable_ansi_mode=false`, where integer overflow wraps (Spark-compatible). Tracked upstream in #24950 for the ANSI-mode behaviour. TODO(daily): add an --ansi/session-option path to lakewatch so this probe can also assert the ANSI-mode error."
+    },
+    {
+      "id": "avg_of_integers",
+      "category": "aggregates",
+      "sql": "SELECT AVG(v_int) AS r FROM probe_values"
+    },
+    {
+      "id": "stddev_single_row",
+      "category": "aggregates",
+      "sql": "SELECT STDDEV(v_int) AS s, STDDEV_POP(v_int) AS p FROM probe_values WHERE id = 1"
+    },
+    {
+      "id": "stddev_all_null",
+      "category": "aggregates",
+      "sql": "SELECT STDDEV(v_int) AS s FROM probe_values WHERE v_int IS NULL"
+    },
+    {
+      "id": "sum_only_nulls",
+      "category": "aggregates",
+      "sql": "SELECT SUM(v_int) AS s FROM probe_values WHERE v_int IS NULL"
+    },
+    {
+      "id": "min_max_text_case",
+      "category": "aggregates",
+      "sql": "SELECT MIN(v_text) AS lo, MAX(v_text) AS hi FROM probe_values WHERE v_text IS NOT NULL"
+    },
+    {
+      "id": "aggregate_group_by_with_nulls",
+      "category": "aggregates",
+      "sql": "SELECT g, SUM(v_int) AS s, AVG(v_dbl) AS a FROM probe_values GROUP BY g ORDER BY g NULLS FIRST",
+      "ordered": true
+    },
+    {
+      "id": "window_rows_frame",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values ORDER BY g NULLS FIRST, id",
+      "ordered": true
+    },
+    {
+      "id": "window_range_frame_ties",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values WHERE v_int IS NOT NULL ORDER BY v_int, id",
+      "ordered": true,
+      "why": "RANGE includes peer rows with an equal ordering key, ROWS does not. The key is an integer so the probe tests frames, not float ordering."
+    },
+    {
+      "id": "window_rows_frame_ties_contrast",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values WHERE v_int IS NOT NULL ORDER BY v_int, id",
+      "ordered": true,
+      "why": "RANGE includes peer rows with an equal ordering key, ROWS does not. The key is an integer so the probe tests frames, not float ordering."
+    },
+    {
+      "id": "lag_default_value",
+      "category": "window",
+      "sql": "SELECT id, LAG(v_int, 1, -1) OVER (PARTITION BY g ORDER BY id) AS prev FROM probe_values ORDER BY g NULLS FIRST, id",
+      "ordered": true
+    },
+    {
+      "id": "ntile_distribution",
+      "category": "window",
+      "sql": "SELECT id, NTILE(4) OVER (ORDER BY id) AS bucket FROM probe_values ORDER BY id",
+      "ordered": true
+    },
+    {
+      "id": "first_last_value_frame",
+      "category": "window",
+      "sql": "SELECT id, FIRST_VALUE(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS f, LAST_VALUE(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS l FROM probe_values ORDER BY g NULLS FIRST, id",
+      "ordered": true
+    },
+    {
+      "id": "window_sum_over_null_partition",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (PARTITION BY g) AS s FROM probe_values ORDER BY g NULLS FIRST, id",
+      "ordered": true,
+      "why": "A NULL partition key still forms a partition."
+    },
+    {
+      "id": "left_join_null_keys",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values a LEFT JOIN probe_values b ON a.g = b.g WHERE a.g IS NULL",
+      "why": "NULL never matches NULL in a join predicate."
+    },
+    {
+      "id": "full_outer_join_null_keys",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values a FULL OUTER JOIN probe_values b ON a.id = b.g"
+    },
+    {
+      "id": "semi_join_duplicates",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values a WHERE a.g IN (SELECT g FROM probe_values WHERE g IS NOT NULL)"
+    },
+    {
+      "id": "length_unicode",
+      "category": "strings",
+      "sql": "SELECT LENGTH('héllo') AS a, LENGTH('日本語') AS b, LENGTH('') AS c"
+    },
+    {
+      "id": "substring_unicode",
+      "category": "strings",
+      "sql": "SELECT SUBSTRING('héllo', 2, 2) AS a, SUBSTRING('日本語', 2, 1) AS b"
+    },
+    {
+      "id": "upper_sharp_s",
+      "category": "strings",
+      "sql": "SELECT UPPER('ß') AS r",
+      "why": "Uppercasing ß is locale dependent; the result must at least be stable and documented.",
+      "known_difference": "Unicode full case folding (ß -> SS) in DataFusion versus simple case mapping (ß -> ẞ) in DuckDB. Both defensible; recorded so the daily hunt does not re-report it."
+    },
+    {
+      "id": "like_case_sensitivity",
+      "category": "strings",
+      "sql": "SELECT ('a' LIKE 'A') AS a, ('a' ILIKE 'A') AS b"
+    },
+    {
+      "id": "trim_variants",
+      "category": "strings",
+      "sql": "SELECT TRIM('  x  ') AS a, LTRIM('  x  ') AS b, RTRIM('  x  ') AS c, TRIM(BOTH 'x' FROM 'xxaxx') AS d"
+    },
+    {
+      "id": "replace_with_empty_pattern",
+      "category": "strings",
+      "sql": "SELECT REPLACE('abc', '', 'X') AS r"
+    },
+    {
+      "id": "concat_null_handling",
+      "category": "strings",
+      "sql": "SELECT CONCAT('a', NULL) AS a, ('a' || NULL) AS b"
+    },
+    {
+      "id": "greatest_least_with_null",
+      "category": "arithmetic",
+      "sql": "SELECT GREATEST(NULL, 1) AS g, LEAST(NULL, 1) AS l",
+      "why": "Postgres ignores NULLs here; the standard leaves it open, so this probe mostly documents behaviour."
+    },
+    {
+      "id": "date_trunc_month",
+      "category": "datetime",
+      "sql": "SELECT DATE_TRUNC('month', DATE '2024-03-15') AS r"
+    },
+    {
+      "id": "date_add_year_leap",
+      "category": "datetime",
+      "sql": "SELECT DATE '2024-02-29' + INTERVAL '1' YEAR AS r",
+      "why": "Adding a year to a leap day has no obvious answer; behaviour must not be a silent panic.",
+      "known_difference": "Type divergence, low priority: DATE + INTERVAL yields DATE in DataFusion and TIMESTAMP in DuckDB/PostgreSQL. Surfaced here so it is not re-triaged as new."
+    },
+    {
+      "id": "date_diff",
+      "category": "datetime",
+      "sql": "SELECT DATE '2024-03-01' - DATE '2024-02-01' AS r"
+    },
+    {
+      "id": "extract_dow",
+      "category": "datetime",
+      "sql": "SELECT EXTRACT(DOW FROM DATE '2024-03-17') AS dow, EXTRACT(DOY FROM DATE '2024-03-17') AS doy"
+    },
+    {
+      "id": "timestamp_cast_precision",
+      "category": "datetime",
+      "sql": "SELECT CAST('2024-03-15 12:34:56.789' AS TIMESTAMP) AS r"
+    },
+    {
+      "id": "cte_and_union",
+      "category": "sql_surface",
+      "sql": "WITH s AS (SELECT g, COUNT(*) AS n FROM probe_values GROUP BY g) SELECT (SELECT COUNT(*) FROM s) AS groups, (SELECT SUM(n) FROM s) AS rows",
+      "why": "CTEs plus scalar subqueries must agree on row counts."
+    },
+    {
+      "id": "union_all_vs_union",
+      "category": "sql_surface",
+      "sql": "SELECT (SELECT COUNT(*) FROM (SELECT g FROM probe_values UNION ALL SELECT g FROM probe_values) t) AS all_rows, (SELECT COUNT(*) FROM (SELECT g FROM probe_values UNION SELECT g FROM probe_values) t) AS distinct_rows"
+    },
+    {
+      "id": "case_with_null",
+      "category": "sql_surface",
+      "sql": "SELECT SUM(CASE WHEN v_int IS NULL THEN 1 ELSE 0 END) AS nulls, SUM(CASE v_int WHEN 4 THEN 1 ELSE 0 END) AS fours FROM probe_values"
+    },
+    {
+      "id": "coalesce_nullif",
+      "category": "sql_surface",
+      "sql": "SELECT COALESCE(NULL, NULL, 3) AS c, NULLIF(1, 1) AS n, NULLIF(1, 2) AS m"
+    },
+    {
+      "id": "in_list_with_expressions",
+      "category": "sql_surface",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values WHERE v_int IN (1 + 1, 4)"
+    },
+    {
+      "id": "signed_zero_ordering",
+      "category": "float_semantics",
+      "sql": "SELECT x FROM (VALUES (0.0),(-0.0),(1.0)) AS t(x) ORDER BY x, 1",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "-0.0"
+        ],
+        [
+          "0.0"
+        ],
+        [
+          "1.0"
+        ]
+      ],
+      "known_difference": "DataFusion sorts with the float total ordering, so -0.0 sorts before 0.0, while `=`, GROUP BY and DISTINCT treat them as equal (#24432 chose total ordering deliberately). DuckDB uses IEEE ordering. Documented, not a bug.",
+      "why": "Pins the total-ordering decision so a regression would be visible."
+    },
+    {
+      "id": "signed_zero_equality_vs_sort",
+      "category": "float_semantics",
+      "sql": "SELECT (-0.0 = 0.0) AS equal, COUNT(DISTINCT x) AS distinct_count FROM (VALUES (0.0),(-0.0)) AS t(x)",
+      "expect_rows": [
+        [
+          "true",
+          "1"
+        ]
+      ],
+      "why": "Equality and DISTINCT use IEEE semantics even though ORDER BY uses total ordering."
+    }
+  ]
+}

@@ -196,10 +196,10 @@ pub fn scalar_to_json(value: &ScalarValue) -> Value {
                     .unwrap_or_else(|| d.to_string()),
             )
         }),
-        ScalarValue::TimestampSecond(v, _) => timestamp_json(v, 1_000_000_000),
-        ScalarValue::TimestampMillisecond(v, _) => timestamp_json(v, 1_000_000),
-        ScalarValue::TimestampMicrosecond(v, _) => timestamp_json(v, 1_000),
-        ScalarValue::TimestampNanosecond(v, _) => timestamp_json(v, 1),
+        ScalarValue::TimestampSecond(v, _) => timestamp_json(v, 1),
+        ScalarValue::TimestampMillisecond(v, _) => timestamp_json(v, 1_000),
+        ScalarValue::TimestampMicrosecond(v, _) => timestamp_json(v, 1_000_000),
+        ScalarValue::TimestampNanosecond(v, _) => timestamp_json(v, 1_000_000_000),
         ScalarValue::Binary(v) | ScalarValue::LargeBinary(v) | ScalarValue::BinaryView(v) => {
             match v {
                 Some(bytes) => Value::String(format!("<{} bytes>", bytes.len())),
@@ -210,11 +210,17 @@ pub fn scalar_to_json(value: &ScalarValue) -> Value {
     }
 }
 
-fn timestamp_json(value: &Option<i64>, per_second: i64) -> Value {
+/// Render a timestamp as an ISO-8601 string.
+///
+/// `units_per_second` is how many of the value's units make one second, so the
+/// value is first normalised to nanoseconds in `i128` (an `i64` of nanoseconds
+/// only spans ~292 years) and then to microseconds for formatting.
+fn timestamp_json(value: &Option<i64>, units_per_second: i64) -> Value {
     match value {
         None => Value::Null,
         Some(raw) => {
-            let micros = raw.div_euclid(per_second / 1000);
+            let nanos = (*raw as i128) * (1_000_000_000i128 / units_per_second as i128);
+            let micros = nanos.div_euclid(1_000) as i64;
             let formatted = chrono::DateTime::from_timestamp_micros(micros)
                 .map(|dt| dt.format("%Y-%m-%dT%H:%M:%S%.6fZ").to_string())
                 .unwrap_or_else(|| raw.to_string());
@@ -235,5 +241,97 @@ pub fn type_name(data_type: &DataType) -> String {
             let _ = TimeUnit::Second;
             format!("{other:?}").to_ascii_lowercase()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rendered(value: ScalarValue) -> serde_json::Value {
+        scalar_to_json(&value)
+    }
+
+    #[test]
+    fn renders_every_timestamp_precision() {
+        // 2024-03-15T12:34:56.789Z expressed in each Arrow unit.
+        assert_eq!(
+            rendered(ScalarValue::TimestampSecond(Some(1_710_506_096), None)),
+            serde_json::json!("2024-03-15T12:34:56.000000Z")
+        );
+        assert_eq!(
+            rendered(ScalarValue::TimestampMillisecond(
+                Some(1_710_506_096_789),
+                None
+            )),
+            serde_json::json!("2024-03-15T12:34:56.789000Z")
+        );
+        assert_eq!(
+            rendered(ScalarValue::TimestampMicrosecond(
+                Some(1_710_506_096_789_000),
+                None
+            )),
+            serde_json::json!("2024-03-15T12:34:56.789000Z")
+        );
+        // Regression: nanosecond values used to divide by zero here.
+        assert_eq!(
+            rendered(ScalarValue::TimestampNanosecond(
+                Some(1_710_506_096_789_000_000),
+                None
+            )),
+            serde_json::json!("2024-03-15T12:34:56.789000Z")
+        );
+    }
+
+    #[test]
+    fn renders_timestamps_beyond_the_i64_nanosecond_range() {
+        // 2260-01-01: 9.15e18 nanoseconds does not fit in the arithmetic an i64
+        // intermediate would use, but must still render.
+        assert_eq!(
+            rendered(ScalarValue::TimestampNanosecond(
+                Some(9_151_488_000_000_000_000),
+                None
+            )),
+            serde_json::json!("2260-01-01T00:00:00.000000Z")
+        );
+    }
+
+    #[test]
+    fn renders_null_and_date_values() {
+        assert_eq!(
+            rendered(ScalarValue::TimestampNanosecond(None, None)),
+            serde_json::Value::Null
+        );
+        // 2024-03-15 as days since the Unix epoch.
+        assert_eq!(
+            rendered(ScalarValue::Date32(Some(19_797))),
+            serde_json::json!("2024-03-15")
+        );
+    }
+
+    #[test]
+    fn renders_scalars_without_losing_type() {
+        assert_eq!(rendered(ScalarValue::Null), serde_json::Value::Null);
+        assert_eq!(
+            rendered(ScalarValue::Boolean(Some(true))),
+            serde_json::json!(true)
+        );
+        assert_eq!(
+            rendered(ScalarValue::Int64(Some(-7))),
+            serde_json::json!(-7)
+        );
+        assert_eq!(rendered(ScalarValue::UInt64(Some(7))), serde_json::json!(7));
+        assert_eq!(
+            rendered(ScalarValue::Float64(Some(1.5))),
+            serde_json::json!(1.5)
+        );
+        assert_eq!(
+            rendered(ScalarValue::Utf8(Some("x".to_string()))),
+            serde_json::json!("x")
+        );
+        assert_eq!(
+            rendered(ScalarValue::Float64(Some(f64::NAN))),
+            serde_json::Value::Null
+        );
     }
 }
