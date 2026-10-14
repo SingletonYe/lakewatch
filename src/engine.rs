@@ -1,7 +1,6 @@
 //! The query engine: catalog + functions + a DataFusion `SessionContext`.
 
 use std::path::Path;
-use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use datafusion::arrow::array::RecordBatch;
@@ -92,29 +91,4 @@ fn default_partitions() -> usize {
         .map(|n| n.get())
         .unwrap_or(4)
         .min(8)
-}
-
-/// Build a `SessionContext` without registering any table. Handy for tests and
-/// for the "no lake on disk" code paths.
-pub fn bare_context() -> SessionContext {
-    let ctx = SessionContext::new_with_config(
-        SessionConfig::new()
-            .with_target_partitions(default_partitions())
-            .with_information_schema(true),
-    );
-    functions::register(&ctx);
-    ctx
-}
-
-/// Register an in-memory batch as a table (used by tests and `--stdin` paths).
-pub fn register_batches(ctx: &SessionContext, name: &str, batches: Vec<RecordBatch>) -> Result<()> {
-    let provider = datafusion::datasource::memory::MemTable::try_new(
-        batches
-            .first()
-            .map(|b| b.schema())
-            .context("cannot infer schema from zero batches")?,
-        vec![batches],
-    )?;
-    ctx.register_table(name, Arc::new(provider))?;
-    Ok(())
 }

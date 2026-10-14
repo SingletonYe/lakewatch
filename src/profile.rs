@@ -305,17 +305,3 @@ fn text_at(batch: &RecordBatch, index: usize) -> Option<String> {
         other => Some(other.to_string()),
     }
 }
-
-/// Convenience used by tests: profile a table by name.
-pub async fn profile_table(
-    ctx: &SessionContext,
-    table: &str,
-    quantiles: bool,
-) -> Result<ProfileReport> {
-    let options = ProfileOptions {
-        input_sql: format!("SELECT * FROM {}", ident(table)),
-        source: table.to_string(),
-        quantiles,
-    };
-    profile(ctx, &options).await
-}

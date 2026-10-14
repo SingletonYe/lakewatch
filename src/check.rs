@@ -179,11 +179,6 @@ impl RulesFile {
         anyhow::ensure!(!parsed.rules.is_empty(), "rules file contains no rules");
         Ok(parsed)
     }
-
-    /// Render the parsed file back to pretty JSON (used by `--print-rules`).
-    pub fn to_json(&self) -> Result<String> {
-        Ok(serde_json::to_string_pretty(self)?)
-    }
 }
 
 /// Result of one rule.

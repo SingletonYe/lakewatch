@@ -3,7 +3,6 @@
 use std::io::Write;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use datafusion::arrow::array::RecordBatch;
@@ -237,9 +236,4 @@ pub fn type_name(data_type: &DataType) -> String {
             format!("{other:?}").to_ascii_lowercase()
         }
     }
-}
-
-/// Convenience: wrap batches in an Arc for `MemoryTable`-style consumers.
-pub fn as_arc(batches: Vec<RecordBatch>) -> Arc<Vec<RecordBatch>> {
-    Arc::new(batches)
 }
