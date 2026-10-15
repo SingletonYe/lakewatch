@@ -149,6 +149,21 @@ https://github.com/apache/datafusion/compare/main...SingletonYe:fix/oneof-signat
 The workflow instruction has been updated so every later slot stops at "push the branch and
 hand over the compare URL" instead of retrying the blocked API call.
 
+**Update 2026-10-15 (slot 2) — a fourth blocked write, and a bigger one than expected:**
+re-running a failed CI job is blocked too:
+
+```console
+$ gh run rerun 38738221541 --repo apache/datafusion --failed
+run 38738221541 cannot be rerun; Must have admin rights to Repository.
+```
+
+So the boundary is not "we cannot write content to apache/*", it is "we cannot change
+anything at all on an apache/* repository": no PR, no issue, no PR body edit, no re-run.
+Every one of those is a one-click hand-off to the user. Worth stating once here so no future
+slot spends a check on a re-run, and so a red CI run is reported as an action item instead of
+being retried from the sandbox. (Reading is unaffected: PR state, checks, job logs, review
+comments and issue search all work — the wasm-pack log above was read this way.)
+
 ## 2026-10-14 21:00 — slot 4 (last slot: daily digest)
 
 Fresh sandbox: everything was rebuilt from GitHub, which is itself the test.
