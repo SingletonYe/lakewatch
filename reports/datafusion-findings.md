@@ -339,3 +339,22 @@ DataFusion 的 DECIMAL 列以文本到达（`2.2000`，每位 scale 一个数字
 规则是：09/13/17 点只在**提了上游 issue/PR、准备了待点一下的分支、或运行失败**时发。本 slot
 三者都不是（而且我们**故意没有**提东西，免得撞 #25996），所以不发。用户在 21:00 的日报里会
 拿到全部内容；需要用户做的仍是上一轮的两件事（贴回复、换 PR 描述）。
+
+### 391 findings 全部分归因完毕（本 slot 的新进展）
+
+之前几轮把 Tier-A 的 20 个 cluster 归成了"13 个 = #20501 那条路径 / 16 条 = map_extract /
+其余 NOT_IMPL 未细究"。今天把最后一块补上了：**22 条 NOT_IMPL 逐个对文档核实，全部是文档写明的
+限制，不是 bug**。于是 391 条发现现在没有任何未解释的残留：
+
+| cluster（消息签名） | 条数 | 归因 |
+|---|---|---|
+| `date_trunc`, `date_part`, `string_to_array`, `generate_series`, `range`, `round`, `trunc`, `regexp_like`, `substr`, `btrim`, `log`, `ltrim`, `rtrim`（13 个 cluster） | 353 | `OneOf` 全分支失败走 `internal_err!` → **PR #26329**（在审），属于 #20501 |
+| `map_extract(UserDefined)` | 16 | 见上：缺陷 1 = #25996 在飞；缺陷 3 = #15817；缺陷 2 已实测待定 |
+| `to_timestamp(Date32)` | 5 | 文档写明"Supports strings, integer, unsigned integer, and double types as input"，Date32 不在其中 → **限制，非 bug** |
+| `gcd(Date32)` / `lcm(Date32)` | 5 + 5 | 文档写明参数是 "First/Second **numeric** expression" → 日期不是数值 → **限制，非 bug** |
+| `to_time(Int64)` / `to_time(Float64)` / `to_time(Date32)` | 3 + 1 + 1 | 文档写明 "Supports strings and timestamps as input" → **限制，非 bug** |
+| `arrow_cast('abc', 'abc')` | 2 | 第二个参数必须是 Arrow 类型名；报错 "Unsupported type 'abc'. Must be a supported arrow type" 正确且面向用户 → **非 bug** |
+
+这组结论的价值不在"发现了什么"，而在**不再有人花时间重看它们**：这些错误信息都是面向用户的、
+说明白了哪里不对、也没有让人去提 bug report。它们此前一直被当作"NOT_IMPL 待研判"，现在每条都带了
+文档依据。（判据是仓库内 `docs/source/user-guide/sql/scalar_functions.md`，逐条比对了签名说明。）
