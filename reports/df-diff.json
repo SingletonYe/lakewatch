@@ -1,0 +1,757 @@
+{
+  "oracle": "duckdb",
+  "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
+  "counts": {
+    "OK": 56,
+    "KNOWN_DIFF": 8,
+    "BOTH_ERROR": 2
+  },
+  "findings": [
+    {
+      "id": "int_division",
+      "category": "arithmetic",
+      "sql": "SELECT 7 / 2 AS r",
+      "why": "Kept in the catalogue as documentation of a deliberate dialect divergence.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 3 vs duckdb [1 row(s)] 3.5"
+      ]
+    },
+    {
+      "id": "cast_float_to_int_half",
+      "category": "casts",
+      "sql": "SELECT CAST(2.5 AS INT) AS a, CAST(3.5 AS INT) AS b, CAST(-2.5 AS INT) AS c",
+      "why": null,
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 2,3,-2 vs duckdb [1 row(s)] 3,4,-3"
+      ]
+    },
+    {
+      "id": "cast_invalid_string",
+      "category": "casts",
+      "sql": "SELECT CAST('abc' AS INT) AS r",
+      "why": "Both engines should reject this; the probe is here to catch a silent 0 or NULL.",
+      "ordered": false,
+      "status": "BOTH_ERROR",
+      "details": [
+        "datafusion errored both ways: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type",
+        "both engines errored (duckdb: Conversion Error: Could not convert string 'abc' to INT32)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Cast error: Cannot cast string 'abc' to value of Int32 type"
+    },
+    {
+      "id": "cast_invalid_date",
+      "category": "casts",
+      "sql": "SELECT CAST('2024-02-30' AS DATE) AS r",
+      "why": "2024-02-30 does not exist; a silent wrap to 2024-03-01 would be a bug.",
+      "ordered": false,
+      "status": "BOTH_ERROR",
+      "details": [
+        "datafusion errored both ways: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type",
+        "both engines errored (duckdb: Conversion Error: date field value out of range: \"2024-02-30\")"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "round_half",
+      "category": "arithmetic",
+      "sql": "SELECT ROUND(2.5) AS a, ROUND(-2.5) AS b, ROUND(2.567, 2) AS c, ROUND(1.005, 2) AS d",
+      "why": null,
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 3.0,-3.0,2.57,1.0 vs duckdb [1 row(s)] 3.0,-3.0,2.57,1.01"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "integer_overflow",
+      "category": "arithmetic",
+      "sql": "SELECT 9223372036854775807 + 1 AS r",
+      "why": "Must raise an overflow error rather than wrap around.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "upper_sharp_s",
+      "category": "strings",
+      "sql": "SELECT UPPER('\u00df') AS r",
+      "why": "Uppercasing \u00df is locale dependent; the result must at least be stable and documented.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] SS vs duckdb [1 row(s)] \u1e9e"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "date_add_year_leap",
+      "category": "datetime",
+      "sql": "SELECT DATE '2024-02-29' + INTERVAL '1' YEAR AS r",
+      "why": "Adding a year to a leap day has no obvious answer; behaviour must not be a silent panic.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 2025-02-28 vs duckdb [1 row(s)] 2025-02-28 00:00:00"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "signed_zero_ordering",
+      "category": "float_semantics",
+      "sql": "SELECT x FROM (VALUES (0.0),(-0.0),(1.0)) AS t(x) ORDER BY x, 1",
+      "why": "Pins the total-ordering decision so a regression would be visible.",
+      "ordered": true,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "decimal_division_scale",
+      "category": "arithmetic",
+      "sql": "SELECT CAST('1.00' AS DECIMAL(4,2)) / CAST('3.00' AS DECIMAL(4,2)) AS d",
+      "why": "Decimal division has no standardised result scale; the point of the probe is that DataFusion keeps a decimal result here and neither loses the type nor crashes.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 0.333333 vs duckdb [1 row(s)] 0.3333333333"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    }
+  ],
+  "results": [
+    {
+      "id": "not_in_with_null",
+      "category": "null_semantics",
+      "sql": "SELECT 3 AS probe WHERE 3 NOT IN (1, 2, NULL)",
+      "why": "Three-valued logic: `x NOT IN (1, 2, NULL)` can never be TRUE, so the row must be filtered out.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "not_in_with_null_column",
+      "category": "null_semantics",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values WHERE v_int NOT IN (1, 2, NULL)",
+      "why": "Same three-valued rule applied to a column; any engine returning a count here is wrong.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "empty_group_sum",
+      "category": "null_semantics",
+      "sql": "SELECT SUM(v_int) AS s, COUNT(v_int) AS c, COUNT(*) AS n FROM probe_values WHERE FALSE",
+      "why": "SUM over an empty set is NULL while COUNT is 0.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "null_equals_null",
+      "category": "null_semantics",
+      "sql": "SELECT (NULL = NULL) AS r",
+      "why": "Equality with NULL is unknown, not true.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "null_concat",
+      "category": "null_semantics",
+      "sql": "SELECT (v_text || 'x') AS r FROM probe_values WHERE id = 4",
+      "why": "`||` propagates NULL.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "count_distinct_with_nulls",
+      "category": "null_semantics",
+      "sql": "SELECT COUNT(DISTINCT v_int) AS c FROM probe_values",
+      "why": "DISTINCT ignores NULLs.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "distinct_keeps_one_null",
+      "category": "null_semantics",
+      "sql": "SELECT COUNT(*) AS c FROM (SELECT DISTINCT g FROM probe_values) t",
+      "why": "DISTINCT collapses NULLs to a single group.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "nulls_first",
+      "category": "null_semantics",
+      "sql": "SELECT id FROM probe_values ORDER BY g ASC NULLS FIRST, id ASC LIMIT 3",
+      "why": "Explicit NULLS FIRST placement.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "nulls_last_desc",
+      "category": "null_semantics",
+      "sql": "SELECT id FROM probe_values ORDER BY g DESC NULLS LAST, id ASC LIMIT 3",
+      "why": "Explicit NULLS LAST placement on a DESC key.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "default_null_order_asc",
+      "category": "null_semantics",
+      "sql": "SELECT id FROM probe_values ORDER BY g ASC, id ASC LIMIT 3",
+      "why": "The implicit NULL placement must match the documented default.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "order_by_expression_alias",
+      "category": "sql_surface",
+      "sql": "SELECT v_int * 2 AS doubled FROM probe_values WHERE v_int IS NOT NULL ORDER BY doubled DESC, v_int ASC",
+      "why": "ORDER BY on a projection alias.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "group_by_null_group",
+      "category": "null_semantics",
+      "sql": "SELECT g, COUNT(*) AS n FROM probe_values GROUP BY g ORDER BY g NULLS FIRST",
+      "why": "NULL forms its own group.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "int_division",
+      "category": "arithmetic",
+      "sql": "SELECT 7 / 2 AS r",
+      "why": "Kept in the catalogue as documentation of a deliberate dialect divergence.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 3 vs duckdb [1 row(s)] 3.5"
+      ]
+    },
+    {
+      "id": "modulo_negative_left",
+      "category": "arithmetic",
+      "sql": "SELECT (-7) % 3 AS r",
+      "why": "Sign of the remainder follows the dividend in the standard.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "modulo_negative_right",
+      "category": "arithmetic",
+      "sql": "SELECT 7 % (-3) AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "float_rounding_sum",
+      "category": "arithmetic",
+      "sql": "SELECT 0.1 + 0.2 AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "cast_float_to_int_half",
+      "category": "casts",
+      "sql": "SELECT CAST(2.5 AS INT) AS a, CAST(3.5 AS INT) AS b, CAST(-2.5 AS INT) AS c",
+      "why": null,
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 2,3,-2 vs duckdb [1 row(s)] 3,4,-3"
+      ]
+    },
+    {
+      "id": "cast_string_with_spaces",
+      "category": "casts",
+      "sql": "SELECT CAST('  12  ' AS INT) AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "cast_invalid_string",
+      "category": "casts",
+      "sql": "SELECT CAST('abc' AS INT) AS r",
+      "why": "Both engines should reject this; the probe is here to catch a silent 0 or NULL.",
+      "ordered": false,
+      "status": "BOTH_ERROR",
+      "details": [
+        "datafusion errored both ways: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type",
+        "both engines errored (duckdb: Conversion Error: Could not convert string 'abc' to INT32)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Cast error: Cannot cast string 'abc' to value of Int32 type"
+    },
+    {
+      "id": "cast_scientific_string",
+      "category": "casts",
+      "sql": "SELECT CAST('1e3' AS DOUBLE) AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "cast_invalid_date",
+      "category": "casts",
+      "sql": "SELECT CAST('2024-02-30' AS DATE) AS r",
+      "why": "2024-02-30 does not exist; a silent wrap to 2024-03-01 would be a bug.",
+      "ordered": false,
+      "status": "BOTH_ERROR",
+      "details": [
+        "datafusion errored both ways: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type",
+        "both engines errored (duckdb: Conversion Error: date field value out of range: \"2024-02-30\")"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "cast_null_to_int",
+      "category": "casts",
+      "sql": "SELECT CAST(NULL AS INT) AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "round_half",
+      "category": "arithmetic",
+      "sql": "SELECT ROUND(2.5) AS a, ROUND(-2.5) AS b, ROUND(2.567, 2) AS c, ROUND(1.005, 2) AS d",
+      "why": null,
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 3.0,-3.0,2.57,1.0 vs duckdb [1 row(s)] 3.0,-3.0,2.57,1.01"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "floor_ceil_negative",
+      "category": "arithmetic",
+      "sql": "SELECT FLOOR(-2.5) AS f, CEIL(-2.5) AS c, TRUNC(-2.5) AS t",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "integer_overflow",
+      "category": "arithmetic",
+      "sql": "SELECT 9223372036854775807 + 1 AS r",
+      "why": "Must raise an overflow error rather than wrap around.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "avg_of_integers",
+      "category": "aggregates",
+      "sql": "SELECT AVG(v_int) AS r FROM probe_values",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "stddev_single_row",
+      "category": "aggregates",
+      "sql": "SELECT STDDEV(v_int) AS s, STDDEV_POP(v_int) AS p FROM probe_values WHERE id = 1",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "stddev_all_null",
+      "category": "aggregates",
+      "sql": "SELECT STDDEV(v_int) AS s FROM probe_values WHERE v_int IS NULL",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "sum_only_nulls",
+      "category": "aggregates",
+      "sql": "SELECT SUM(v_int) AS s FROM probe_values WHERE v_int IS NULL",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "min_max_text_case",
+      "category": "aggregates",
+      "sql": "SELECT MIN(v_text) AS lo, MAX(v_text) AS hi FROM probe_values WHERE v_text IS NOT NULL",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "aggregate_group_by_with_nulls",
+      "category": "aggregates",
+      "sql": "SELECT g, SUM(v_int) AS s, AVG(v_dbl) AS a FROM probe_values GROUP BY g ORDER BY g NULLS FIRST",
+      "why": null,
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_rows_frame",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values ORDER BY g NULLS FIRST, id",
+      "why": null,
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_range_frame_ties",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values WHERE v_int IS NOT NULL ORDER BY v_int, id",
+      "why": "RANGE includes peer rows with an equal ordering key, ROWS does not. The key is an integer so the probe tests frames, not float ordering.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_rows_frame_ties_contrast",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values WHERE v_int IS NOT NULL ORDER BY v_int, id",
+      "why": "RANGE includes peer rows with an equal ordering key, ROWS does not. The key is an integer so the probe tests frames, not float ordering.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "lag_default_value",
+      "category": "window",
+      "sql": "SELECT id, LAG(v_int, 1, -1) OVER (PARTITION BY g ORDER BY id) AS prev FROM probe_values ORDER BY g NULLS FIRST, id",
+      "why": null,
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "ntile_distribution",
+      "category": "window",
+      "sql": "SELECT id, NTILE(4) OVER (ORDER BY id) AS bucket FROM probe_values ORDER BY id",
+      "why": null,
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "first_last_value_frame",
+      "category": "window",
+      "sql": "SELECT id, FIRST_VALUE(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS f, LAST_VALUE(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS l FROM probe_values ORDER BY g NULLS FIRST, id",
+      "why": null,
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_sum_over_null_partition",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (PARTITION BY g) AS s FROM probe_values ORDER BY g NULLS FIRST, id",
+      "why": "A NULL partition key still forms a partition.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "left_join_null_keys",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values a LEFT JOIN probe_values b ON a.g = b.g WHERE a.g IS NULL",
+      "why": "NULL never matches NULL in a join predicate.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "full_outer_join_null_keys",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values a FULL OUTER JOIN probe_values b ON a.id = b.g",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "semi_join_duplicates",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values a WHERE a.g IN (SELECT g FROM probe_values WHERE g IS NOT NULL)",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "length_unicode",
+      "category": "strings",
+      "sql": "SELECT LENGTH('h\u00e9llo') AS a, LENGTH('\u65e5\u672c\u8a9e') AS b, LENGTH('') AS c",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "substring_unicode",
+      "category": "strings",
+      "sql": "SELECT SUBSTRING('h\u00e9llo', 2, 2) AS a, SUBSTRING('\u65e5\u672c\u8a9e', 2, 1) AS b",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "upper_sharp_s",
+      "category": "strings",
+      "sql": "SELECT UPPER('\u00df') AS r",
+      "why": "Uppercasing \u00df is locale dependent; the result must at least be stable and documented.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] SS vs duckdb [1 row(s)] \u1e9e"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "like_case_sensitivity",
+      "category": "strings",
+      "sql": "SELECT ('a' LIKE 'A') AS a, ('a' ILIKE 'A') AS b",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "trim_variants",
+      "category": "strings",
+      "sql": "SELECT TRIM('  x  ') AS a, LTRIM('  x  ') AS b, RTRIM('  x  ') AS c, TRIM(BOTH 'x' FROM 'xxaxx') AS d",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "replace_with_empty_pattern",
+      "category": "strings",
+      "sql": "SELECT REPLACE('abc', '', 'X') AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "concat_null_handling",
+      "category": "strings",
+      "sql": "SELECT CONCAT('a', NULL) AS a, ('a' || NULL) AS b",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "greatest_least_with_null",
+      "category": "arithmetic",
+      "sql": "SELECT GREATEST(NULL, 1) AS g, LEAST(NULL, 1) AS l",
+      "why": "Postgres ignores NULLs here; the standard leaves it open, so this probe mostly documents behaviour.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "date_trunc_month",
+      "category": "datetime",
+      "sql": "SELECT DATE_TRUNC('month', DATE '2024-03-15') AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "date_add_year_leap",
+      "category": "datetime",
+      "sql": "SELECT DATE '2024-02-29' + INTERVAL '1' YEAR AS r",
+      "why": "Adding a year to a leap day has no obvious answer; behaviour must not be a silent panic.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 2025-02-28 vs duckdb [1 row(s)] 2025-02-28 00:00:00"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "date_diff",
+      "category": "datetime",
+      "sql": "SELECT DATE '2024-03-01' - DATE '2024-02-01' AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "extract_dow",
+      "category": "datetime",
+      "sql": "SELECT EXTRACT(DOW FROM DATE '2024-03-17') AS dow, EXTRACT(DOY FROM DATE '2024-03-17') AS doy",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "timestamp_cast_precision",
+      "category": "datetime",
+      "sql": "SELECT CAST('2024-03-15 12:34:56.789' AS TIMESTAMP) AS r",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "cte_and_union",
+      "category": "sql_surface",
+      "sql": "WITH s AS (SELECT g, COUNT(*) AS n FROM probe_values GROUP BY g) SELECT (SELECT COUNT(*) FROM s) AS groups, (SELECT SUM(n) FROM s) AS rows",
+      "why": "CTEs plus scalar subqueries must agree on row counts.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "union_all_vs_union",
+      "category": "sql_surface",
+      "sql": "SELECT (SELECT COUNT(*) FROM (SELECT g FROM probe_values UNION ALL SELECT g FROM probe_values) t) AS all_rows, (SELECT COUNT(*) FROM (SELECT g FROM probe_values UNION SELECT g FROM probe_values) t) AS distinct_rows",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "case_with_null",
+      "category": "sql_surface",
+      "sql": "SELECT SUM(CASE WHEN v_int IS NULL THEN 1 ELSE 0 END) AS nulls, SUM(CASE v_int WHEN 4 THEN 1 ELSE 0 END) AS fours FROM probe_values",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "coalesce_nullif",
+      "category": "sql_surface",
+      "sql": "SELECT COALESCE(NULL, NULL, 3) AS c, NULLIF(1, 1) AS n, NULLIF(1, 2) AS m",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "in_list_with_expressions",
+      "category": "sql_surface",
+      "sql": "SELECT COUNT(*) AS c FROM probe_values WHERE v_int IN (1 + 1, 4)",
+      "why": null,
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "signed_zero_ordering",
+      "category": "float_semantics",
+      "sql": "SELECT x FROM (VALUES (0.0),(-0.0),(1.0)) AS t(x) ORDER BY x, 1",
+      "why": "Pins the total-ordering decision so a regression would be visible.",
+      "ordered": true,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "signed_zero_equality_vs_sort",
+      "category": "float_semantics",
+      "sql": "SELECT (-0.0 = 0.0) AS equal, COUNT(DISTINCT x) AS distinct_count FROM (VALUES (0.0),(-0.0)) AS t(x)",
+      "why": "Equality and DISTINCT use IEEE semantics even though ORDER BY uses total ordering.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "map_extract_present_and_missing",
+      "category": "nested_types",
+      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing",
+      "why": "DataFusion documents `map_extract` as returning a list, empty when the key is absent; DuckDB has the same function, so this is oracle-comparable.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "element_at_is_map_extract_here",
+      "category": "nested_types",
+      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS r",
+      "why": "Pins the documented alias so a change in either direction is visible.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "decimal_mul_add_scale",
+      "category": "arithmetic",
+      "sql": "SELECT CAST('1.10' AS DECIMAL(10,2)) * CAST('2.00' AS DECIMAL(10,2)) AS m, CAST('2.50' AS DECIMAL(4,2)) + CAST('0.05' AS DECIMAL(4,2)) AS a",
+      "why": "Decimal multiplication must widen the scale (2 + 2 = 4) rather than fall back to floating point, and decimal addition must stay exact -- 0.05 has no binary representation, so a silent promotion to DOUBLE shows up here.",
+      "ordered": false,
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "decimal_division_scale",
+      "category": "arithmetic",
+      "sql": "SELECT CAST('1.00' AS DECIMAL(4,2)) / CAST('3.00' AS DECIMAL(4,2)) AS d",
+      "why": "Decimal division has no standardised result scale; the point of the probe is that DataFusion keeps a decimal result here and neither loses the type nor crashes.",
+      "ordered": false,
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 0.333333 vs duckdb [1 row(s)] 0.3333333333"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "grouping_sets_grand_total",
+      "category": "grouping_sets",
+      "sql": "SELECT COALESCE(g, -1) AS g_key, COUNT(*) AS c FROM probe_values GROUP BY GROUPING SETS ((g), ()) ORDER BY g_key, c",
+      "why": "GROUPING SETS must emit one row per grouping set, including the grand total over all 12 rows, and the NULL group must not be merged into it.",
+      "ordered": true,
+      "status": "OK",
+      "details": []
+    }
+  ]
+}

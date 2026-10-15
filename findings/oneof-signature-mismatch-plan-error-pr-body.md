@@ -31,6 +31,17 @@ Error during planning: Function 'substr' failed to match any signature, errors: 
 
 The message body, the candidate signatures, and the trailing "No function matches the given name and argument types ... You might need to add explicit type casts." line are all unchanged. Only the `Internal error` kind and the bug-report boilerplate are gone.
 
+### How far this reaches
+
+`get_valid_types_with_udf` is shared by scalar **and** aggregate functions, so the fix is not limited to scalar calls. `SELECT avg(DATE '2024-01-01')` on `main`:
+
+```text
+Error during planning: Internal error: Function 'avg' failed to match any signature, errors: …
+This issue was likely caused by a bug in DataFusion's code. …
+```
+
+and with this change it is a plain planning error. A sweep of all 72 aggregate functions (458 calls, hostile argument profiles) found 185 internal errors, **184 of which are exactly this root cause** — `avg`, `sum`, `median`, `approx_median`, `approx_percentile_cont`, `approx_percentile_cont_with_weight`. One line of code, the whole function catalogue.
+
 ## What changes are included in this PR?
 
 - `datafusion/expr/src/type_coercion/functions.rs`: return `plan_err!` instead of `internal_err!` when every `OneOf` branch rejects the arguments. One line of behaviour change.

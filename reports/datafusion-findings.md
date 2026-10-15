@@ -262,12 +262,13 @@ target is the `element_at` / `map_extract` path in `findings/nested-map-coercion
 
 ## 2026-10-15 09:00 — slot 1 (first slot of the day)
 
-**结论**：probes 66（+3）· candidates 0 · 新 root cause 0 · 但拦下了一个重复 PR
+**结论**：probes 66（+3）· candidates 0 · 拦下一个重复 PR · **并在从未扫过的聚合函数里挖到 1 个新根因**
 
 | 阶段 | 结果 |
 |---|---|
 | Phase 0 健康闸门 | 7/7 PASS（fresh clone，duckdb 1.5.6 oracle 已装，build 6m33s） |
 | Phase 1a Tier-A | 1874 次调用 / 391 findings / **20 个根因**（INTERNAL=369, NOT_IMPL=22）—— 与基线一致，无新增根因 |
+| Phase 1a+ 聚合函数 | **新**：72 个聚合函数 / 458 次调用 / 191 findings / 13 个根因，其中 **1 个是全新的**（见下） |
 | Phase 1b 语义探针 | 66 探针 · OK=56 · KNOWN_DIFF=8 · BOTH_ERROR=2 · **0 个待研判候选** |
 | Phase 4 扩目录 | +3 探针，1 处 harness 修正 |
 | Phase 6 邮件 | 未发（见下） |
@@ -367,3 +368,50 @@ DataFusion 的 DECIMAL 列以文本到达（`2.2000`，每位 scale 一个数字
   `6bf43f29`（2026-10-15T12:47Z），**#25996 仍未合并**，所以上面对 map_extract 的归因成立。
 * 语义探针改用 `--partitions 8` 重跑一遍（默认是 4）：66 探针结果完全一致
   （OK=56、KNOWN_DIFF=8、BOTH_ERROR=2、0 候选），没有新的 plan divergence。并行度数不是这里的问题源。
+
+### 追加（同一 slot 稍后）：扫到聚合函数里去了，挖到 1 个新根因
+
+`df_robust.py` 此前写死 `function_type = 'SCALAR'`，所以 **72 个聚合函数、11 个窗口函数从来没被
+摇过**。给脚本加了 `--function-type` 选项（默认 SCALAR，行为不变），先跑聚合：
+
+`python3 scripts/df_robust.py --function-type AGGREGATE` → 72 函数 / 458 次调用 / **191 findings
+/ 13 个根因**（INTERNAL=185, NOT_IMPL=6）。
+
+分两半，结论完全不同：
+
+* **184 / 185 的 INTERNAL 就是 #26329 那个根因**（`avg(DATE …)`、`sum(DATE …)`、`median(DATE …)`、
+  `approx_percentile_cont(…)` 全是 "Function 'X' failed to match any signature"）。这是给
+  #26329 的一个**新论据**：这个修改不只救标量函数，它把整个函数目录（标量 + 聚合）的
+  "Internal error … 请提 bug report" 文案一起去掉了。已加进待粘贴的 PR 描述。
+* **1 条是全新的根因**，值得单独立案：
+
+**`nth_value(x, 0)`：聚合形式报 internal error，窗口形式静默返回 NULL。**
+
+```console
+$ lakewatch sql "SELECT nth_value(v_int, 0) FROM probe_values"
+Internal error: Assertion failed: n != 0: Nth value indices are 1 based. 0 is invalid index.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: ...
+
+$ lakewatch sql "SELECT id, nth_value(v_int, 0) OVER (ORDER BY id) FROM probe_values"
+-- 12 行全是 NULL，一点错都不报
+```
+
+同一个表达式、同一组参数，两种形式给出两种结果：一边把用户自己的输入当 DataFusion 的 bug 让人去
+提 issue，另一边悄悄给 NULL。索引 1 起算、负数从末尾数，两条文档都没写 `0`，而聚合路径的断言信息
+自己就写着 "0 is invalid index"。
+
+* 聚合：`functions-aggregate/src/nth_value.rs:219`、`:350` 的 `assert_or_internal_err!(n != 0, …)`。
+* 窗口：`functions-window/src/nth_value.rs:433-441`，`self.n.cmp(&0)` 里有一个
+  `Ordering::Equal => (false, false)` 分支 —— 显式把 0 当成"永远没有结果"，没有任何校验。
+  两条路径是两个不同的实现（UDWF vs UDAF），谁都没在入口校验 `n`。
+
+**不是 #26329 那一类**：参数类型完全匹配签名，坏的是第二个参数的**取值**，失败点在建累加器时，
+不在类型强制阶段。**不是重复**：`"Nth value indices are 1 based"`、`nth_value "index 0"`、
+`nth_value 0 internal error` 三组搜索都没有对应 issue/PR（#24595 是零*参数*，#12320 是 NULL 输入）。
+
+按规矩**没有开分支、没有提 issue**（#26329 还在开，一天一个上游 PR），但把现成的 issue 文本写好了：
+`findings/nth-value-zero-index-issue.md`，用户复制即可提。修法很小，但横跨两个 crate
+（`functions-aggregate` + `functions-window`），所以 issue 里问了维护者想要哪种范围：两处一起，
+还是先修聚合那条（那是对用户可见的错误信息）。等 #26329 清掉后这就是下一个 PR 的靶子。
+
+`--function-type WINDOW` 还没跑（窗口函数需要 `OVER` 子句，当前摇法测不出东西），记在下一次。

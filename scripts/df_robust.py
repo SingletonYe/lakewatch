@@ -99,10 +99,10 @@ class Shaker:
         )
         return completed.returncode == 0, completed.stdout, completed.stderr
 
-    def functions(self) -> list[dict]:
+    def functions(self, function_type: str = "SCALAR") -> list[dict]:
         sql = (
             "SELECT routine_name, data_type, syntax_example, description "
-            "FROM information_schema.routines WHERE function_type = 'SCALAR' "
+            f"FROM information_schema.routines WHERE function_type = '{function_type}' "
             "ORDER BY routine_name"
         )
         ok, stdout, stderr = self.run(sql)
@@ -146,6 +146,13 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=DEFAULT_PROBE_ROOT)
     parser.add_argument("--bin", type=Path, default=None)
     parser.add_argument("--only", default=None, help="substring filter on the function name")
+    parser.add_argument(
+        "--function-type",
+        default="SCALAR",
+        choices=["SCALAR", "AGGREGATE", "WINDOW"],
+        help="which family to shake (default SCALAR); aggregates and window functions "
+        "are called on one row of literals, which is enough to reach their coercion paths",
+    )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--json", type=Path, default=None)
     parser.add_argument("--strict", action="store_true", help="exit 1 when a panic or internal error was found")
@@ -156,7 +163,7 @@ def main() -> int:
         binary = shutil.which("lakewatch") or sys.exit("lakewatch binary not found; run cargo build")
     shaker = Shaker(binary, args.root)
 
-    functions = shaker.functions()
+    functions = shaker.functions(args.function_type)
     if args.only:
         functions = [f for f in functions if args.only in f["routine_name"]]
     if args.limit:
