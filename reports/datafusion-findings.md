@@ -203,3 +203,47 @@ DuckDB) and `element_at_is_map_extract_here` (pins the documented alias, recorde
   apache/datafusion#24432.
 * Extend the catalogue to operators lakewatch does not use yet: `GROUPING SETS`,
   decimal and interval arithmetic, nested types, `MERGE`.
+
+## 2026-10-15 08:55 — PR-response run (review on #26329)
+
+**Trigger:** the user, who forwarded the review notification. Not a probe slot: the scope was
+Phase 0b only, and no sweep was run, so the numbers below are deliberately absent rather than
+zero.
+
+`gh pr view 26329 --repo apache/datafusion` → `OPEN`, one review from **alamb**
+(`CONTRIBUTOR`, `COMMENTED`, on `1fd13a7`): *"this looks great … other than adjusting the
+tests, this looks ready to me"*, with two inline comments asking for the added unit test to be
+deleted because the `.slt` cases cover the same paths, or moved to `.slt` if we think the
+coverage is needed.
+
+**Acted in-slot, as the table in the procedure requires.** Push `268933e` on
+`fix/oneof-signature-mismatch-plan-error` deletes the unit test (39 lines, nothing else). The
+claim that `.slt` already covers it was checked, not assumed, and it holds: `round`'s `OneOf`
+has 1- and 2-argument branches, so `SELECT round('x')` fails one on the argument type and the
+other on the arity — the exact shape the unit test built — and `round(1, 2, 3)`, `round(true)`,
+`round(timestamp)`, the four `generate_series` cases and `nth_value` cover the rest. Nothing
+was moved into `.slt`. Re-verified: `cargo fmt --all --check` clean, `cargo test -p
+datafusion-expr --lib` 281 passed / 0 failed, no new warnings.
+
+**What the `.slt` verification actually rests on.** `sqllogictest-0.29.1` matches an expected
+error as an **unanchored regex against the full error string** (`parser.rs:465`), and
+`verify_function_arguments` (`datafusion/expr/src/expr_schema.rs:790`) renders a `Plan` error
+as the bare message while any other variant keeps its `Display` prefix. So on `main` the
+actual text is `Error during planning: Internal error: Function 'round' failed to match any
+signature, …` and the expectation does not match it; after the change it does. Each of the ten
+updated expectations is therefore a real regression guard, and the error-variant change is
+observable through it. This is also the answer to the previous slot's open worry ("CI is the
+verification for the four `.slt` files") — the expectations can be reasoned about statically,
+and a background build of the `sqllogictests` binary was started to confirm it end to end.
+
+**Capability boundary, re-confirmed (do not retry):** `gh pr edit 26329 --body-file …` fails
+with *"The 'login' field requires one of the following scopes: ['read:org']"* — the same wall
+as `gh pr create`. So the PR-body correction that this push makes necessary
+(`findings/oneof-signature-mismatch-plan-error-pr-body.md`, which still claims the unit test
+exists and says "282 passed") and the reply comment on the review are handed to the user as
+pasted-ready text. Neither is posted by us, and neither is claimed to be.
+
+**Next:** when the next slot runs, `268933e` is the head; check whether the user posted the
+reply and whether CI needs re-approval for the new commit (first-time-contributor gate). If the
+review is satisfied, this PR is one approval away from the merge queue and the next Tier-A
+target is the `element_at` / `map_extract` path in `findings/nested-map-coercion-error.md`.

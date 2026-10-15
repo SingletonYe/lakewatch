@@ -1,11 +1,12 @@
 # Finding: `OneOf` signature mismatch reported as an internal error
 
-**Status:** fix prepared, branch pushed, PR awaiting one click
+**Status:** OPEN, reviewed 2026-10-15 — reviewer asked for the redundant unit test to go,
+new commit `268933e` pushed, reply and PR body await the user
 **DataFusion:** `apache/datafusion@6023600` (2026-10-14)
 **Upstream refs:** #20501 (open, this is part of it), #19004 (open, related), #21032 (closed
 unmerged — the same fix attempted as a much larger change and asked to be split up)
-**Branch:** `SingletonYe/datafusion:fix/oneof-signature-mismatch-plan-error` @ `1fd13a7`
-**PR:** https://github.com/apache/datafusion/compare/main...SingletonYe:fix/oneof-signature-mismatch-plan-error?expand=1
+**Branch:** `SingletonYe/datafusion:fix/oneof-signature-mismatch-plan-error` @ `268933e`
+**PR:** https://github.com/apache/datafusion/pull/26329
 
 ## Symptom
 
@@ -48,6 +49,8 @@ unchanged. Message verbosity and the missing separator (`…#19004`) are left fo
 
 ## Verification performed
 
+At the first push (`1fd13a7`):
+
 * new unit test fails on `main`, passes with the change;
 * `cargo test -p datafusion-expr --lib` → 282 passed, 0 failed;
 * `cargo fmt --all --check` clean;
@@ -57,3 +60,41 @@ unchanged. Message verbosity and the missing separator (`…#19004`) are left fo
 
 Full `sqllogictest` was **not** run locally (needs a full `datafusion-core` build); CI is the
 verification for those four files.
+
+## Review round 1 — 2026-10-15, alamb (CONTRIBUTOR), `COMMENTED`
+
+> Thanks @SingletonYe -- this looks great -- thank you for the focused PR -- other than
+> adjusting the tests, this looks ready to me
+
+Two inline comments on the unit test this branch added, at
+`type_coercion/functions.rs:1498`:
+
+> I think we can remove this unit test as the .slt tests cover all the same paths, right? It
+> seems like we don't need double coverage
+> If you think we need more coverage, please adapt this test to .slt
+
+**Action taken (commit `268933e`, a normal commit, not a force-push):** the unit test is
+deleted, 39 lines. Checked before agreeing to drop it, rather than taking the reviewer's word:
+`round`'s signature is a `OneOf` with 1-argument and 2-argument branches, so `SELECT
+round('x')` in `math.slt` fails one branch on the argument type and the other on the arity —
+the exact shape the unit test constructed. `round(1, 2, 3)`, `round(true)`,
+`round(timestamp)`, the four `generate_series` cases and `nth_value` cover the rest. So
+nothing moved to `.slt`: the coverage was already there.
+
+Why the `.slt` cases really do guard this change, in the runner's semantics: expectations are
+unanchored regexes matched against the full error string (`sqllogictest-0.29.1`,
+`parser.rs:465`), and `verify_function_arguments` (`expr_schema.rs:790`) renders a `Plan`
+error as the bare message but any other variant with its `Display` prefix. So on `main` the
+actual text is `Error during planning: Internal error: Function 'round' failed to match any
+signature, …` and the expectation `Error during planning: Function 'round' failed to match
+any signature` does **not** match it; after the change it does. Each of the ten updated
+expectations therefore fails on `main` — that is the regression guard, and it is why the
+variant change is observable at all.
+
+Re-verified after the deletion: `cargo fmt --all --check` clean, `cargo test -p
+datafusion-expr --lib` 281 passed / 0 failed (282 before, i.e. exactly the deleted test), no
+new warnings — none of the test module's helpers became unused, because `MockUdf`,
+`assert_contains`, `logical_string` and `logical_int64` are all still used by the remaining
+tests.
+
+Not done, and it is not ours to do: the reply comment and the PR-body correction (`findings/oneof-signature-mismatch-plan-error-pr-body.md`) both need the user, because `apache/*` refuses our writes (see `reports/datafusion-findings.md`).

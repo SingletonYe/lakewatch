@@ -34,14 +34,13 @@ The message body, the candidate signatures, and the trailing "No function matche
 ## What changes are included in this PR?
 
 - `datafusion/expr/src/type_coercion/functions.rs`: return `plan_err!` instead of `internal_err!` when every `OneOf` branch rejects the arguments. One line of behaviour change.
-- A unit test covering that failure. It mirrors `substr`'s real signature, so one branch fails on the argument type and the other on the arity.
-- Ten `sqllogictest` expectations that asserted the old user-visible text, in `array/array_range.slt`, `spark/math/round.slt`, `errors.slt` and `math.slt`.
+- Ten `sqllogictest` expectations that asserted the old user-visible text, in `array/array_range.slt`, `spark/math/round.slt`, `errors.slt` and `math.slt`. These are the tests for this change: `SELECT round('x')` fails one `OneOf` branch on the argument type and the other on the arity, and `round(1, 2, 3)`, the four `generate_series` cases and `nth_value` cover the remaining branch combinations. (An earlier unit test for the same path was removed at review: it was duplicate coverage.)
 
 ## Are these changes tested?
 
 Yes.
 
-- The new unit test fails on `main` and passes with the change; `cargo test -p datafusion-expr --lib` is 282 passed, 0 failed.
+- `cargo test -p datafusion-expr --lib` is 281 passed, 0 failed. The `.slt` expectations are the coverage for the behaviour change: each of them fails on `main`, because the old message carried an `Internal error: ` prefix that the expected text does not contain.
 - `cargo fmt --all --check` is clean.
 - I audited every other expectation of this message. The remaining ones — `functions.slt`, `aggregate.slt`, `string_literal.slt`, `named_arguments.slt`, and one assertion in `datafusion/optimizer/src/analyzer/type_coercion.rs` — match on a substring that does not include the removed prefix, so they are unaffected. No `sqllogictest` file asserted the "This issue was likely caused by a bug..." boilerplate.
 
