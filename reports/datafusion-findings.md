@@ -233,8 +233,20 @@ actual text is `Error during planning: Internal error: Function 'round' failed t
 signature, …` and the expectation does not match it; after the change it does. Each of the ten
 updated expectations is therefore a real regression guard, and the error-variant change is
 observable through it. This is also the answer to the previous slot's open worry ("CI is the
-verification for the four `.slt` files") — the expectations can be reasoned about statically,
-and a background build of the `sqllogictests` binary was started to confirm it end to end.
+verification for the four `.slt` files") — and it was confirmed end to end rather than left as
+an argument. The `sqllogictests` binary builds in **6m14s** here and takes file substrings as
+filters, so the four affected files were run directly: **exit 0** on `268933e`. With the
+one-line source change reverted and the `.slt` expectations left in place, the run fails on
+**exactly the ten updated expectations** (`array_range.slt:247,251,254,257`, `errors.slt:127`,
+`math.slt:178,181`, `spark/math/round.slt:596,600,604`), each with the old text
+`Error during planning: Internal error: Function 'round' failed to match any signature, …`.
+The regression guard is demonstrated, not asserted. Recorded with the exact commands in
+`findings/oneof-signature-mismatch-plan-error.md`.
+
+**Harness lesson:** `testing/` is an uninitialised *submodule* in a plain clone, so the first
+`errors.slt` run reported two unrelated failures (lines 44 and 159, empty `aggregate_test_100`).
+`git submodule update --init --depth 1 testing` (12 MB) fixes it. Future slots that run `.slt`
+files must do this first, or they will misread an empty table as a regression.
 
 **Capability boundary, re-confirmed (do not retry):** `gh pr edit 26329 --body-file …` fails
 with *"The 'login' field requires one of the following scopes: ['read:org']"* — the same wall

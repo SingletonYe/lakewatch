@@ -98,3 +98,31 @@ new warnings — none of the test module's helpers became unused, because `MockU
 tests.
 
 Not done, and it is not ours to do: the reply comment and the PR-body correction (`findings/oneof-signature-mismatch-plan-error-pr-body.md`) both need the user, because `apache/*` refuses our writes (see `reports/datafusion-findings.md`).
+
+## Local `sqllogictest` verification (added 2026-10-15)
+
+The first push could only say "CI is the verification" for the four `.slt` files; that gap is
+now closed. `cargo test -p datafusion-sqllogictest --test sqllogictests --no-run` builds in
+**6m14s** on this sandbox (2 vCPU), and the runner takes file substrings as filters, so the
+affected files can be executed directly:
+
+```bash
+cd datafusion/sqllogictest   # the runner resolves test_files/ from the cwd
+../../target/debug/deps/sqllogictests-<hash> math.slt errors.slt array_range.slt spark/math/round.slt
+```
+
+* On `268933e`: **exit 0**, all five files pass.
+* With the one-line source change reverted (`.slt` expectations untouched): **ten failures, at
+  exactly the ten expectations this PR updates** — `array_range.slt:247,251,254,257`,
+  `errors.slt:127`, `math.slt:178,181`, `spark/math/round.slt:596,600,604` — each reporting
+  `but got error: DataFusion error: Error during planning: Internal error: Function 'round'
+  failed to match any signature, …`.
+
+That is the regression guard demonstrated, not argued: the expectations fail without the fix
+and pass with it.
+
+**Sandbox gotcha, worth remembering:** the first run of `errors.slt` reported two failures at
+lines 44 and 159 that have nothing to do with this change. `testing/` is an empty *submodule*
+in a plain `git clone` (arrow-testing), so `aggregate_test_100` comes out empty and those two
+cases "succeed". After `git submodule update --init --depth 1 testing` (12 MB) the file is
+clean. Do not diagnose a change from an uninitialised-submodule run.

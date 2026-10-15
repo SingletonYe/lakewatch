@@ -40,11 +40,10 @@ The message body, the candidate signatures, and the trailing "No function matche
 
 Yes.
 
-- `cargo test -p datafusion-expr --lib` is 281 passed, 0 failed. The `.slt` expectations are the coverage for the behaviour change: each of them fails on `main`, because the old message carried an `Internal error: ` prefix that the expected text does not contain.
+- `cargo test -p datafusion-expr --lib` is 281 passed, 0 failed.
+- I ran the four affected `sqllogictest` files locally — `errors.slt`, `math.slt`, `array/array_range.slt`, `spark/math/round.slt` — and all pass. With the source change reverted they fail on exactly the ten updated expectations, with the old text `Error during planning: Internal error: Function 'round' failed to match any signature, …`, so those expectations are a real regression guard and not just a text update. The rest of the `.slt` suite was not run locally; CI covers that.
 - `cargo fmt --all --check` is clean.
 - I audited every other expectation of this message. The remaining ones — `functions.slt`, `aggregate.slt`, `string_literal.slt`, `named_arguments.slt`, and one assertion in `datafusion/optimizer/src/analyzer/type_coercion.rs` — match on a substring that does not include the removed prefix, so they are unaffected. No `sqllogictest` file asserted the "This issue was likely caused by a bug..." boilerplate.
-
-I could not run the full `sqllogictest` suite locally (it needs a full `datafusion-core` build), so CI is the verification for the four updated `.slt` files.
 
 ## Scope
 
