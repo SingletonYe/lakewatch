@@ -1,7 +1,8 @@
 # Finding: `OneOf` signature mismatch reported as an internal error
 
-**Status:** OPEN, reviewed 2026-10-15 — reviewer asked for the redundant unit test to go,
-new commit `268933e` pushed, reply and PR body await the user
+**Status:** OPEN, **APPROVED by alamb 2026-10-15 13:17:18Z** on `268933e`; the first-time
+contributor CI gate is now open and the checks are queued — next slot must read the CI result
+and fix it in-slot if it is red. Do not nudge; it was approved minutes ago
 **DataFusion:** `apache/datafusion@6023600` (2026-10-14)
 **Upstream refs:** #20501 (open, this is part of it), #19004 (open, related), #21032 (closed
 unmerged — the same fix attempted as a much larger change and asked to be split up)

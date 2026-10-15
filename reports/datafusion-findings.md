@@ -422,3 +422,23 @@ $ lakewatch sql "SELECT id, nth_value(v_int, 0) OVER (ORDER BY id) FROM probe_va
 **记录口径的小改动**：从本 slot 起，`reports/df-robust.json` 和 `reports/df-diff.json`
 （30 KB + 133 KB）也一并提交 —— 之前只提交 markdown，机器可读的原始结果留在沙箱里随沙箱消失，
 下一 slot 无法复核"391/20"和"0 候选"这些数字是怎么来的。这两个文件就是那两句话的凭据。
+
+### 更正：本 slot 运行到一半，PR 被批准了（13:17Z），CI 终于跑起来了
+
+上面 Phase 0b 那段写"球在用户那边、0 条新评论"——那是 09:05–09:15 的事实。**09:17:18 EDT
+（13:17:18Z）alamb 又交了一次 review，这次是 `APPROVED`**，正文只有一句 "Thank you
+@SingletonYe 🙏"。我 09:21 那次核对用的是不带 `reviews` 的字段，所以没看见，直到收尾时才查出来。
+（邮件已经在本 slot 发出，只有一个 slot 一封邮件的规矩，所以不在邮件里改口 —— 而且 GitHub 自己的
+approval 通知邮件也到用户邮箱了，信息没有丢。这一行是为了让下一个 slot 不被前面的描述误导。）
+
+**批准的直接后果：首次贡献者的 CI 门禁解除了。** `statusCheckRollup` 现在有 23 项，
+`linux build test`、`cargo fmt`、`Check License Header`、`Check semver`、CodeQL、Large files 等
+一大票处于 `QUEUED`，`reviewDecision` 已经是 `APPROVED`，`mergeStateStatus` 仍是 `BLOCKED`
+（等必需检查跑完）。
+
+所以下一个 slot 的 Phase 0b 变成一件明确的事：
+
+1. 看 `268933e` 的 CI 结果。**红了就当场修**（首次贡献者的 PR 挂红是最坏结果）；
+2. 绿了就等合并队列，**不要催**——刚批准 14 分钟，按规矩三天内不 nudge；
+3. 用户那两件事（贴回复、换 PR 描述）现在都不阻塞了，但 PR 描述里仍写着"A unit test covering
+   that failure"和"282 passed"，属于应改未改；回复则是礼貌性回答 reviewer 的问题。
