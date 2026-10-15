@@ -589,3 +589,58 @@ a new head SHA resets the first-time-contributor workflow gate to `action_requir
 another maintainer approval before any CI runs again — trading "one flaky check" for "no CI at
 all, waiting on a human". The merge queue merges onto the latest `main` itself; being behind is
 normal and is not a blocker here.
+
+## 2026-10-15 17:00 — slot 3
+
+**结论**：70 探针（+2）· 0 待研判候选 · Tier-A 三族再次逐项复现 · PR 仍只卡在那一个 flaky 必需检查上
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | 7/7 PASS（fresh clone，build 6m57s，duckdb 1.5.6） |
+| Phase 1a 标量 | 1874 调用 / 391 findings / 20 根因（INTERNAL=369, NOT_IMPL=22）—— 与基线一致 |
+| Phase 1a 聚合 | 458 调用 / 191 findings / 13 根因 —— 与 slot 1、slot 2 一致 |
+| Phase 1a 窗口 | 79 调用 / 0 findings |
+| Phase 1b 语义 | 70 探针 · OK=59 · KNOWN_DIFF=9 · BOTH_ERROR=2 · **0 候选** |
+| Phase 4 | +2 探针（ROLLUP + `grouping()`、RANGE 窗口 peer 语义） |
+
+### Phase 0b — 没有可做的事，而且这次连"换个检查"都没得换
+
+`OPEN`，head 仍 `268933e`，`APPROVED`，无新人类评论（只有 Codecov 机器人），
+`build and run with wasm-pack` **仍然红**，其余 38 pass / 3 skip。按 Phase 0b 的表，CI 真红要当场修——
+读完日志的结论是**没有代码可修**：ChromeDriver 在启动阶段被 SIGKILL（`driver status: signal: 9`），
+一个浏览器用例都没跑，同 job 的 Rust 用例 9/9 通过；而且我们既不能重跑（只读账号，
+`Must have admin rights to Repository`），也不该 push（新 SHA 会让首次贡献者门禁回到
+`action_required`，等于把"一个 flaky 检查"换成"完全没 CI"）。上一轮已经把这些写进
+`findings/ci-rerun-request-comment.md`，交给人处理。
+
+**新证据（本 slot 补的）**：这不是仓库范围的宕机。查了最近完成的、同样跑 `rust.yml` 的 PR run，
+它的 wasm-pack job 是 `success`：
+
+```console
+$ gh api repos/apache/datafusion/actions/workflows/rust.yml/runs?event=pull_request
+38796147752  branch=rich-T-kid/bench-ndv-cap-arrow-rle-reader-v2  wasm=[success]
+```
+
+（main 分支上这个 job 一律 `skipped`，只在 PR 上跑，所以 main 不能用来对照。）也就是说更可能是我们那次
+runner 的**一次性故障**（驱动进程被杀），而不是"这个 job 一直坏"。对合并路径没影响：committer 要么
+重跑一次，要么把 PR 丢进 merge queue —— 队列会在最新 main 上重建并**重新跑一遍必需检查**，那时这个
+检查是新的一次运行。
+
+### Phase 4 — 两个新探针，都盯"标准语义 vs 实现"
+
+1. `rollup_with_grouping_flag`：`GROUP BY ROLLUP(g)` 配上 `grouping(g)`。`probe_values` 里既有
+   `g IS NULL` 那一组（2 行）又有总计（12 行），COALESCE 之后两者都长成 `-1`，**只有 `grouping()`
+   能分辨**——这正是这个标志存在的意义，也是"ROLLUP 等价于哪个 GROUPING SETS 列表"最容易写错的地方。
+   固定 `expect_rows`，无 oracle 也能跑。两引擎一致。
+2. `window_range_unbounded_peers`：`RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` 的
+   累计和。RANGE 是**按 peer 分组**而不是按行，`probe_values` 特意有并列值（4,4 和 5,5）和 NULL，
+   按 ROWS 语义算会得到完全不同的数字，所以这条探针能真正区分两种实现；NULL 那一组按默认
+   `NULLS LAST` 落在最后，两行同值同和。两引擎逐行一致。窗口这一族今天第二次扫（79 次调用）仍是
+   0 个 Tier-A 发现，这条探针是把它钉住而不是找它麻烦。
+
+### 邮件
+
+按规矩 17:00 这个 slot **不发**：没有提上游 issue/PR、没有准备待点开的分支、运行没有失败。
+（21:00 那个 slot 的日报会把今天四段合起来发。）需要人做的仍然是上一轮那几件：
+`nth_value(x, 0)` 的 issue 文本、请 committer 重跑 CI 的一句评论、以及 PR 描述里过时的那两行 ——
+都不阻塞合并。

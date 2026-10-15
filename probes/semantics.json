@@ -483,6 +483,102 @@
       ],
       "why": "Same expression as `integer_overflow`, with ANSI mode on: `enable_ansi_mode`'s own documentation promises that 'numeric overflow ... raise[s] runtime errors rather than returning NULL or adjusted values', so all three columns should be errors.",
       "known_difference": "Known upstream: the ANSI mode epic #23929 names arithmetic overflow as in scope ('for example, invalid casts, arithmetic overflow, division by zero') and #24950 covers the spark-specific cast-overflow case. Measured 2026-10-15 on 55.2.0 with `enable_ansi_mode=true`: the three expressions still wrap to -9223372036854775808 / 9223372036854775807 / -2, i.e. the config documentation is ahead of the implementation. Recorded here so no slot re-files it as a new bug; revisit when #23929 lands."
+    },
+    {
+      "id": "rollup_with_grouping_flag",
+      "category": "grouping_sets",
+      "sql": "SELECT COALESCE(g, -1) AS g_key, grouping(g) AS is_total, COUNT(*) AS c FROM probe_values GROUP BY ROLLUP(g) ORDER BY g_key, c",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "-1",
+          "0",
+          "2"
+        ],
+        [
+          "-1",
+          "1",
+          "12"
+        ],
+        [
+          "10",
+          "0",
+          "3"
+        ],
+        [
+          "20",
+          "0",
+          "3"
+        ],
+        [
+          "30",
+          "0",
+          "3"
+        ],
+        [
+          "40",
+          "0",
+          "1"
+        ]
+      ],
+      "why": "ROLLUP must emit the same groups as the equivalent GROUPING SETS list, and `grouping(g)` must separate the NULL-valued group (`is_total = 0`, 2 rows) from the grand total (`is_total = 1`, all 12) -- the whole point of the flag, and the thing a plain COALESCE cannot tell apart."
+    },
+    {
+      "id": "window_range_unbounded_peers",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values ORDER BY id",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "1",
+          "-2"
+        ],
+        [
+          "2",
+          "2"
+        ],
+        [
+          "3",
+          "23"
+        ],
+        [
+          "4",
+          "-3"
+        ],
+        [
+          "5",
+          "13"
+        ],
+        [
+          "6",
+          "13"
+        ],
+        [
+          "7",
+          "23"
+        ],
+        [
+          "8",
+          "23"
+        ],
+        [
+          "9",
+          "-3"
+        ],
+        [
+          "10",
+          "2"
+        ],
+        [
+          "11",
+          "23"
+        ],
+        [
+          "12",
+          "5"
+        ]
+      ],
+      "why": "A RANGE frame is peer-based, not row-based: every row whose ORDER BY value ties must see the same running sum, and the NULL ordering value forms one peer group at the end. `probe_values` has ties (4,4 and 5,5) and NULLs precisely for this, and row-based `ROWS` semantics would give different numbers."
     }
   ]
 }

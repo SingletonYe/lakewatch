@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 57,
+    "OK": 59,
     "KNOWN_DIFF": 9,
     "BOTH_ERROR": 2
   },
@@ -870,6 +870,26 @@
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "rollup_with_grouping_flag",
+      "category": "grouping_sets",
+      "sql": "SELECT COALESCE(g, -1) AS g_key, grouping(g) AS is_total, COUNT(*) AS c FROM probe_values GROUP BY ROLLUP(g) ORDER BY g_key, c",
+      "why": "ROLLUP must emit the same groups as the equivalent GROUPING SETS list, and `grouping(g)` must separate the NULL-valued group (`is_total = 0`, 2 rows) from the grand total (`is_total = 1`, all 12) -- the whole point of the flag, and the thing a plain COALESCE cannot tell apart.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_range_unbounded_peers",
+      "category": "window",
+      "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values ORDER BY id",
+      "why": "A RANGE frame is peer-based, not row-based: every row whose ORDER BY value ties must see the same running sum, and the NULL ordering value forms one peer group at the end. `probe_values` has ties (4,4 and 5,5) and NULLs precisely for this, and row-based `ROWS` semantics would give different numbers.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
     }
   ]
 }
