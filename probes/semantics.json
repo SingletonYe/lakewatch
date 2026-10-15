@@ -394,6 +394,30 @@
         ]
       ],
       "why": "Equality and DISTINCT use IEEE semantics even though ORDER BY uses total ordering."
+    },
+    {
+      "id": "map_extract_present_and_missing",
+      "category": "nested_types",
+      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing",
+      "expect_rows": [
+        [
+          "[1]",
+          "[]"
+        ]
+      ],
+      "why": "DataFusion documents `map_extract` as returning a list, empty when the key is absent; DuckDB has the same function, so this is oracle-comparable."
+    },
+    {
+      "id": "element_at_is_map_extract_here",
+      "category": "nested_types",
+      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS r",
+      "expect_rows": [
+        [
+          "[1]"
+        ]
+      ],
+      "known_difference": "In DataFusion `element_at` is documented as an alias of `map_extract` (see information_schema.routines), while DuckDB's `element_at` is array access. Pinned so the divergence is not re-triaged as a bug; note that `element_at(<list>, i)` in DataFusion fails with a user-hostile error, recorded separately.",
+      "why": "Pins the documented alias so a change in either direction is visible."
     }
   ]
 }

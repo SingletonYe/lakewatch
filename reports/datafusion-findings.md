@@ -149,8 +149,52 @@ https://github.com/apache/datafusion/compare/main...SingletonYe:fix/oneof-signat
 The workflow instruction has been updated so every later slot stops at "push the branch and
 hand over the compare URL" instead of retrying the blocked API call.
 
+## 2026-10-14 21:00 — slot 4 (last slot: daily digest)
+
+Fresh sandbox: everything was rebuilt from GitHub, which is itself the test.
+
+| check | result |
+|---|---|
+| health gate, **from a clean clone** | 7/7 PASS — the harness is reproducible from zero, which every later slot depends on |
+| Tier-A `df_robust.py` | 391 findings, 20 root causes, 0 panics — baseline reproduced exactly |
+| Semantic `df_diff.py` | **63 probes** (2 new), 54 OK, 7 known-difference, 2 both-error, 0 candidates |
+
+**PR #26329 needs nothing from us.** OPEN, MERGEABLE, 0 reviews, 0 comments, every workflow
+still `action_required` (the first-time-contributor gate). Did not re-push, as instructed.
+The user replaced the auto-generated PR body with the templated one.
+
+### New finding: a second call site, worse than the first
+
+`element_at` / `map_extract` with a non-map argument produce a message that is wrong in three
+separate ways at once — an internal error for a user mistake, an *execution* error inside a
+*planning* error, and an unhelpful candidate list. Attribution: `utils.rs:341` emits
+`internal_err!("Expected a Map type, got ...")` and `type_coercion/functions.rs:541` wraps it
+with `exec_err!`. Written up with the exact locations and the fix in
+`findings/nested-map-coercion-error.md`, deliberately **not** folded into #26329 (that is how
+#21032 died). 16 of the 391 findings come from this path.
+
+Checked and rejected as a bug: `element_at` being map-only. It is documented as an alias of
+`map_extract` in this version, so the aliasing is self-consistent; only the error path is
+wrong. The catalogue now pins the DuckDB divergence so it is not re-triaged.
+
+### Catalogue growth
+
+Two probes added, both passing: `map_extract_present_and_missing` (oracle-comparable with
+DuckDB) and `element_at_is_map_extract_here` (pins the documented alias, recorded as a
+`known_difference`). 61 → 63.
+
+### Process notes
+
+* A `pgrep -f "cargo build"` wait loop matched **its own shell command line** and never
+  exited, burning 25 minutes of wall clock while the build had finished in 4m29s. Watch for
+  self-matching process patterns; read the build log instead of polling.
+* This slot initially ran the semantic sweep with `--oracle none` because DuckDB had not been
+  installed in the fresh sandbox, which silently downgrades the sweep (7 oracle comparisons
+  became plain "OK"). Install the oracle in Phase 0 as written.
+
 ### Next
 
+* Add a `--session-option key=value` path
 * Add a `--session-option key=value` path
 * Add a `--session-option key=value` path so probes can run under
   `enable_ansi_mode=true` and assert the documented overflow error.
