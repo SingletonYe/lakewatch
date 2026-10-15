@@ -207,12 +207,18 @@ class Runner:
                 f"SELECT * FROM read_csv_auto([{file_list}], header=true)"
             )
 
-    def datafusion(self, sql: str, partitions: int) -> tuple[list[list[str]] | None, str | None]:
+    def datafusion(
+        self, sql: str, partitions: int, session_options: tuple[str, ...] = ()
+    ) -> tuple[list[list[str]] | None, str | None]:
+        options: list[str] = []
+        for option in session_options:
+            options += ["--session-option", option]
         completed = subprocess.run(
             [
                 str(self.binary),
                 "--root", str(self.probe_root),
                 "--partitions", str(partitions),
+                *options,
                 "sql", sql,
                 "-f", "json",
             ],
@@ -300,18 +306,20 @@ def main() -> int:
         pid = probe["id"]
         sql = probe["sql"]
         ordered = bool(probe.get("ordered", False))
+        session_options = tuple(probe.get("session_options", ()))
         record: dict = {
             "id": pid,
             "category": probe.get("category", ""),
             "sql": sql,
             "why": probe.get("why"),
             "ordered": ordered,
+            "session_options": list(session_options),
             "status": "OK",
             "details": [],
         }
 
-        single, single_error = runner.datafusion(sql, 1)
-        multi, multi_error = runner.datafusion(sql, args.partitions)
+        single, single_error = runner.datafusion(sql, 1, session_options)
+        multi, multi_error = runner.datafusion(sql, args.partitions, session_options)
 
         # 1. self-consistency: same engine, different amount of parallelism
         if single_error and multi_error:

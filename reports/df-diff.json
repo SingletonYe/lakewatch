@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 56,
-    "KNOWN_DIFF": 8,
+    "OK": 57,
+    "KNOWN_DIFF": 9,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -13,6 +13,7 @@
       "sql": "SELECT 7 / 2 AS r",
       "why": "Kept in the catalogue as documentation of a deliberate dialect divergence.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 3 vs duckdb [1 row(s)] 3.5"
@@ -24,6 +25,7 @@
       "sql": "SELECT CAST(2.5 AS INT) AS a, CAST(3.5 AS INT) AS b, CAST(-2.5 AS INT) AS c",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 2,3,-2 vs duckdb [1 row(s)] 3,4,-3"
@@ -35,6 +37,7 @@
       "sql": "SELECT CAST('abc' AS INT) AS r",
       "why": "Both engines should reject this; the probe is here to catch a silent 0 or NULL.",
       "ordered": false,
+      "session_options": [],
       "status": "BOTH_ERROR",
       "details": [
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type",
@@ -48,6 +51,7 @@
       "sql": "SELECT CAST('2024-02-30' AS DATE) AS r",
       "why": "2024-02-30 does not exist; a silent wrap to 2024-03-01 would be a bug.",
       "ordered": false,
+      "session_options": [],
       "status": "BOTH_ERROR",
       "details": [
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type",
@@ -61,6 +65,7 @@
       "sql": "SELECT ROUND(2.5) AS a, ROUND(-2.5) AS b, ROUND(2.567, 2) AS c, ROUND(1.005, 2) AS d",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 3.0,-3.0,2.57,1.0 vs duckdb [1 row(s)] 3.0,-3.0,2.57,1.01"
@@ -71,8 +76,9 @@
       "id": "integer_overflow",
       "category": "arithmetic",
       "sql": "SELECT 9223372036854775807 + 1 AS r",
-      "why": "Must raise an overflow error rather than wrap around.",
+      "why": "Must raise an overflow error rather than wrap around in ANSI mode; in the default non-ANSI mode it is expected to wrap (see `integer_overflow_ansi`).",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
@@ -85,6 +91,7 @@
       "sql": "SELECT UPPER('\u00df') AS r",
       "why": "Uppercasing \u00df is locale dependent; the result must at least be stable and documented.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] SS vs duckdb [1 row(s)] \u1e9e"
@@ -97,6 +104,7 @@
       "sql": "SELECT DATE '2024-02-29' + INTERVAL '1' YEAR AS r",
       "why": "Adding a year to a leap day has no obvious answer; behaviour must not be a silent panic.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 2025-02-28 vs duckdb [1 row(s)] 2025-02-28 00:00:00"
@@ -109,6 +117,7 @@
       "sql": "SELECT x FROM (VALUES (0.0),(-0.0),(1.0)) AS t(x) ORDER BY x, 1",
       "why": "Pins the total-ordering decision so a regression would be visible.",
       "ordered": true,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
@@ -121,9 +130,25 @@
       "sql": "SELECT CAST('1.00' AS DECIMAL(4,2)) / CAST('3.00' AS DECIMAL(4,2)) AS d",
       "why": "Decimal division has no standardised result scale; the point of the probe is that DataFusion keeps a decimal result here and neither loses the type nor crashes.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 0.333333 vs duckdb [1 row(s)] 0.3333333333"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "integer_overflow_ansi",
+      "category": "arithmetic",
+      "sql": "SELECT 9223372036854775807 + 1 AS r, -9223372036854775807 - 2 AS s, 9223372036854775807 * 2 AS m",
+      "why": "Same expression as `integer_overflow`, with ANSI mode on: `enable_ansi_mode`'s own documentation promises that 'numeric overflow ... raise[s] runtime errors rather than returning NULL or adjusted values', so all three columns should be errors.",
+      "ordered": false,
+      "session_options": [
+        "datafusion.execution.enable_ansi_mode=true"
+      ],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
@@ -135,6 +160,7 @@
       "sql": "SELECT 3 AS probe WHERE 3 NOT IN (1, 2, NULL)",
       "why": "Three-valued logic: `x NOT IN (1, 2, NULL)` can never be TRUE, so the row must be filtered out.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -144,6 +170,7 @@
       "sql": "SELECT COUNT(*) AS c FROM probe_values WHERE v_int NOT IN (1, 2, NULL)",
       "why": "Same three-valued rule applied to a column; any engine returning a count here is wrong.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -153,6 +180,7 @@
       "sql": "SELECT SUM(v_int) AS s, COUNT(v_int) AS c, COUNT(*) AS n FROM probe_values WHERE FALSE",
       "why": "SUM over an empty set is NULL while COUNT is 0.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -162,6 +190,7 @@
       "sql": "SELECT (NULL = NULL) AS r",
       "why": "Equality with NULL is unknown, not true.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -171,6 +200,7 @@
       "sql": "SELECT (v_text || 'x') AS r FROM probe_values WHERE id = 4",
       "why": "`||` propagates NULL.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -180,6 +210,7 @@
       "sql": "SELECT COUNT(DISTINCT v_int) AS c FROM probe_values",
       "why": "DISTINCT ignores NULLs.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -189,6 +220,7 @@
       "sql": "SELECT COUNT(*) AS c FROM (SELECT DISTINCT g FROM probe_values) t",
       "why": "DISTINCT collapses NULLs to a single group.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -198,6 +230,7 @@
       "sql": "SELECT id FROM probe_values ORDER BY g ASC NULLS FIRST, id ASC LIMIT 3",
       "why": "Explicit NULLS FIRST placement.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -207,6 +240,7 @@
       "sql": "SELECT id FROM probe_values ORDER BY g DESC NULLS LAST, id ASC LIMIT 3",
       "why": "Explicit NULLS LAST placement on a DESC key.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -216,6 +250,7 @@
       "sql": "SELECT id FROM probe_values ORDER BY g ASC, id ASC LIMIT 3",
       "why": "The implicit NULL placement must match the documented default.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -225,6 +260,7 @@
       "sql": "SELECT v_int * 2 AS doubled FROM probe_values WHERE v_int IS NOT NULL ORDER BY doubled DESC, v_int ASC",
       "why": "ORDER BY on a projection alias.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -234,6 +270,7 @@
       "sql": "SELECT g, COUNT(*) AS n FROM probe_values GROUP BY g ORDER BY g NULLS FIRST",
       "why": "NULL forms its own group.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -243,6 +280,7 @@
       "sql": "SELECT 7 / 2 AS r",
       "why": "Kept in the catalogue as documentation of a deliberate dialect divergence.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 3 vs duckdb [1 row(s)] 3.5"
@@ -254,6 +292,7 @@
       "sql": "SELECT (-7) % 3 AS r",
       "why": "Sign of the remainder follows the dividend in the standard.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -263,6 +302,7 @@
       "sql": "SELECT 7 % (-3) AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -272,6 +312,7 @@
       "sql": "SELECT 0.1 + 0.2 AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -281,6 +322,7 @@
       "sql": "SELECT CAST(2.5 AS INT) AS a, CAST(3.5 AS INT) AS b, CAST(-2.5 AS INT) AS c",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 2,3,-2 vs duckdb [1 row(s)] 3,4,-3"
@@ -292,6 +334,7 @@
       "sql": "SELECT CAST('  12  ' AS INT) AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -301,6 +344,7 @@
       "sql": "SELECT CAST('abc' AS INT) AS r",
       "why": "Both engines should reject this; the probe is here to catch a silent 0 or NULL.",
       "ordered": false,
+      "session_options": [],
       "status": "BOTH_ERROR",
       "details": [
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type",
@@ -314,6 +358,7 @@
       "sql": "SELECT CAST('1e3' AS DOUBLE) AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -323,6 +368,7 @@
       "sql": "SELECT CAST('2024-02-30' AS DATE) AS r",
       "why": "2024-02-30 does not exist; a silent wrap to 2024-03-01 would be a bug.",
       "ordered": false,
+      "session_options": [],
       "status": "BOTH_ERROR",
       "details": [
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type",
@@ -336,6 +382,7 @@
       "sql": "SELECT CAST(NULL AS INT) AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -345,6 +392,7 @@
       "sql": "SELECT ROUND(2.5) AS a, ROUND(-2.5) AS b, ROUND(2.567, 2) AS c, ROUND(1.005, 2) AS d",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 3.0,-3.0,2.57,1.0 vs duckdb [1 row(s)] 3.0,-3.0,2.57,1.01"
@@ -357,6 +405,7 @@
       "sql": "SELECT FLOOR(-2.5) AS f, CEIL(-2.5) AS c, TRUNC(-2.5) AS t",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -364,8 +413,9 @@
       "id": "integer_overflow",
       "category": "arithmetic",
       "sql": "SELECT 9223372036854775807 + 1 AS r",
-      "why": "Must raise an overflow error rather than wrap around.",
+      "why": "Must raise an overflow error rather than wrap around in ANSI mode; in the default non-ANSI mode it is expected to wrap (see `integer_overflow_ansi`).",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
@@ -378,6 +428,7 @@
       "sql": "SELECT AVG(v_int) AS r FROM probe_values",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -387,6 +438,7 @@
       "sql": "SELECT STDDEV(v_int) AS s, STDDEV_POP(v_int) AS p FROM probe_values WHERE id = 1",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -396,6 +448,7 @@
       "sql": "SELECT STDDEV(v_int) AS s FROM probe_values WHERE v_int IS NULL",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -405,6 +458,7 @@
       "sql": "SELECT SUM(v_int) AS s FROM probe_values WHERE v_int IS NULL",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -414,6 +468,7 @@
       "sql": "SELECT MIN(v_text) AS lo, MAX(v_text) AS hi FROM probe_values WHERE v_text IS NOT NULL",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -423,6 +478,7 @@
       "sql": "SELECT g, SUM(v_int) AS s, AVG(v_dbl) AS a FROM probe_values GROUP BY g ORDER BY g NULLS FIRST",
       "why": null,
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -432,6 +488,7 @@
       "sql": "SELECT id, SUM(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values ORDER BY g NULLS FIRST, id",
       "why": null,
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -441,6 +498,7 @@
       "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values WHERE v_int IS NOT NULL ORDER BY v_int, id",
       "why": "RANGE includes peer rows with an equal ordering key, ROWS does not. The key is an integer so the probe tests frames, not float ordering.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -450,6 +508,7 @@
       "sql": "SELECT id, SUM(v_int) OVER (ORDER BY v_int ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s FROM probe_values WHERE v_int IS NOT NULL ORDER BY v_int, id",
       "why": "RANGE includes peer rows with an equal ordering key, ROWS does not. The key is an integer so the probe tests frames, not float ordering.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -459,6 +518,7 @@
       "sql": "SELECT id, LAG(v_int, 1, -1) OVER (PARTITION BY g ORDER BY id) AS prev FROM probe_values ORDER BY g NULLS FIRST, id",
       "why": null,
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -468,6 +528,7 @@
       "sql": "SELECT id, NTILE(4) OVER (ORDER BY id) AS bucket FROM probe_values ORDER BY id",
       "why": null,
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -477,6 +538,7 @@
       "sql": "SELECT id, FIRST_VALUE(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS f, LAST_VALUE(v_int) OVER (PARTITION BY g ORDER BY id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS l FROM probe_values ORDER BY g NULLS FIRST, id",
       "why": null,
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -486,6 +548,7 @@
       "sql": "SELECT id, SUM(v_int) OVER (PARTITION BY g) AS s FROM probe_values ORDER BY g NULLS FIRST, id",
       "why": "A NULL partition key still forms a partition.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -495,6 +558,7 @@
       "sql": "SELECT COUNT(*) AS c FROM probe_values a LEFT JOIN probe_values b ON a.g = b.g WHERE a.g IS NULL",
       "why": "NULL never matches NULL in a join predicate.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -504,6 +568,7 @@
       "sql": "SELECT COUNT(*) AS c FROM probe_values a FULL OUTER JOIN probe_values b ON a.id = b.g",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -513,6 +578,7 @@
       "sql": "SELECT COUNT(*) AS c FROM probe_values a WHERE a.g IN (SELECT g FROM probe_values WHERE g IS NOT NULL)",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -522,6 +588,7 @@
       "sql": "SELECT LENGTH('h\u00e9llo') AS a, LENGTH('\u65e5\u672c\u8a9e') AS b, LENGTH('') AS c",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -531,6 +598,7 @@
       "sql": "SELECT SUBSTRING('h\u00e9llo', 2, 2) AS a, SUBSTRING('\u65e5\u672c\u8a9e', 2, 1) AS b",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -540,6 +608,7 @@
       "sql": "SELECT UPPER('\u00df') AS r",
       "why": "Uppercasing \u00df is locale dependent; the result must at least be stable and documented.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] SS vs duckdb [1 row(s)] \u1e9e"
@@ -552,6 +621,7 @@
       "sql": "SELECT ('a' LIKE 'A') AS a, ('a' ILIKE 'A') AS b",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -561,6 +631,7 @@
       "sql": "SELECT TRIM('  x  ') AS a, LTRIM('  x  ') AS b, RTRIM('  x  ') AS c, TRIM(BOTH 'x' FROM 'xxaxx') AS d",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -570,6 +641,7 @@
       "sql": "SELECT REPLACE('abc', '', 'X') AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -579,6 +651,7 @@
       "sql": "SELECT CONCAT('a', NULL) AS a, ('a' || NULL) AS b",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -588,6 +661,7 @@
       "sql": "SELECT GREATEST(NULL, 1) AS g, LEAST(NULL, 1) AS l",
       "why": "Postgres ignores NULLs here; the standard leaves it open, so this probe mostly documents behaviour.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -597,6 +671,7 @@
       "sql": "SELECT DATE_TRUNC('month', DATE '2024-03-15') AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -606,6 +681,7 @@
       "sql": "SELECT DATE '2024-02-29' + INTERVAL '1' YEAR AS r",
       "why": "Adding a year to a leap day has no obvious answer; behaviour must not be a silent panic.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 2025-02-28 vs duckdb [1 row(s)] 2025-02-28 00:00:00"
@@ -618,6 +694,7 @@
       "sql": "SELECT DATE '2024-03-01' - DATE '2024-02-01' AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -627,6 +704,7 @@
       "sql": "SELECT EXTRACT(DOW FROM DATE '2024-03-17') AS dow, EXTRACT(DOY FROM DATE '2024-03-17') AS doy",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -636,6 +714,7 @@
       "sql": "SELECT CAST('2024-03-15 12:34:56.789' AS TIMESTAMP) AS r",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -645,6 +724,7 @@
       "sql": "WITH s AS (SELECT g, COUNT(*) AS n FROM probe_values GROUP BY g) SELECT (SELECT COUNT(*) FROM s) AS groups, (SELECT SUM(n) FROM s) AS rows",
       "why": "CTEs plus scalar subqueries must agree on row counts.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -654,6 +734,7 @@
       "sql": "SELECT (SELECT COUNT(*) FROM (SELECT g FROM probe_values UNION ALL SELECT g FROM probe_values) t) AS all_rows, (SELECT COUNT(*) FROM (SELECT g FROM probe_values UNION SELECT g FROM probe_values) t) AS distinct_rows",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -663,6 +744,7 @@
       "sql": "SELECT SUM(CASE WHEN v_int IS NULL THEN 1 ELSE 0 END) AS nulls, SUM(CASE v_int WHEN 4 THEN 1 ELSE 0 END) AS fours FROM probe_values",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -672,6 +754,7 @@
       "sql": "SELECT COALESCE(NULL, NULL, 3) AS c, NULLIF(1, 1) AS n, NULLIF(1, 2) AS m",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -681,6 +764,7 @@
       "sql": "SELECT COUNT(*) AS c FROM probe_values WHERE v_int IN (1 + 1, 4)",
       "why": null,
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -690,6 +774,7 @@
       "sql": "SELECT x FROM (VALUES (0.0),(-0.0),(1.0)) AS t(x) ORDER BY x, 1",
       "why": "Pins the total-ordering decision so a regression would be visible.",
       "ordered": true,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
@@ -702,6 +787,7 @@
       "sql": "SELECT (-0.0 = 0.0) AS equal, COUNT(DISTINCT x) AS distinct_count FROM (VALUES (0.0),(-0.0)) AS t(x)",
       "why": "Equality and DISTINCT use IEEE semantics even though ORDER BY uses total ordering.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -711,6 +797,7 @@
       "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing",
       "why": "DataFusion documents `map_extract` as returning a list, empty when the key is absent; DuckDB has the same function, so this is oracle-comparable.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -720,6 +807,7 @@
       "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS r",
       "why": "Pins the documented alias so a change in either direction is visible.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -729,6 +817,7 @@
       "sql": "SELECT CAST('1.10' AS DECIMAL(10,2)) * CAST('2.00' AS DECIMAL(10,2)) AS m, CAST('2.50' AS DECIMAL(4,2)) + CAST('0.05' AS DECIMAL(4,2)) AS a",
       "why": "Decimal multiplication must widen the scale (2 + 2 = 4) rather than fall back to floating point, and decimal addition must stay exact -- 0.05 has no binary representation, so a silent promotion to DOUBLE shows up here.",
       "ordered": false,
+      "session_options": [],
       "status": "OK",
       "details": []
     },
@@ -738,6 +827,7 @@
       "sql": "SELECT CAST('1.00' AS DECIMAL(4,2)) / CAST('3.00' AS DECIMAL(4,2)) AS d",
       "why": "Decimal division has no standardised result scale; the point of the probe is that DataFusion keeps a decimal result here and neither loses the type nor crashes.",
       "ordered": false,
+      "session_options": [],
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] 0.333333 vs duckdb [1 row(s)] 0.3333333333"
@@ -750,8 +840,36 @@
       "sql": "SELECT COALESCE(g, -1) AS g_key, COUNT(*) AS c FROM probe_values GROUP BY GROUPING SETS ((g), ()) ORDER BY g_key, c",
       "why": "GROUPING SETS must emit one row per grouping set, including the grand total over all 12 rows, and the NULL group must not be merged into it.",
       "ordered": true,
+      "session_options": [],
       "status": "OK",
       "details": []
+    },
+    {
+      "id": "session_option_parse_float_as_decimal",
+      "category": "arithmetic",
+      "sql": "SELECT 0.1 + 0.2 AS r",
+      "why": "The first probe that exercises --session-option: with float literals parsed as DECIMAL the sum is exactly 0.3, which is also what DuckDB's DECIMAL literals give. It fails loudly if the option is ever silently ignored, which is the failure mode a session-option flag has.",
+      "ordered": false,
+      "session_options": [
+        "datafusion.sql_parser.parse_float_as_decimal=true"
+      ],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "integer_overflow_ansi",
+      "category": "arithmetic",
+      "sql": "SELECT 9223372036854775807 + 1 AS r, -9223372036854775807 - 2 AS s, 9223372036854775807 * 2 AS m",
+      "why": "Same expression as `integer_overflow`, with ANSI mode on: `enable_ansi_mode`'s own documentation promises that 'numeric overflow ... raise[s] runtime errors rather than returning NULL or adjusted values', so all three columns should be errors.",
+      "ordered": false,
+      "session_options": [
+        "datafusion.execution.enable_ansi_mode=true"
+      ],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
   ]
 }

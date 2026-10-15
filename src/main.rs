@@ -52,6 +52,17 @@ struct Cli {
     #[arg(long, global = true, value_name = "N")]
     partitions: Option<usize>,
 
+    /// Set a DataFusion session option, e.g.
+    /// `--session-option datafusion.execution.enable_ansi_mode=true`.
+    /// Repeatable; unknown keys are an error, not a silent no-op.
+    #[arg(
+        long = "session-option",
+        global = true,
+        value_name = "KEY=VALUE",
+        value_parser = parse_var
+    )]
+    session_options: Vec<(String, String)>,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -209,7 +220,7 @@ async fn run(cli: Cli) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let engine = Engine::open(&cli.root, cli.partitions).await?;
+    let engine = Engine::open(&cli.root, cli.partitions, &cli.session_options).await?;
     let code = match cli.command {
         Command::Functions => Option::None,
         Command::Tables(args) => Some(cmd_tables(&engine, args).await?),

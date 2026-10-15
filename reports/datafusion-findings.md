@@ -442,3 +442,70 @@ approval 通知邮件也到用户邮箱了，信息没有丢。这一行是为�
 2. 绿了就等合并队列，**不要催**——刚批准 14 分钟，按规矩三天内不 nudge；
 3. 用户那两件事（贴回复、换 PR 描述）现在都不阻塞了，但 PR 描述里仍写着"A unit test covering
    that failure"和"282 passed"，属于应改未改；回复则是礼貌性回答 reviewer 的问题。
+
+## 2026-10-15 13:00 — slot 2
+
+**结论**：68 探针（+2）· 0 待研判候选 · Tier-A 三族全部复现基线 · PR #26329 已批准、只剩 1 项 CI 挂（**flaky，需用户点一次 Re-run**）
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | 7/7 PASS（fresh clone，含本 slot 新写的 Rust 代码） |
+| Phase 1a 标量 | 1874 调用 / 391 findings / 20 根因 —— 与基线完全一致 |
+| Phase 1a 聚合 | 458 调用 / 191 findings / 13 根因 —— 与 slot 1 一致（184 = #26329，1 = nth_value） |
+| Phase 1a 窗口 | 79 调用 / 0 findings |
+| Phase 1b 语义 | 68 探针 · OK=57 · KNOWN_DIFF=9 · BOTH_ERROR=2 · **0 候选** |
+| Phase 4 | 补上目录里自己写的 TODO：`--session-option` 路径 + 2 个探针 |
+
+### Phase 0b — PR 已批准；唯一的红项是环境故障，不是我们的代码
+
+`APPROVED`（alamb，13:17Z），head 仍 `268933e`，无新评论，**不需要 nudge**（才批了 3.7 小时）。
+检查 42 项：**38 pass / 3 skip / 1 fail**。红的是 `build and run with wasm-pack`：
+
+```text
+driver status: signal: 9 (SIGKILL)
+driver stdout: Starting ChromeDriver 155.0.8059.39 ...
+Error: driver failed to bind port during startup
+```
+
+拆开看，这跟改动无关也跟测试断言无关：浏览器驱动**被 SIGKILL**（runner 资源压力），死在**驱动启动阶段**，
+连一个浏览器用例都没跑；同一 job 里 Rust 侧的 9 个用例是 `9 passed; 0 failed`。仓库当前的 `Rust`
+workflow 有 10 个 run 在排队，main 分支自己也在排队 —— 这台 runner 明显被打爆了。
+
+**我们能做的和不能做的**（`gh run rerun 38738221541 --failed` → `cannot be rerun; Must have admin
+rights to Repository`）：**连重跑都无权**。这是第 4 个被 apache/* 挡住的写操作，补进能力边界表。
+所以只能请用户点一下 Re-run：
+<https://github.com/apache/datafusion/actions/runs/38738221541/job/116443866487>
+
+不点也行：PR 已经 APPROVED，merge queue 本身会重跑一遍全套。**绝对不要为了"刷新"这个红叉去 push
+一个空提交** —— 那在 reviewer 眼里就是刷提交。
+
+### Phase 4 — 把目录自己留的 TODO 做掉了：`--session-option`
+
+上一轮目录里 `integer_overflow` 的备注写着 `TODO(daily): add an --ansi/session-option path to
+lakewatch`。本 slot 做完：
+
+* **lakewatch**：新增全局 `--session-option KEY=VALUE`（可重复），在默认配置之后应用，所以显式选项
+  永远赢。实现上走 `ConfigOptions::set`（返回 `Result`）而不是 `SessionConfig::set_str` —— 后者内部
+  是 `.unwrap()`，手滑写错 key 会 panic 而不是报错；现在 `--session-option datafusion.nope=1` 得到
+  一句干净的 `invalid --session-option \`datafusion.nope=1\`: ... not found on ConfigOptions`。
+* **df_diff**：探针可以带 `session_options`，并且会把实际用的选项写进报告（可复现）。
+* **新探针 `session_option_parse_float_as_decimal`**：`0.1 + 0.2` 在 `parse_float_as_decimal=true`
+  下正好是 `0.3`（DuckDB 的 DECIMAL 字面量同样），用来证明这个开关**真的生效**而不是被静默忽略 ——
+  这正是 session-option 这类开关最典型的失效方式。结果 OK。
+* **新探针 `integer_overflow_ansi`**：同一个表达式在 ANSI 模式下打开。`enable_ansi_mode` 自己的文档
+  写着"operations such as division by zero, **numeric overflow**, or invalid casts raise runtime
+  errors rather than returning NULL or **adjusted values**"，实测（55.2.0）：
+
+  | 表达式 | ANSI 关 | ANSI 开 |
+  |---|---|---|
+  | `9223372036854775807 + 1` | -9223372036854775808 | **-9223372036854775808** |
+  | `-9223372036854775807 - 2` | 9223372036854775807 | **9223372036854775807** |
+  | `9223372036854775807 * 2` | -2 | **-2** |
+  | `abs(-9223372036854775808)` | Arrow overflow 报错 | Arrow overflow 报错 |
+
+  即：**ANSI 模式对整数溢出不生效，文档跑在实现前面。** 结案方式：这是 ANSI epic **#23929** 明确
+  圈定的范围（原文列了 "arithmetic overflow"），Spark 侧的 cast overflow 另有 #24950 —— **所以不
+  提新 issue**，写进探针的 `known_difference` 并指向 #23929，等 epic 落地再回看。
+
+顺手修正上一轮的两处猜测：`1/0` 和常量坏 cast 在 **两种模式都报错**（ANSI 开关不影响它们；
+`errors.slt` 里那两个用例的差异来自别处）。现在这两点有实测结论，不再靠推测。

@@ -24,8 +24,13 @@ impl Engine {
     /// Discover a lake rooted at `root` and register every dataset it contains.
     ///
     /// `partitions` overrides the number of target partitions (`None` = one per
-    /// core, capped at eight).
-    pub async fn open(root: &Path, partitions: Option<usize>) -> Result<Self> {
+    /// core, capped at eight). `session_options` are DataFusion setting
+    /// overrides applied on top of those defaults, as `(key, value)` pairs.
+    pub async fn open(
+        root: &Path,
+        partitions: Option<usize>,
+        session_options: &[(String, String)],
+    ) -> Result<Self> {
         let root = root
             .canonicalize()
             .with_context(|| format!("cannot resolve lake root `{}`", root.display()))?;
@@ -39,7 +44,7 @@ impl Engine {
 
         // One partition per core keeps scans parallel without over-subscribing a
         // laptop; the planner still picks the cheapest plan for each query.
-        let cfg = SessionConfig::new()
+        let mut cfg = SessionConfig::new()
             .with_target_partitions(
                 partitions
                     .filter(|n| *n > 0)
@@ -49,6 +54,16 @@ impl Engine {
             // A lake on a laptop is read from local disk; spreading one file over
             // several partitions costs more in scheduling than it saves.
             .with_repartition_file_scans(false);
+
+        // Applied last, so an explicit option always wins over the defaults above.
+        // `ConfigOptions::set` rejects unknown keys and malformed values, and we
+        // surface that as an ordinary error rather than letting `SessionConfig`
+        // panic on the caller's typo.
+        for (key, value) in session_options {
+            cfg.options_mut()
+                .set(key, value)
+                .with_context(|| format!("invalid --session-option `{key}={value}`"))?;
+        }
 
         let ctx = SessionContext::new_with_config(cfg);
         functions::register(&ctx);

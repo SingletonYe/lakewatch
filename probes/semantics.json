@@ -173,8 +173,8 @@
       "id": "integer_overflow",
       "category": "arithmetic",
       "sql": "SELECT 9223372036854775807 + 1 AS r",
-      "why": "Must raise an overflow error rather than wrap around.",
-      "known_difference": "Not a bug: DataFusion defaults to `datafusion.execution.enable_ansi_mode=false`, where integer overflow wraps (Spark-compatible). Tracked upstream in #24950 for the ANSI-mode behaviour. TODO(daily): add an --ansi/session-option path to lakewatch so this probe can also assert the ANSI-mode error."
+      "why": "Must raise an overflow error rather than wrap around in ANSI mode; in the default non-ANSI mode it is expected to wrap (see `integer_overflow_ansi`).",
+      "known_difference": "Not a bug: DataFusion defaults to `datafusion.execution.enable_ansi_mode=false`, where integer overflow wraps (Spark-compatible). The ANSI-side expectation is the separate probe `integer_overflow_ansi`, which now runs with `--session-option`; the gap it shows is tracked upstream by the epic #23929."
     },
     {
       "id": "avg_of_integers",
@@ -464,6 +464,25 @@
         ]
       ],
       "why": "GROUPING SETS must emit one row per grouping set, including the grand total over all 12 rows, and the NULL group must not be merged into it."
+    },
+    {
+      "id": "session_option_parse_float_as_decimal",
+      "category": "arithmetic",
+      "sql": "SELECT 0.1 + 0.2 AS r",
+      "session_options": [
+        "datafusion.sql_parser.parse_float_as_decimal=true"
+      ],
+      "why": "The first probe that exercises --session-option: with float literals parsed as DECIMAL the sum is exactly 0.3, which is also what DuckDB's DECIMAL literals give. It fails loudly if the option is ever silently ignored, which is the failure mode a session-option flag has."
+    },
+    {
+      "id": "integer_overflow_ansi",
+      "category": "arithmetic",
+      "sql": "SELECT 9223372036854775807 + 1 AS r, -9223372036854775807 - 2 AS s, 9223372036854775807 * 2 AS m",
+      "session_options": [
+        "datafusion.execution.enable_ansi_mode=true"
+      ],
+      "why": "Same expression as `integer_overflow`, with ANSI mode on: `enable_ansi_mode`'s own documentation promises that 'numeric overflow ... raise[s] runtime errors rather than returning NULL or adjusted values', so all three columns should be errors.",
+      "known_difference": "Known upstream: the ANSI mode epic #23929 names arithmetic overflow as in scope ('for example, invalid casts, arithmetic overflow, division by zero') and #24950 covers the spark-specific cast-overflow case. Measured 2026-10-15 on 55.2.0 with `enable_ansi_mode=true`: the three expressions still wrap to -9223372036854775808 / 9223372036854775807 / -2, i.e. the config documentation is ahead of the implementation. Recorded here so no slot re-files it as a new bug; revisit when #23929 lands."
     }
   ]
 }
