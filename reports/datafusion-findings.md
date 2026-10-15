@@ -542,3 +542,50 @@ lakewatch`。本 slot 做完：
 
 现在两个 harness 都能接收会话选项，后续想验 ANSI 专属行为（比如某个函数在 ANSI 下应当报
 ARITHMETIC_OVERFLOW 而不是溢出值）可以直接写探针，不必再改代码。
+
+## 2026-10-15 13:30 — how merging actually works here (read from the repo's own config)
+
+Question asked, answer recorded so no slot has to rediscover it. Sources: `.asf.yaml`
+(`ref=main`), the repository ruleset `Merge Queue` (id 25115946), and the PR's own fields.
+
+**Nothing merges automatically.** The chain is: 1 approving review by someone with write access
++ every *required* status check green → **then a committer presses the button**. Measured on
+#26329: `reviewDecision=APPROVED`, `mergeable=MERGEABLE`, `mergeStateStatus=BLOCKED`,
+`autoMergeRequest=null`.
+
+* Review requirement: `required_approving_review_count: 1` — satisfied (alamb).
+* Required checks are the 36 contexts listed in `.asf.yaml`, including
+  `build and run with wasm-pack` — the one that is currently red. So the merge is blocked by
+  that flake, not by anything about the change.
+* Merge buttons: **squash only** (`enabled_merge_buttons: squash: true, merge: false,
+  rebase: false`).
+* A merge queue is active on `main` (ruleset): `merge_method: SQUASH`,
+  `grouping_strategy: ALLGREEN`, `max_entries_to_build: 5`, `min_entries_to_merge: 1`,
+  `min_entries_to_merge_wait_minutes: 5`, `check_response_timeout_minutes: 360`. Once a
+  committer queues the PR, GitHub builds it on top of the latest `main` and re-runs the required
+  checks there; ALLGREEN means the entry must be green on its own.
+* `allow_auto_merge: true` at repo level, but auto-merge has to be *armed* by someone with
+  write access; the fork author cannot, and it is not armed on this PR. So "CI green" alone
+  never lands it.
+* Also from `.asf.yaml`: `creation_cap: max_open_pull_requests: 3` for users without write
+  access. That is a hard ceiling above our self-imposed one-PR-per-day rule.
+* `del_branch_on_merge: true` — the fork branch disappears on merge, so any post-merge work
+  starts from a fresh branch.
+
+### Correction to the slot-2 email: the user cannot re-run the check either
+
+The slot-2 email said "you click Re-run". That is wrong, and the API says why:
+`gh api repos/apache/datafusion --jq .permissions` → `{"admin":false,"maintain":false,
+"pull":true,"push":false,"triage":false}`. Read-only. GitHub only offers "Re-run failed jobs" to
+people with write access, and our own attempt got `Must have admin rights to Repository`. So the
+re-run is a *committer* action: either they re-run the flake, or they merge and let the merge
+queue re-run everything. Either way **nobody on our side has a click to make**: the honest
+hand-off is the comment text in `findings/ci-rerun-request-comment.md`, or nothing at all.
+
+### Do not click "Update branch"
+
+The PR page offers it (`allow_update_branch: true`) and the branch is 32 commits behind. Don't:
+a new head SHA resets the first-time-contributor workflow gate to `action_required`, which needs
+another maintainer approval before any CI runs again — trading "one flaky check" for "no CI at
+all, waiting on a human". The merge queue merges onto the latest `main` itself; being behind is
+normal and is not a blocker here.
