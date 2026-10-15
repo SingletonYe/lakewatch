@@ -259,3 +259,83 @@ pasted-ready text. Neither is posted by us, and neither is claimed to be.
 reply and whether CI needs re-approval for the new commit (first-time-contributor gate). If the
 review is satisfied, this PR is one approval away from the merge queue and the next Tier-A
 target is the `element_at` / `map_extract` path in `findings/nested-map-coercion-error.md`.
+
+## 2026-10-15 09:00 — slot 1 (first slot of the day)
+
+**结论**：probes 66（+3）· candidates 0 · 新 root cause 0 · 但拦下了一个重复 PR
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | 7/7 PASS（fresh clone，duckdb 1.5.6 oracle 已装，build 6m33s） |
+| Phase 1a Tier-A | 1874 次调用 / 391 findings / **20 个根因**（INTERNAL=369, NOT_IMPL=22）—— 与基线一致，无新增根因 |
+| Phase 1b 语义探针 | 66 探针 · OK=56 · KNOWN_DIFF=8 · BOTH_ERROR=2 · **0 个待研判候选** |
+| Phase 4 扩目录 | +3 探针，1 处 harness 修正 |
+| Phase 6 邮件 | 未发（见下） |
+
+### Phase 0b — PR #26329：无需动作，球在用户那边
+
+`OPEN`，head `268933e`，评审线程现在是 `isOutdated`（因为那行代码已删），**0 条新评论**。
+alamb 没有追加要求。但上一轮的交接**还没被执行**：PR 描述里仍写着 "A unit test covering that
+failure" 和 "282 passed"，回复评论也还没贴。我们这边无可推送的东西；**不要为了唤醒 CI 再
+push**（新 commit 之后首次贡献者门禁要维护者再点一次 Approve，这是正常的）。
+
+### Phase 2 — 今天的实质产出：拦住一个重复的上游 PR
+
+上一轮把 `map_extract` / `element_at` 的内部错误记为"下一个独立 PR 的靶子"。今天按流程
+先搜上游，`gh search prs --repo apache/datafusion "map_extract"` 直接命中：
+
+**#25996 "fix: report map_extract on a non-map argument as a plan error"**（jackylee-ch，
+2026-10-03 开，**仍 OPEN**）改的正是我们指认的那一行
+（`functions-nested/src/utils.rs` 的 `get_map_entry_field`），测试也写好了。
+
+所以那个 PR **不能提**，会撞车。三个缺陷重新归因：
+
+| 缺陷 | 上游 | 状态 |
+|---|---|---|
+| 1. 非 map 参数报 internal error（+ 让人提 bug report） | #25996 | 在飞，已修 |
+| 3. 候选列表列出内部的 `map_extract(UserDefined)` | #15817 | 已开 issue |
+| 2. plan 期的 coercion 失败被标成 `Execution error` | — | **已实测、未提** |
+
+缺陷 2 今天用**不依赖 map_extract 的函数**实测证实了（这才是它值得记的理由）：
+`array_add(1, 2)` 和 `cosine_distance([1.0], 'x')` 在 main 上就是
+`Error during planning: Execution error: Function 'array_add' user-defined coercion failed
+with: Error during planning: array_add does not support type Int64. …` —— 内部本来就是 Plan
+错误，却被 `get_valid_types_with_udf` 的 `TypeSignature::UserDefined` 分支用 `exec_err!` 包成
+了 Execution 错误。**#25996 不会修掉这一条**（它只把最内层换成 plan_err!），修完的
+`map_extract(1, 1)` 会是同样的形状。
+
+今天**不提**这条：它与在飞的 #25996、与已开的家族 issue #14431/#14432/#20501、以及我们自己的
+#26329 都相邻，一天一个上游产物是规矩。等 #25996 合并后再决定是提一个独立 issue（错误
+*kind* 影响按 `DataFusionError::Execution` 匹配的调用方）还是不必提。写到
+`findings/nested-map-coercion-error.md`。
+
+### Phase 4 — 目录增长：decimal 与 GROUPING SETS
+
+三个新探针（66）：
+
+* `decimal_mul_add_scale`（arithmetic）—— 乘法必须把 scale 加宽（2+2=4），加法必须精确；
+  `2.50 + 0.05` 是最能暴露"悄悄退化成 float"的用例。两引擎一致。
+* `decimal_division_scale`（arithmetic）—— **known_difference**：DataFusion 保留 DECIMAL
+  并按自己的规则定 scale（此处 6 → `0.333333`），DuckDB 提升为 DOUBLE
+  （`0.3333333333333333`）。上游 #7301 就是在讲这个兼容模式，所以不是 bug。
+* `grouping_sets_grand_total`（新类别 `grouping_sets`）—— `GROUPING SETS ((g), ())`
+  必须给出每组一行并含总计 12 行，且 NULL 组不能与总计合并。带 `expect_rows` 固定答案，
+  无 oracle 也能跑。两引擎一致。
+
+**Harness 修正（`harness_noise`，附修法）**：`df_diff.canon` 把 DECIMAL 处理成了两种拼法 ——
+DataFusion 的 DECIMAL 列以文本到达（`2.2000`，每位 scale 一个数字），DuckDB 给的是
+`Decimal` 对象（走 float 格式化 → `2.2`），于是任何 decimal 探针都会假报 MISMATCH。现在带小数
+点的十进制字面量在两条路径上走同一套规范化。只对**含小数点**的字面量生效，所以整数拼法
+（`1` 与 `1.0`）仍然区分得开，不会掩盖真实差异。
+
+### 过程教训
+
+`pkill -f "cargo build --release"` 匹配到了**执行它的那个 shell 自身**，把整条命令连同刚起的
+两个后台任务一起杀了 —— 与 2026-10-14 记的 `pgrep` 自匹配是同一类错误。用
+`pkill -f "[c]argo build"` 这种括号写法，或者别用 pkill。
+
+### Phase 6 — 为什么这个 slot 不发邮件
+
+规则是：09/13/17 点只在**提了上游 issue/PR、准备了待点一下的分支、或运行失败**时发。本 slot
+三者都不是（而且我们**故意没有**提东西，免得撞 #25996），所以不发。用户在 21:00 的日报里会
+拿到全部内容；需要用户做的仍是上一轮的两件事（贴回复、换 PR 描述）。

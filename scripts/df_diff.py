@@ -37,6 +37,11 @@ import sys
 from pathlib import Path
 
 ISO_DATETIME = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}(?:\.\d+)?))?Z?$")
+# A decimal literal with a fractional part. DataFusion hands us DECIMAL columns as text
+# (`2.2000`, one digit per unit of scale) while DuckDB hands us `Decimal` objects
+# (`2.2`); both spell the same value, so both spellings have to normalise the same way.
+# The fractional part is required: an integer spelled `1` must stay distinct from `1.0`.
+DECIMAL_LITERAL = re.compile(r"^[+-]?\d+\.\d+$")
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CATALOGUE = ROOT / "probes" / "semantics.json"
@@ -78,7 +83,10 @@ def canon(value) -> str:
     if isinstance(value, float) and value == 0.0:
         # keep the sign of zero visible: it is the whole point of some probes
         return "-0.0" if math.copysign(1.0, value) < 0 else "0.0"
-    return normalise_datetime(str(value))
+    text = str(value)
+    if DECIMAL_LITERAL.match(text):
+        return format_number(float(text))
+    return normalise_datetime(text)
 
 
 def format_number(value: float) -> str:

@@ -418,6 +418,52 @@
       ],
       "known_difference": "In DataFusion `element_at` is documented as an alias of `map_extract` (see information_schema.routines), while DuckDB's `element_at` is array access. Pinned so the divergence is not re-triaged as a bug; note that `element_at(<list>, i)` in DataFusion fails with a user-hostile error, recorded separately.",
       "why": "Pins the documented alias so a change in either direction is visible."
+    },
+    {
+      "id": "decimal_mul_add_scale",
+      "category": "arithmetic",
+      "sql": "SELECT CAST('1.10' AS DECIMAL(10,2)) * CAST('2.00' AS DECIMAL(10,2)) AS m, CAST('2.50' AS DECIMAL(4,2)) + CAST('0.05' AS DECIMAL(4,2)) AS a",
+      "why": "Decimal multiplication must widen the scale (2 + 2 = 4) rather than fall back to floating point, and decimal addition must stay exact -- 0.05 has no binary representation, so a silent promotion to DOUBLE shows up here."
+    },
+    {
+      "id": "decimal_division_scale",
+      "category": "arithmetic",
+      "sql": "SELECT CAST('1.00' AS DECIMAL(4,2)) / CAST('3.00' AS DECIMAL(4,2)) AS d",
+      "why": "Decimal division has no standardised result scale; the point of the probe is that DataFusion keeps a decimal result here and neither loses the type nor crashes.",
+      "known_difference": "Dialect divergence, not a bug: DataFusion keeps DECIMAL and applies its own result scale (scale 6 here -> 0.333333), while DuckDB promotes the result to DOUBLE (0.3333333333333333). DataFusion's decimal division rules are its own compatibility choice, tracked upstream as #7301 'Decimal division compatibility mode with spark'. Recorded so it is not re-triaged as a bug."
+    },
+    {
+      "id": "grouping_sets_grand_total",
+      "category": "grouping_sets",
+      "sql": "SELECT COALESCE(g, -1) AS g_key, COUNT(*) AS c FROM probe_values GROUP BY GROUPING SETS ((g), ()) ORDER BY g_key, c",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "-1",
+          "2"
+        ],
+        [
+          "-1",
+          "12"
+        ],
+        [
+          "10",
+          "3"
+        ],
+        [
+          "20",
+          "3"
+        ],
+        [
+          "30",
+          "3"
+        ],
+        [
+          "40",
+          "1"
+        ]
+      ],
+      "why": "GROUPING SETS must emit one row per grouping set, including the grand total over all 12 rows, and the NULL group must not be merged into it."
     }
   ]
 }
