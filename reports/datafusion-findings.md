@@ -418,3 +418,7 @@ $ lakewatch sql "SELECT id, nth_value(v_int, 0) OVER (ORDER BY id) FROM probe_va
 
 （一个值得记住的盲区：`nth_value(x, 0)` 在窗口形式下**不报错**，所以摇法永远不会把它标成 finding —— 
 上面那条新根因是靠*聚合*那一侧的错误才暴露出来的。只摇窗口的话会漏掉它。）
+
+**记录口径的小改动**：从本 slot 起，`reports/df-robust.json` 和 `reports/df-diff.json`
+（30 KB + 133 KB）也一并提交 —— 之前只提交 markdown，机器可读的原始结果留在沙箱里随沙箱消失，
+下一 slot 无法复核"391/20"和"0 候选"这些数字是怎么来的。这两个文件就是那两句话的凭据。
