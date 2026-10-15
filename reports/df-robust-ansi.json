@@ -1,0 +1,3920 @@
+{
+  "functions": 364,
+  "invocations": 1874,
+  "counts": {
+    "INTERNAL": 369,
+    "NOT_IMPL": 22
+  },
+  "findings": [
+    {
+      "function": "btrim",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "btrim(DATE '2024-01-01')",
+      "sql": "SELECT btrim(DATE '2024-01-01')",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "btrim",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "btrim(1e308)",
+      "sql": "SELECT btrim(1e308)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "btrim",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "btrim(9223372036854775807)",
+      "sql": "SELECT btrim(9223372036854775807)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "btrim",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "btrim(-1)",
+      "sql": "SELECT btrim(-1)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "btrim",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "btrim(0)",
+      "sql": "SELECT btrim(0)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_part",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_part(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT date_part(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_part(DATE '2024-01-01')",
+      "sql": "SELECT date_part(DATE '2024-01-01')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "date_part('')",
+      "sql": "SELECT date_part('')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_part(1e308, 1e308)",
+      "sql": "SELECT date_part(1e308, 1e308)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_part(1e308)",
+      "sql": "SELECT date_part(1e308)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_part(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT date_part(9223372036854775807, 9223372036854775807)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_part(9223372036854775807)",
+      "sql": "SELECT date_part(9223372036854775807)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_part('', -1)",
+      "sql": "SELECT date_part('', -1)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_part('')",
+      "sql": "SELECT date_part('')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_part(-1, -1)",
+      "sql": "SELECT date_part(-1, -1)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_part(-1)",
+      "sql": "SELECT date_part(-1)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "date_part(NULL)",
+      "sql": "SELECT date_part(NULL)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "date_part('abc')",
+      "sql": "SELECT date_part('abc')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_part(0, 0)",
+      "sql": "SELECT date_part(0, 0)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_part",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_part(0)",
+      "sql": "SELECT date_part(0)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(DATE '2024-01-01')",
+      "sql": "SELECT date_trunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308, 1e308)",
+      "sql": "SELECT date_trunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308)",
+      "sql": "SELECT date_trunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308, 1e308)",
+      "sql": "SELECT date_trunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308)",
+      "sql": "SELECT date_trunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308, 1e308)",
+      "sql": "SELECT date_trunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308)",
+      "sql": "SELECT date_trunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308, 1e308)",
+      "sql": "SELECT date_trunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308)",
+      "sql": "SELECT date_trunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308, 1e308)",
+      "sql": "SELECT date_trunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(1e308)",
+      "sql": "SELECT date_trunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(9223372036854775807)",
+      "sql": "SELECT date_trunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('', -1)",
+      "sql": "SELECT date_trunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('', -1)",
+      "sql": "SELECT date_trunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('', -1)",
+      "sql": "SELECT date_trunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('', -1)",
+      "sql": "SELECT date_trunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('', -1)",
+      "sql": "SELECT date_trunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('')",
+      "sql": "SELECT date_trunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1, -1)",
+      "sql": "SELECT date_trunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1)",
+      "sql": "SELECT date_trunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1, -1)",
+      "sql": "SELECT date_trunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1)",
+      "sql": "SELECT date_trunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1, -1)",
+      "sql": "SELECT date_trunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1)",
+      "sql": "SELECT date_trunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1, -1)",
+      "sql": "SELECT date_trunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1)",
+      "sql": "SELECT date_trunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1, -1)",
+      "sql": "SELECT date_trunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(-1)",
+      "sql": "SELECT date_trunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(NULL)",
+      "sql": "SELECT date_trunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(NULL)",
+      "sql": "SELECT date_trunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(NULL)",
+      "sql": "SELECT date_trunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(NULL)",
+      "sql": "SELECT date_trunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(NULL)",
+      "sql": "SELECT date_trunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('abc')",
+      "sql": "SELECT date_trunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('abc')",
+      "sql": "SELECT date_trunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('abc')",
+      "sql": "SELECT date_trunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('abc')",
+      "sql": "SELECT date_trunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "date_trunc('abc')",
+      "sql": "SELECT date_trunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0, 0)",
+      "sql": "SELECT date_trunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0)",
+      "sql": "SELECT date_trunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0, 0)",
+      "sql": "SELECT date_trunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0)",
+      "sql": "SELECT date_trunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0, 0)",
+      "sql": "SELECT date_trunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0)",
+      "sql": "SELECT date_trunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0, 0)",
+      "sql": "SELECT date_trunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0)",
+      "sql": "SELECT date_trunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0, 0)",
+      "sql": "SELECT date_trunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "date_trunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "date_trunc(0)",
+      "sql": "SELECT date_trunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datepart",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datepart(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT datepart(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datepart(DATE '2024-01-01')",
+      "sql": "SELECT datepart(DATE '2024-01-01')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "datepart('')",
+      "sql": "SELECT datepart('')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datepart(1e308, 1e308)",
+      "sql": "SELECT datepart(1e308, 1e308)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datepart(1e308)",
+      "sql": "SELECT datepart(1e308)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datepart(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT datepart(9223372036854775807, 9223372036854775807)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datepart(9223372036854775807)",
+      "sql": "SELECT datepart(9223372036854775807)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datepart('', -1)",
+      "sql": "SELECT datepart('', -1)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datepart('')",
+      "sql": "SELECT datepart('')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datepart(-1, -1)",
+      "sql": "SELECT datepart(-1, -1)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datepart(-1)",
+      "sql": "SELECT datepart(-1)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "datepart(NULL)",
+      "sql": "SELECT datepart(NULL)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "datepart('abc')",
+      "sql": "SELECT datepart('abc')",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datepart(0, 0)",
+      "sql": "SELECT datepart(0, 0)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datepart",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datepart(0)",
+      "sql": "SELECT datepart(0)",
+      "message": "date_part(String, Duration)",
+      "documented_syntax": "date_part(part, expression)",
+      "documented_type": null
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(DATE '2024-01-01')",
+      "sql": "SELECT datetrunc(DATE '2024-01-01')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308, 1e308)",
+      "sql": "SELECT datetrunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308)",
+      "sql": "SELECT datetrunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308, 1e308)",
+      "sql": "SELECT datetrunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308)",
+      "sql": "SELECT datetrunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308, 1e308)",
+      "sql": "SELECT datetrunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308)",
+      "sql": "SELECT datetrunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308, 1e308)",
+      "sql": "SELECT datetrunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308)",
+      "sql": "SELECT datetrunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308, 1e308)",
+      "sql": "SELECT datetrunc(1e308, 1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(1e308)",
+      "sql": "SELECT datetrunc(1e308)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807, 9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(9223372036854775807)",
+      "sql": "SELECT datetrunc(9223372036854775807)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('', -1)",
+      "sql": "SELECT datetrunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('', -1)",
+      "sql": "SELECT datetrunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('', -1)",
+      "sql": "SELECT datetrunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('', -1)",
+      "sql": "SELECT datetrunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('', -1)",
+      "sql": "SELECT datetrunc('', -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('')",
+      "sql": "SELECT datetrunc('')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1, -1)",
+      "sql": "SELECT datetrunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1)",
+      "sql": "SELECT datetrunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1, -1)",
+      "sql": "SELECT datetrunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1)",
+      "sql": "SELECT datetrunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1, -1)",
+      "sql": "SELECT datetrunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1)",
+      "sql": "SELECT datetrunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1, -1)",
+      "sql": "SELECT datetrunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1)",
+      "sql": "SELECT datetrunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1, -1)",
+      "sql": "SELECT datetrunc(-1, -1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(-1)",
+      "sql": "SELECT datetrunc(-1)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(NULL)",
+      "sql": "SELECT datetrunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(NULL)",
+      "sql": "SELECT datetrunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(NULL)",
+      "sql": "SELECT datetrunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(NULL)",
+      "sql": "SELECT datetrunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(NULL)",
+      "sql": "SELECT datetrunc(NULL)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('abc')",
+      "sql": "SELECT datetrunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('abc')",
+      "sql": "SELECT datetrunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('abc')",
+      "sql": "SELECT datetrunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('abc')",
+      "sql": "SELECT datetrunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "datetrunc('abc')",
+      "sql": "SELECT datetrunc('abc')",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0, 0)",
+      "sql": "SELECT datetrunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0)",
+      "sql": "SELECT datetrunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Time(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0, 0)",
+      "sql": "SELECT datetrunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0)",
+      "sql": "SELECT datetrunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns)"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0, 0)",
+      "sql": "SELECT datetrunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0)",
+      "sql": "SELECT datetrunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Timestamp(ns, \"+TZ\")"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0, 0)",
+      "sql": "SELECT datetrunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0)",
+      "sql": "SELECT datetrunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "Date"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0, 0)",
+      "sql": "SELECT datetrunc(0, 0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "datetrunc",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "datetrunc(0)",
+      "sql": "SELECT datetrunc(0)",
+      "message": "date_trunc(String, Time)",
+      "documented_syntax": "date_trunc(precision, expression)",
+      "documented_type": "String"
+    },
+    {
+      "function": "element_at",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "element_at(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT element_at(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "element_at('', '')",
+      "sql": "SELECT element_at('', '')",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "element_at(1e308, 1e308)",
+      "sql": "SELECT element_at(1e308, 1e308)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "element_at(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT element_at(9223372036854775807, 9223372036854775807)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "element_at('', -1)",
+      "sql": "SELECT element_at('', -1)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "element_at(-1, -1)",
+      "sql": "SELECT element_at(-1, -1)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "element_at('abc', 'abc')",
+      "sql": "SELECT element_at('abc', 'abc')",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "element_at",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "element_at(0, 0)",
+      "sql": "SELECT element_at(0, 0)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "generate_series",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "generate_series(DATE '2024-01-01')",
+      "sql": "SELECT generate_series(DATE '2024-01-01')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "generate_series(DATE '2024-01-01')",
+      "sql": "SELECT generate_series(DATE '2024-01-01')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "generate_series(DATE '2024-01-01')",
+      "sql": "SELECT generate_series(DATE '2024-01-01')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "generate_series(DATE '2024-01-01')",
+      "sql": "SELECT generate_series(DATE '2024-01-01')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "generate_series(DATE '2024-01-01')",
+      "sql": "SELECT generate_series(DATE '2024-01-01')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "generate_series(1e308)",
+      "sql": "SELECT generate_series(1e308)",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "generate_series(1e308)",
+      "sql": "SELECT generate_series(1e308)",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "generate_series(1e308)",
+      "sql": "SELECT generate_series(1e308)",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "generate_series(1e308)",
+      "sql": "SELECT generate_series(1e308)",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "generate_series(1e308)",
+      "sql": "SELECT generate_series(1e308)",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "generate_series('')",
+      "sql": "SELECT generate_series('')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "generate_series('abc')",
+      "sql": "SELECT generate_series('abc')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "generate_series('abc')",
+      "sql": "SELECT generate_series('abc')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "generate_series('abc')",
+      "sql": "SELECT generate_series('abc')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "generate_series",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "generate_series('abc')",
+      "sql": "SELECT generate_series('abc')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "generate_series",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "generate_series('abc')",
+      "sql": "SELECT generate_series('abc')",
+      "message": "generate_series(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "generate_series(stop)\ngenerate_series(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "log",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "log(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT log(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "log(DATE '2024-01-01')",
+      "sql": "SELECT log(DATE '2024-01-01')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "log('', '')",
+      "sql": "SELECT log('', '')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "log('')",
+      "sql": "SELECT log('')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "log('', -1)",
+      "sql": "SELECT log('', -1)",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "log('')",
+      "sql": "SELECT log('')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "log('abc', 'abc')",
+      "sql": "SELECT log('abc', 'abc')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "log",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "log('abc')",
+      "sql": "SELECT log('abc')",
+      "message": "log(Float, Float)",
+      "documented_syntax": "log(base, numeric_expression)\nlog(numeric_expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "ltrim",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "ltrim(DATE '2024-01-01')",
+      "sql": "SELECT ltrim(DATE '2024-01-01')",
+      "message": "ltrim(String)",
+      "documented_syntax": "ltrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "ltrim",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "ltrim(1e308)",
+      "sql": "SELECT ltrim(1e308)",
+      "message": "ltrim(String)",
+      "documented_syntax": "ltrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "ltrim",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "ltrim(9223372036854775807)",
+      "sql": "SELECT ltrim(9223372036854775807)",
+      "message": "ltrim(String)",
+      "documented_syntax": "ltrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "ltrim",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "ltrim(-1)",
+      "sql": "SELECT ltrim(-1)",
+      "message": "ltrim(String)",
+      "documented_syntax": "ltrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "ltrim",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "ltrim(0)",
+      "sql": "SELECT ltrim(0)",
+      "message": "ltrim(String)",
+      "documented_syntax": "ltrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "map_extract",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "map_extract(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT map_extract(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "map_extract('', '')",
+      "sql": "SELECT map_extract('', '')",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "map_extract(1e308, 1e308)",
+      "sql": "SELECT map_extract(1e308, 1e308)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "map_extract(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT map_extract(9223372036854775807, 9223372036854775807)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "map_extract('', -1)",
+      "sql": "SELECT map_extract('', -1)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "map_extract(-1, -1)",
+      "sql": "SELECT map_extract(-1, -1)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "map_extract('abc', 'abc')",
+      "sql": "SELECT map_extract('abc', 'abc')",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "map_extract",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "map_extract(0, 0)",
+      "sql": "SELECT map_extract(0, 0)",
+      "message": "map_extract(UserDefined)",
+      "documented_syntax": "map_extract(map, key)",
+      "documented_type": null
+    },
+    {
+      "function": "range",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "range(DATE '2024-01-01')",
+      "sql": "SELECT range(DATE '2024-01-01')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "range",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "range(DATE '2024-01-01')",
+      "sql": "SELECT range(DATE '2024-01-01')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "range",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "range(DATE '2024-01-01')",
+      "sql": "SELECT range(DATE '2024-01-01')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "range",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "range(DATE '2024-01-01')",
+      "sql": "SELECT range(DATE '2024-01-01')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "range",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "range(DATE '2024-01-01')",
+      "sql": "SELECT range(DATE '2024-01-01')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "range",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "range",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "range",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "range",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "range",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "range",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "range(1e308)",
+      "sql": "SELECT range(1e308)",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "range",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "range(1e308)",
+      "sql": "SELECT range(1e308)",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "range",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "range(1e308)",
+      "sql": "SELECT range(1e308)",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "range",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "range(1e308)",
+      "sql": "SELECT range(1e308)",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "range",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "range(1e308)",
+      "sql": "SELECT range(1e308)",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "range",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "range",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "range",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "range",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "range",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "range('')",
+      "sql": "SELECT range('')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "range",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "range('abc')",
+      "sql": "SELECT range('abc')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Int64)"
+    },
+    {
+      "function": "range",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "range('abc')",
+      "sql": "SELECT range('abc')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "range",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "range('abc')",
+      "sql": "SELECT range('abc')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Date)"
+    },
+    {
+      "function": "range",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "range('abc')",
+      "sql": "SELECT range('abc')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns, \"+TZ\"))"
+    },
+    {
+      "function": "range",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "range('abc')",
+      "sql": "SELECT range('abc')",
+      "message": "range(Timestamp, Timestamp, Interval(MonthDayNano))",
+      "documented_syntax": "range(stop)\nrange(start, stop[, step])",
+      "documented_type": "List(Timestamp(ns))"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT regexp_like(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(DATE '2024-01-01')",
+      "sql": "SELECT regexp_like(DATE '2024-01-01')",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "regexp_like('')",
+      "sql": "SELECT regexp_like('')",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(1e308, 1e308)",
+      "sql": "SELECT regexp_like(1e308, 1e308)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(1e308)",
+      "sql": "SELECT regexp_like(1e308)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT regexp_like(9223372036854775807, 9223372036854775807)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(9223372036854775807)",
+      "sql": "SELECT regexp_like(9223372036854775807)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "regexp_like('', -1)",
+      "sql": "SELECT regexp_like('', -1)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "regexp_like('')",
+      "sql": "SELECT regexp_like('')",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(-1, -1)",
+      "sql": "SELECT regexp_like(-1, -1)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(-1)",
+      "sql": "SELECT regexp_like(-1)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(NULL)",
+      "sql": "SELECT regexp_like(NULL)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "regexp_like('abc')",
+      "sql": "SELECT regexp_like('abc')",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(0, 0)",
+      "sql": "SELECT regexp_like(0, 0)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "regexp_like",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "regexp_like(0)",
+      "sql": "SELECT regexp_like(0)",
+      "message": "regexp_like(String, String, String)",
+      "documented_syntax": "regexp_like(str, regexp[, flags])",
+      "documented_type": "Boolean"
+    },
+    {
+      "function": "round",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "round(DATE '2024-01-01')",
+      "sql": "SELECT round(DATE '2024-01-01')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "round",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "round(DATE '2024-01-01')",
+      "sql": "SELECT round(DATE '2024-01-01')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "round",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "round(DATE '2024-01-01')",
+      "sql": "SELECT round(DATE '2024-01-01')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "round",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "round(DATE '2024-01-01')",
+      "sql": "SELECT round(DATE '2024-01-01')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 0)"
+    },
+    {
+      "function": "round",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "round(DATE '2024-01-01')",
+      "sql": "SELECT round(DATE '2024-01-01')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "round",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "round",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "round",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "round",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 0)"
+    },
+    {
+      "function": "round",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "round",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "round",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "round",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "round",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 0)"
+    },
+    {
+      "function": "round",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "round('')",
+      "sql": "SELECT round('')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "round",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "round('abc')",
+      "sql": "SELECT round('abc')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "round",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "round('abc')",
+      "sql": "SELECT round('abc')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "round",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "round('abc')",
+      "sql": "SELECT round('abc')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "round",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "round('abc')",
+      "sql": "SELECT round('abc')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 0)"
+    },
+    {
+      "function": "round",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "round('abc')",
+      "sql": "SELECT round('abc')",
+      "message": "round(Float64)",
+      "documented_syntax": "round(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "rtrim",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "rtrim(DATE '2024-01-01')",
+      "sql": "SELECT rtrim(DATE '2024-01-01')",
+      "message": "rtrim(String)",
+      "documented_syntax": "rtrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "rtrim",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "rtrim(1e308)",
+      "sql": "SELECT rtrim(1e308)",
+      "message": "rtrim(String)",
+      "documented_syntax": "rtrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "rtrim",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "rtrim(9223372036854775807)",
+      "sql": "SELECT rtrim(9223372036854775807)",
+      "message": "rtrim(String)",
+      "documented_syntax": "rtrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "rtrim",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "rtrim(-1)",
+      "sql": "SELECT rtrim(-1)",
+      "message": "rtrim(String)",
+      "documented_syntax": "rtrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "rtrim",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "rtrim(0)",
+      "sql": "SELECT rtrim(0)",
+      "message": "rtrim(String)",
+      "documented_syntax": "rtrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT string_to_array(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(DATE '2024-01-01')",
+      "sql": "SELECT string_to_array(DATE '2024-01-01')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "string_to_array('')",
+      "sql": "SELECT string_to_array('')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(1e308, 1e308)",
+      "sql": "SELECT string_to_array(1e308, 1e308)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(1e308)",
+      "sql": "SELECT string_to_array(1e308)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT string_to_array(9223372036854775807, 9223372036854775807)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(9223372036854775807)",
+      "sql": "SELECT string_to_array(9223372036854775807)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "string_to_array('', -1)",
+      "sql": "SELECT string_to_array('', -1)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "string_to_array('')",
+      "sql": "SELECT string_to_array('')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(-1, -1)",
+      "sql": "SELECT string_to_array(-1, -1)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(-1)",
+      "sql": "SELECT string_to_array(-1)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(NULL)",
+      "sql": "SELECT string_to_array(NULL)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "string_to_array('abc')",
+      "sql": "SELECT string_to_array('abc')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(0, 0)",
+      "sql": "SELECT string_to_array(0, 0)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_array",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "string_to_array(0)",
+      "sql": "SELECT string_to_array(0)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT string_to_list(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(DATE '2024-01-01')",
+      "sql": "SELECT string_to_list(DATE '2024-01-01')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "string_to_list('')",
+      "sql": "SELECT string_to_list('')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(1e308, 1e308)",
+      "sql": "SELECT string_to_list(1e308, 1e308)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(1e308)",
+      "sql": "SELECT string_to_list(1e308)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT string_to_list(9223372036854775807, 9223372036854775807)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(9223372036854775807)",
+      "sql": "SELECT string_to_list(9223372036854775807)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "string_to_list('', -1)",
+      "sql": "SELECT string_to_list('', -1)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "string_to_list('')",
+      "sql": "SELECT string_to_list('')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(-1, -1)",
+      "sql": "SELECT string_to_list(-1, -1)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(-1)",
+      "sql": "SELECT string_to_list(-1)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(NULL)",
+      "sql": "SELECT string_to_list(NULL)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "string_to_list('abc')",
+      "sql": "SELECT string_to_list('abc')",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(0, 0)",
+      "sql": "SELECT string_to_list(0, 0)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "string_to_list",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "string_to_list(0)",
+      "sql": "SELECT string_to_list(0)",
+      "message": "string_to_array(String, String, String)",
+      "documented_syntax": "string_to_array(str, delimiter[, null_str])",
+      "documented_type": "List(String)"
+    },
+    {
+      "function": "substr",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "substr(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT substr(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substr",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "substr('', '')",
+      "sql": "SELECT substr('', '')",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substr",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "substr(1e308, 1e308)",
+      "sql": "SELECT substr(1e308, 1e308)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substr",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "substr(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT substr(9223372036854775807, 9223372036854775807)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substr",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "substr(-1, -1)",
+      "sql": "SELECT substr(-1, -1)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substr",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "substr('abc', 'abc')",
+      "sql": "SELECT substr('abc', 'abc')",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substr",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "substr(0, 0)",
+      "sql": "SELECT substr(0, 0)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "substring(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT substring(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "substring('', '')",
+      "sql": "SELECT substring('', '')",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "substring(1e308, 1e308)",
+      "sql": "SELECT substring(1e308, 1e308)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "substring(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT substring(9223372036854775807, 9223372036854775807)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "substring(-1, -1)",
+      "sql": "SELECT substring(-1, -1)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "substring('abc', 'abc')",
+      "sql": "SELECT substring('abc', 'abc')",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "substring",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "substring(0, 0)",
+      "sql": "SELECT substring(0, 0)",
+      "message": "substr(str: String, start_pos: Int64, length: Int64)",
+      "documented_syntax": "substr(str, start_pos[, length])",
+      "documented_type": "String"
+    },
+    {
+      "function": "trim",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "trim(DATE '2024-01-01')",
+      "sql": "SELECT trim(DATE '2024-01-01')",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "trim",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "trim(1e308)",
+      "sql": "SELECT trim(1e308)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "trim",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "trim(9223372036854775807)",
+      "sql": "SELECT trim(9223372036854775807)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "trim",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "trim(-1)",
+      "sql": "SELECT trim(-1)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "trim",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "trim(0)",
+      "sql": "SELECT trim(0)",
+      "message": "btrim(String)",
+      "documented_syntax": "btrim(str[, trim_str])",
+      "documented_type": "String"
+    },
+    {
+      "function": "trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "trunc(DATE '2024-01-01')",
+      "sql": "SELECT trunc(DATE '2024-01-01')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": null
+    },
+    {
+      "function": "trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "trunc(DATE '2024-01-01')",
+      "sql": "SELECT trunc(DATE '2024-01-01')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "trunc(DATE '2024-01-01')",
+      "sql": "SELECT trunc(DATE '2024-01-01')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "trunc",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "trunc(DATE '2024-01-01')",
+      "sql": "SELECT trunc(DATE '2024-01-01')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": null
+    },
+    {
+      "function": "trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "trunc",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": null
+    },
+    {
+      "function": "trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "trunc",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "trunc('')",
+      "sql": "SELECT trunc('')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "trunc('abc')",
+      "sql": "SELECT trunc('abc')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": null
+    },
+    {
+      "function": "trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "trunc('abc')",
+      "sql": "SELECT trunc('abc')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "trunc('abc')",
+      "sql": "SELECT trunc('abc')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "trunc",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "trunc('abc')",
+      "sql": "SELECT trunc('abc')",
+      "message": "trunc(Float64)",
+      "documented_syntax": "trunc(numeric_expression[, decimal_places])",
+      "documented_type": "Float32"
+    },
+    {
+      "function": "arrow_cast",
+      "profile": "text",
+      "verdict": "NOT_IMPL",
+      "call": "arrow_cast('abc', 'abc')",
+      "sql": "SELECT arrow_cast('abc', 'abc')",
+      "message": "lakewatch: Execution error: Unsupported type 'abc'. Must be a supported arrow type name such as 'Int32' or 'Timestamp(ns)'. Error unknown token: abc",
+      "documented_syntax": "arrow_cast(expression, datatype)",
+      "documented_type": null
+    },
+    {
+      "function": "arrow_try_cast",
+      "profile": "text",
+      "verdict": "NOT_IMPL",
+      "call": "arrow_try_cast('abc', 'abc')",
+      "sql": "SELECT arrow_try_cast('abc', 'abc')",
+      "message": "lakewatch: Execution error: Unsupported type 'abc'. Must be a supported arrow type name such as 'Int32' or 'Timestamp(ns)'. Error unknown token: abc",
+      "documented_syntax": "arrow_try_cast(expression, datatype)",
+      "documented_type": null
+    },
+    {
+      "function": "gcd",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "gcd(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT gcd(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "gcd(UserDefined)",
+      "documented_syntax": "gcd(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "gcd",
+      "profile": "empty",
+      "verdict": "NOT_IMPL",
+      "call": "gcd('', '')",
+      "sql": "SELECT gcd('', '')",
+      "message": "gcd(UserDefined)",
+      "documented_syntax": "gcd(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "gcd",
+      "profile": "float_max",
+      "verdict": "NOT_IMPL",
+      "call": "gcd(1e308, 1e308)",
+      "sql": "SELECT gcd(1e308, 1e308)",
+      "message": "gcd(UserDefined)",
+      "documented_syntax": "gcd(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "gcd",
+      "profile": "mixed",
+      "verdict": "NOT_IMPL",
+      "call": "gcd('', -1)",
+      "sql": "SELECT gcd('', -1)",
+      "message": "gcd(UserDefined)",
+      "documented_syntax": "gcd(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "gcd",
+      "profile": "text",
+      "verdict": "NOT_IMPL",
+      "call": "gcd('abc', 'abc')",
+      "sql": "SELECT gcd('abc', 'abc')",
+      "message": "gcd(UserDefined)",
+      "documented_syntax": "gcd(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "lcm",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "lcm(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT lcm(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "lcm(UserDefined)",
+      "documented_syntax": "lcm(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "lcm",
+      "profile": "empty",
+      "verdict": "NOT_IMPL",
+      "call": "lcm('', '')",
+      "sql": "SELECT lcm('', '')",
+      "message": "lcm(UserDefined)",
+      "documented_syntax": "lcm(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "lcm",
+      "profile": "float_max",
+      "verdict": "NOT_IMPL",
+      "call": "lcm(1e308, 1e308)",
+      "sql": "SELECT lcm(1e308, 1e308)",
+      "message": "lcm(UserDefined)",
+      "documented_syntax": "lcm(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "lcm",
+      "profile": "mixed",
+      "verdict": "NOT_IMPL",
+      "call": "lcm('', -1)",
+      "sql": "SELECT lcm('', -1)",
+      "message": "lcm(UserDefined)",
+      "documented_syntax": "lcm(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "lcm",
+      "profile": "text",
+      "verdict": "NOT_IMPL",
+      "call": "lcm('abc', 'abc')",
+      "sql": "SELECT lcm('abc', 'abc')",
+      "message": "lcm(UserDefined)",
+      "documented_syntax": "lcm(expression_x, expression_y)",
+      "documented_type": null
+    },
+    {
+      "function": "to_time",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "to_time(DATE '2024-01-01')",
+      "sql": "SELECT to_time(DATE '2024-01-01')",
+      "message": "lakewatch: Execution error: Unsupported data type Date32 for function to_time",
+      "documented_syntax": "to_time(expression[, format1, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_time",
+      "profile": "float_max",
+      "verdict": "NOT_IMPL",
+      "call": "to_time(1e308)",
+      "sql": "SELECT to_time(1e308)",
+      "message": "lakewatch: Execution error: Unsupported data type Float64 for function to_time",
+      "documented_syntax": "to_time(expression[, format1, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_time",
+      "profile": "int_max",
+      "verdict": "NOT_IMPL",
+      "call": "to_time(9223372036854775807)",
+      "sql": "SELECT to_time(9223372036854775807)",
+      "message": "lakewatch: Execution error: Unsupported data type Int64 for function to_time",
+      "documented_syntax": "to_time(expression[, format1, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_time",
+      "profile": "negative",
+      "verdict": "NOT_IMPL",
+      "call": "to_time(-1)",
+      "sql": "SELECT to_time(-1)",
+      "message": "lakewatch: Execution error: Unsupported data type Int64 for function to_time",
+      "documented_syntax": "to_time(expression[, format1, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_time",
+      "profile": "zero",
+      "verdict": "NOT_IMPL",
+      "call": "to_time(0)",
+      "sql": "SELECT to_time(0)",
+      "message": "lakewatch: Execution error: Unsupported data type Int64 for function to_time",
+      "documented_syntax": "to_time(expression[, format1, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_timestamp",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "to_timestamp(DATE '2024-01-01')",
+      "sql": "SELECT to_timestamp(DATE '2024-01-01')",
+      "message": "lakewatch: Execution error: Unsupported data type Date32 for function to_timestamp",
+      "documented_syntax": "to_timestamp(expression[, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_timestamp_micros",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "to_timestamp_micros(DATE '2024-01-01')",
+      "sql": "SELECT to_timestamp_micros(DATE '2024-01-01')",
+      "message": "lakewatch: Execution error: Unsupported data type Date32 for function to_timestamp_micros",
+      "documented_syntax": "to_timestamp_micros(expression[, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_timestamp_millis",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "to_timestamp_millis(DATE '2024-01-01')",
+      "sql": "SELECT to_timestamp_millis(DATE '2024-01-01')",
+      "message": "lakewatch: Execution error: Unsupported data type Date32 for function to_timestamp_millis",
+      "documented_syntax": "to_timestamp_millis(expression[, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_timestamp_nanos",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "to_timestamp_nanos(DATE '2024-01-01')",
+      "sql": "SELECT to_timestamp_nanos(DATE '2024-01-01')",
+      "message": "lakewatch: Execution error: Unsupported data type Date32 for function to_timestamp_nanos",
+      "documented_syntax": "to_timestamp_nanos(expression[, ..., format_n])",
+      "documented_type": null
+    },
+    {
+      "function": "to_timestamp_seconds",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "to_timestamp_seconds(DATE '2024-01-01')",
+      "sql": "SELECT to_timestamp_seconds(DATE '2024-01-01')",
+      "message": "lakewatch: Execution error: Unsupported data type Date32 for function to_timestamp_seconds",
+      "documented_syntax": "to_timestamp_seconds(expression[, ..., format_n])",
+      "documented_type": null
+    }
+  ]
+}

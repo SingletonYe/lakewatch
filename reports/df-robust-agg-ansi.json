@@ -1,0 +1,1920 @@
+{
+  "functions": 72,
+  "invocations": 458,
+  "counts": {
+    "INTERNAL": 185,
+    "NOT_IMPL": 6
+  },
+  "findings": [
+    {
+      "function": "approx_median",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_median(DATE '2024-01-01')",
+      "sql": "SELECT approx_median(DATE '2024-01-01')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_median(DATE '2024-01-01')",
+      "sql": "SELECT approx_median(DATE '2024-01-01')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_median(DATE '2024-01-01')",
+      "sql": "SELECT approx_median(DATE '2024-01-01')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_median",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_median('')",
+      "sql": "SELECT approx_median('')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_median('')",
+      "sql": "SELECT approx_median('')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_median('')",
+      "sql": "SELECT approx_median('')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_median",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_median('')",
+      "sql": "SELECT approx_median('')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_median('')",
+      "sql": "SELECT approx_median('')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_median('')",
+      "sql": "SELECT approx_median('')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_median",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_median('abc')",
+      "sql": "SELECT approx_median('abc')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_median('abc')",
+      "sql": "SELECT approx_median('abc')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_median",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_median('abc')",
+      "sql": "SELECT approx_median('abc')",
+      "message": "approx_median(Float)",
+      "documented_syntax": "approx_median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont(DATE '2024-01-01')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont(DATE '2024-01-01')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont(DATE '2024-01-01')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont(DATE '2024-01-01')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(1e308)",
+      "sql": "SELECT approx_percentile_cont(1e308)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(1e308)",
+      "sql": "SELECT approx_percentile_cont(1e308)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(1e308)",
+      "sql": "SELECT approx_percentile_cont(1e308)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(1e308)",
+      "sql": "SELECT approx_percentile_cont(1e308)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont(9223372036854775807)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont(9223372036854775807)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont(9223372036854775807)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont(9223372036854775807)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('')",
+      "sql": "SELECT approx_percentile_cont('')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(-1)",
+      "sql": "SELECT approx_percentile_cont(-1)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(-1)",
+      "sql": "SELECT approx_percentile_cont(-1)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(-1)",
+      "sql": "SELECT approx_percentile_cont(-1)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(-1)",
+      "sql": "SELECT approx_percentile_cont(-1)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(NULL)",
+      "sql": "SELECT approx_percentile_cont(NULL)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(NULL)",
+      "sql": "SELECT approx_percentile_cont(NULL)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(NULL)",
+      "sql": "SELECT approx_percentile_cont(NULL)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(NULL)",
+      "sql": "SELECT approx_percentile_cont(NULL)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('abc')",
+      "sql": "SELECT approx_percentile_cont('abc')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('abc')",
+      "sql": "SELECT approx_percentile_cont('abc')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('abc')",
+      "sql": "SELECT approx_percentile_cont('abc')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont('abc')",
+      "sql": "SELECT approx_percentile_cont('abc')",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(0)",
+      "sql": "SELECT approx_percentile_cont(0)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(0)",
+      "sql": "SELECT approx_percentile_cont(0)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(0)",
+      "sql": "SELECT approx_percentile_cont(0)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont(0)",
+      "sql": "SELECT approx_percentile_cont(0)",
+      "message": "approx_percentile_cont(Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont(percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "sql": "SELECT approx_percentile_cont_with_weight(DATE '2024-01-01')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', '')",
+      "sql": "SELECT approx_percentile_cont_with_weight('', '')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', '')",
+      "sql": "SELECT approx_percentile_cont_with_weight('', '')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', '')",
+      "sql": "SELECT approx_percentile_cont_with_weight('', '')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', '')",
+      "sql": "SELECT approx_percentile_cont_with_weight('', '')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308, 1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308, 1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308, 1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308, 1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308, 1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308, 1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308, 1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308, 1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "float_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(1e308)",
+      "sql": "SELECT approx_percentile_cont_with_weight(1e308)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807, 9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "int_max",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(9223372036854775807)",
+      "sql": "SELECT approx_percentile_cont_with_weight(9223372036854775807)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight('', -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight('', -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight('', -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('', -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight('', -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('')",
+      "sql": "SELECT approx_percentile_cont_with_weight('')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1, -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1, -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1, -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1, -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1, -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1, -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1, -1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1, -1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "negative",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(-1)",
+      "sql": "SELECT approx_percentile_cont_with_weight(-1)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL, NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL, NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL, NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL, NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL, NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL, NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL, NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL, NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "null",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(NULL)",
+      "sql": "SELECT approx_percentile_cont_with_weight(NULL)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc', 'abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc', 'abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc', 'abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc', 'abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc', 'abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc', 'abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc', 'abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc', 'abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight('abc')",
+      "sql": "SELECT approx_percentile_cont_with_weight('abc')",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0, 0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0, 0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0, 0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0, 0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0, 0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0, 0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0, 0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0, 0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "approx_percentile_cont_with_weight",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "approx_percentile_cont_with_weight(0)",
+      "sql": "SELECT approx_percentile_cont_with_weight(0)",
+      "message": "approx_percentile_cont_with_weight(Float, Float, Float64, Integer)",
+      "documented_syntax": "approx_percentile_cont_with_weight(weight, percentile [, centroids]) WITHIN GROUP (ORDER BY expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "avg",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "avg(DATE '2024-01-01')",
+      "sql": "SELECT avg(DATE '2024-01-01')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "avg",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "avg(DATE '2024-01-01')",
+      "sql": "SELECT avg(DATE '2024-01-01')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "avg",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "avg(DATE '2024-01-01')",
+      "sql": "SELECT avg(DATE '2024-01-01')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "avg",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "avg('')",
+      "sql": "SELECT avg('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "avg",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "avg('')",
+      "sql": "SELECT avg('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "avg",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "avg('')",
+      "sql": "SELECT avg('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "avg",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "avg('')",
+      "sql": "SELECT avg('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "avg",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "avg('')",
+      "sql": "SELECT avg('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "avg",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "avg('')",
+      "sql": "SELECT avg('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "avg",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "avg('abc')",
+      "sql": "SELECT avg('abc')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "avg",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "avg('abc')",
+      "sql": "SELECT avg('abc')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "avg",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "avg('abc')",
+      "sql": "SELECT avg('abc')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "mean",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "mean(DATE '2024-01-01')",
+      "sql": "SELECT mean(DATE '2024-01-01')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "mean",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "mean(DATE '2024-01-01')",
+      "sql": "SELECT mean(DATE '2024-01-01')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "mean",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "mean(DATE '2024-01-01')",
+      "sql": "SELECT mean(DATE '2024-01-01')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "mean",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "mean('')",
+      "sql": "SELECT mean('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "mean",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "mean('')",
+      "sql": "SELECT mean('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "mean",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "mean('')",
+      "sql": "SELECT mean('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "mean",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "mean('')",
+      "sql": "SELECT mean('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "mean",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "mean('')",
+      "sql": "SELECT mean('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "mean",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "mean('')",
+      "sql": "SELECT mean('')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "mean",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "mean('abc')",
+      "sql": "SELECT mean('abc')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Decimal(38, 14)"
+    },
+    {
+      "function": "mean",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "mean('abc')",
+      "sql": "SELECT mean('abc')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "mean",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "mean('abc')",
+      "sql": "SELECT mean('abc')",
+      "message": "avg(Float64)",
+      "documented_syntax": "avg(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "median",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "median(DATE '2024-01-01')",
+      "sql": "SELECT median(DATE '2024-01-01')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "median",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "median(DATE '2024-01-01')",
+      "sql": "SELECT median(DATE '2024-01-01')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "median",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "median(DATE '2024-01-01')",
+      "sql": "SELECT median(DATE '2024-01-01')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "median",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "median('')",
+      "sql": "SELECT median('')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "median",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "median('')",
+      "sql": "SELECT median('')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "median",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "median('')",
+      "sql": "SELECT median('')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "median",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "median('')",
+      "sql": "SELECT median('')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "median",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "median('')",
+      "sql": "SELECT median('')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "median",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "median('')",
+      "sql": "SELECT median('')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "median",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "median('abc')",
+      "sql": "SELECT median('abc')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "median",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "median('abc')",
+      "sql": "SELECT median('abc')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "median",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "median('abc')",
+      "sql": "SELECT median('abc')",
+      "message": "median(Float64)",
+      "documented_syntax": "median(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "nth_value",
+      "profile": "zero",
+      "verdict": "INTERNAL",
+      "call": "nth_value(0, 0)",
+      "sql": "SELECT nth_value(0, 0)",
+      "message": "This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues",
+      "documented_syntax": "nth_value(expression, n ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Interval(DayTime)"
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "UInt64"
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "sum",
+      "profile": "date",
+      "verdict": "INTERNAL",
+      "call": "sum(DATE '2024-01-01')",
+      "sql": "SELECT sum(DATE '2024-01-01')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": null
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Interval(DayTime)"
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "UInt64"
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "sum",
+      "profile": "empty",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": null
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Interval(DayTime)"
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "UInt64"
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "sum",
+      "profile": "mixed",
+      "verdict": "INTERNAL",
+      "call": "sum('')",
+      "sql": "SELECT sum('')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": null
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Duration(ns)"
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Interval(DayTime)"
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Decimal(38, 10)"
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Int64"
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "UInt64"
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": "Float64"
+    },
+    {
+      "function": "sum",
+      "profile": "text",
+      "verdict": "INTERNAL",
+      "call": "sum('abc')",
+      "sql": "SELECT sum('abc')",
+      "message": "sum(Interval)",
+      "documented_syntax": "sum(expression)",
+      "documented_type": null
+    },
+    {
+      "function": "approx_distinct",
+      "profile": "float_max",
+      "verdict": "NOT_IMPL",
+      "call": "approx_distinct(1e308)",
+      "sql": "SELECT approx_distinct(1e308)",
+      "message": "lakewatch: This feature is not implemented: Support for 'approx_distinct' for data type Float64 is not implemented",
+      "documented_syntax": "approx_distinct(expression)",
+      "documented_type": null
+    },
+    {
+      "function": "nth_value",
+      "profile": "date",
+      "verdict": "NOT_IMPL",
+      "call": "nth_value(DATE '2024-01-01', DATE '2024-01-01')",
+      "sql": "SELECT nth_value(DATE '2024-01-01', DATE '2024-01-01')",
+      "message": "lakewatch: This feature is not implemented: nth_value not supported for n: 2024-01-01",
+      "documented_syntax": "nth_value(expression, n ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "nth_value",
+      "profile": "empty",
+      "verdict": "NOT_IMPL",
+      "call": "nth_value('', '')",
+      "sql": "SELECT nth_value('', '')",
+      "message": "lakewatch: This feature is not implemented: nth_value not supported for n:",
+      "documented_syntax": "nth_value(expression, n ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "nth_value",
+      "profile": "float_max",
+      "verdict": "NOT_IMPL",
+      "call": "nth_value(1e308, 1e308)",
+      "sql": "SELECT nth_value(1e308, 1e308)",
+      "message": "lakewatch: This feature is not implemented: nth_value not supported for n: 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "documented_syntax": "nth_value(expression, n ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "nth_value",
+      "profile": "null",
+      "verdict": "NOT_IMPL",
+      "call": "nth_value(NULL, NULL)",
+      "sql": "SELECT nth_value(NULL, NULL)",
+      "message": "lakewatch: This feature is not implemented: nth_value not supported for n: NULL",
+      "documented_syntax": "nth_value(expression, n ORDER BY expression)",
+      "documented_type": null
+    },
+    {
+      "function": "nth_value",
+      "profile": "text",
+      "verdict": "NOT_IMPL",
+      "call": "nth_value('abc', 'abc')",
+      "sql": "SELECT nth_value('abc', 'abc')",
+      "message": "lakewatch: This feature is not implemented: nth_value not supported for n: abc",
+      "documented_syntax": "nth_value(expression, n ORDER BY expression)",
+      "documented_type": null
+    }
+  ]
+}

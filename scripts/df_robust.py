@@ -87,13 +87,17 @@ def classify(stderr: str, exit_code: int) -> tuple[str, str]:
 
 
 class Shaker:
-    def __init__(self, binary: Path, probe_root: Path):
+    def __init__(self, binary: Path, probe_root: Path, session_options: tuple[str, ...] = ()):
         self.binary = binary
         self.probe_root = probe_root
+        self.session_options = session_options
 
     def run(self, sql: str) -> tuple[bool, str, str]:
+        options: list[str] = []
+        for option in self.session_options:
+            options += ["--session-option", option]
         completed = subprocess.run(
-            [str(self.binary), "--root", str(self.probe_root), "sql", sql, "-f", "json"],
+            [str(self.binary), "--root", str(self.probe_root), *options, "sql", sql, "-f", "json"],
             capture_output=True,
             text=True,
         )
@@ -147,6 +151,14 @@ def main() -> int:
     parser.add_argument("--bin", type=Path, default=None)
     parser.add_argument("--only", default=None, help="substring filter on the function name")
     parser.add_argument(
+        "--session-option",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="pass a DataFusion session option to every call, e.g. "
+        "--session-option datafusion.execution.enable_ansi_mode=true; repeatable",
+    )
+    parser.add_argument(
         "--function-type",
         default="SCALAR",
         choices=["SCALAR", "AGGREGATE", "WINDOW"],
@@ -161,7 +173,7 @@ def main() -> int:
     binary = args.bin or (ROOT / "target" / "debug" / "lakewatch")
     if not binary.exists():
         binary = shutil.which("lakewatch") or sys.exit("lakewatch binary not found; run cargo build")
-    shaker = Shaker(binary, args.root)
+    shaker = Shaker(binary, args.root, tuple(args.session_option))
 
     functions = shaker.functions(args.function_type)
     if args.only:
@@ -252,6 +264,8 @@ def main() -> int:
     for finding in findings:
         counts[finding["verdict"]] = counts.get(finding["verdict"], 0) + 1
     print("-" * 72)
+    if args.session_option:
+        print("session options: " + ", ".join(args.session_option))
     print(f"functions: {len(functions)} | invocations: {calls} | clean expected errors: {clean_errors}")
     print(f"findings: {len(findings)} across {len(clusters)} distinct root cause(s)")
     print("by verdict: " + (", ".join(f"{k}={v}" for k, v in sorted(counts.items())) or "none"))
