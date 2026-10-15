@@ -358,3 +358,12 @@ DataFusion 的 DECIMAL 列以文本到达（`2.2000`，每位 scale 一个数字
 这组结论的价值不在"发现了什么"，而在**不再有人花时间重看它们**：这些错误信息都是面向用户的、
 说明白了哪里不对、也没有让人去提 bug report。它们此前一直被当作"NOT_IMPL 待研判"，现在每条都带了
 文档依据。（判据是仓库内 `docs/source/user-guide/sql/scalar_functions.md`，逐条比对了签名说明。）
+
+### 版本口径与两处负结果（记录以免下次混淆）
+
+* 探针实际跑在 **crates.io 的 `datafusion 55.2.0`** 上（`Cargo.lock` 锁死；`Cargo.toml` 写的是
+  `"55"`）。`findings/*.md` 里写的 `apache/datafusion@<sha>` 是**读源码、定位调用点**时用的上游
+  commit，不是探针的运行时版本 —— 两者不是一回事，别再混着写。本 slot 核对：上游 main 已走到
+  `6bf43f29`（2026-10-15T12:47Z），**#25996 仍未合并**，所以上面对 map_extract 的归因成立。
+* 语义探针改用 `--partitions 8` 重跑一遍（默认是 4）：66 探针结果完全一致
+  （OK=56、KNOWN_DIFF=8、BOTH_ERROR=2、0 候选），没有新的 plan divergence。并行度数不是这里的问题源。
