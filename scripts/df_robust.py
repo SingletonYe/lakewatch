@@ -181,8 +181,11 @@ def main() -> int:
             for profile, values in PROFILES:
                 args_list = [values[index % len(values)] for index in range(arity)]
                 call = build_call(name, args_list)
+                # Window functions are only reachable with an OVER clause; the
+                # whole-partition frame is enough to reach their evaluators.
+                suffix = " OVER ()" if args.function_type == "WINDOW" else ""
                 calls += 1
-                ok, _, stderr = shaker.run(f"SELECT {call}")
+                ok, _, stderr = shaker.run(f"SELECT {call}{suffix}")
                 if ok:
                     continue
                 verdict, message = classify(stderr, 1)
@@ -197,7 +200,7 @@ def main() -> int:
                         "profile": profile,
                         "verdict": verdict,
                         "call": call,
-                        "sql": f"SELECT {call}",
+                        "sql": f"SELECT {call}{suffix}",
                         "message": message,
                         "documented_syntax": function.get("syntax_example"),
                         "documented_type": function.get("data_type"),

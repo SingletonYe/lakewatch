@@ -414,4 +414,7 @@ $ lakewatch sql "SELECT id, nth_value(v_int, 0) OVER (ORDER BY id) FROM probe_va
 （`functions-aggregate` + `functions-window`），所以 issue 里问了维护者想要哪种范围：两处一起，
 还是先修聚合那条（那是对用户可见的错误信息）。等 #26329 清掉后这就是下一个 PR 的靶子。
 
-`--function-type WINDOW` 还没跑（窗口函数需要 `OVER` 子句，当前摇法测不出东西），记在下一次。
+`--function-type WINDOW` 也跑了：11 个窗口函数 / 79 次调用（自动加 `OVER ()`，否则窗口函数根本不可达）→ **0 findings**，30 条干净的用户级错误，其余正常返回。窗口这一族干净。
+
+（一个值得记住的盲区：`nth_value(x, 0)` 在窗口形式下**不报错**，所以摇法永远不会把它标成 finding —— 
+上面那条新根因是靠*聚合*那一侧的错误才暴露出来的。只摇窗口的话会漏掉它。）
