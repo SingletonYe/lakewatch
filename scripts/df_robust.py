@@ -107,7 +107,9 @@ class Shaker:
         sql = (
             "SELECT routine_name, data_type, syntax_example, description "
             f"FROM information_schema.routines WHERE function_type = '{function_type}' "
-            "ORDER BY routine_name"
+            # A total order matters: overloaded functions share a routine_name, and
+            # an unordered tie makes the committed report churn on every run.
+            "ORDER BY routine_name, data_type, syntax_example"
         )
         ok, stdout, stderr = self.run(sql)
         if not ok:
@@ -245,7 +247,7 @@ def main() -> int:
 
     ranked = sorted(
         clusters.values(),
-        key=lambda c: (order.get(c["verdict"], 9), -c["count"]),
+        key=lambda c: (order.get(c["verdict"], 9), -c["count"], c["signature"]),
     )
 
     for cluster in ranked:
@@ -258,7 +260,17 @@ def main() -> int:
         print(f"    repro: {cluster['example']['sql']}")
         print()
 
-    findings.sort(key=lambda f: (order.get(f["verdict"], 9), f["function"], f["profile"]))
+    # Full tie-break, so the same run always writes the same JSON: `profile` alone
+    # does not separate the overload rows of one function.
+    findings.sort(
+        key=lambda f: (
+            order.get(f["verdict"], 9),
+            f["function"],
+            f["profile"],
+            f["documented_type"] or "",
+            f["sql"],
+        )
+    )
 
     counts: dict[str, int] = {}
     for finding in findings:

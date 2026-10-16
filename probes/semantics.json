@@ -579,6 +579,14 @@
         ]
       ],
       "why": "A RANGE frame is peer-based, not row-based: every row whose ORDER BY value ties must see the same running sum, and the NULL ordering value forms one peer group at the end. `probe_values` has ties (4,4 and 5,5) and NULLs precisely for this, and row-based `ROWS` semantics would give different numbers."
+    },
+    {
+      "id": "set_ops_intersect_except_all_multiset",
+      "category": "set_operators",
+      "sql": "SELECT 'intersect_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) INTERSECT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) x UNION ALL SELECT 'except_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) EXCEPT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) y ORDER BY op, v",
+      "ordered": true,
+      "why": "The ALL variants of INTERSECT/EXCEPT are multiset operators with standard-fixed answers: with T1={1,1,1,2} (m copies) and T2={1,1,3} (n copies), INTERSECT ALL must emit min(m,n) copies of each row -- 1,1 -- and EXCEPT ALL must emit max(m-n,0) -- 1,2. One probe covers both operators because the same input pair drives both, and the `op` column keeps the two answers distinguishable.",
+      "known_difference": "Known upstream, already open -- not a new bug. DataFusion's ALL set operators do not implement multiset semantics. Measured 2026-10-15 on 55.2.0 (1 and 4 partitions identical, so it is not a planning artifact): INTERSECT ALL returns 1,1,1 (all three LHS copies) where the standard and DuckDB give 1,1; EXCEPT ALL returns only 2 where the standard and DuckDB give 1,2, i.e. it removes every LHS copy of a row that appears at all on the RHS. Filed upstream as apache/datafusion#12955 'INTERSECT ALL returns wrong number of records from RHS' and #12956 'EXCEPT ALL returns the wrong number of records' (both open since 2024-10-15, both quoting the same SQL-92 paragraph). Recorded here so no slot re-files it as new; revisit when either issue is fixed, and flip this probe to a pinned `expect_rows` at that point."
     }
   ]
 }

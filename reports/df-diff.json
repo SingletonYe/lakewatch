@@ -3,7 +3,7 @@
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
     "OK": 59,
-    "KNOWN_DIFF": 9,
+    "KNOWN_DIFF": 10,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -149,6 +149,19 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "set_ops_intersect_except_all_multiset",
+      "category": "set_operators",
+      "sql": "SELECT 'intersect_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) INTERSECT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) x UNION ALL SELECT 'except_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) EXCEPT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) y ORDER BY op, v",
+      "why": "The ALL variants of INTERSECT/EXCEPT are multiset operators with standard-fixed answers: with T1={1,1,1,2} (m copies) and T2={1,1,3} (n copies), INTERSECT ALL must emit min(m,n) copies of each row -- 1,1 -- and EXCEPT ALL must emit max(m-n,0) -- 1,2. One probe covers both operators because the same input pair drives both, and the `op` column keeps the two answers distinguishable.",
+      "ordered": true,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [4 row(s)] except_all,2 | intersect_all,1 | intersect_all,1 | intersect_all,1 vs duckdb [4 row(s)] except_all,1 | except_all,2 | intersect_all,1 | intersect_all,1"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
@@ -890,6 +903,19 @@
       "session_options": [],
       "status": "OK",
       "details": []
+    },
+    {
+      "id": "set_ops_intersect_except_all_multiset",
+      "category": "set_operators",
+      "sql": "SELECT 'intersect_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) INTERSECT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) x UNION ALL SELECT 'except_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) EXCEPT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) y ORDER BY op, v",
+      "why": "The ALL variants of INTERSECT/EXCEPT are multiset operators with standard-fixed answers: with T1={1,1,1,2} (m copies) and T2={1,1,3} (n copies), INTERSECT ALL must emit min(m,n) copies of each row -- 1,1 -- and EXCEPT ALL must emit max(m-n,0) -- 1,2. One probe covers both operators because the same input pair drives both, and the `op` column keeps the two answers distinguishable.",
+      "ordered": true,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [4 row(s)] except_all,2 | intersect_all,1 | intersect_all,1 | intersect_all,1 vs duckdb [4 row(s)] except_all,1 | except_all,2 | intersect_all,1 | intersect_all,1"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
   ]
 }

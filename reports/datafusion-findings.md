@@ -644,3 +644,111 @@ runner 的**一次性故障**（驱动进程被杀），而不是"这个 job 一
 （21:00 那个 slot 的日报会把今天四段合起来发。）需要人做的仍然是上一轮那几件：
 `nth_value(x, 0)` 的 issue 文本、请 committer 重跑 CI 的一句评论、以及 PR 描述里过时的那两行 ——
 都不阻塞合并。
+
+## 2026-10-15 21:00 — slot 4 (last slot: daily digest)
+
+**结论**：71 探针（+1）· 0 个待研判候选 · 0 个需要新提的上游产物 · 全天四段基线**逐条**复现 · PR 只差 committer 合并
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | 7/7 PASS（fresh clone，build 7m21s，duckdb 1.5.6 oracle） |
+| Phase 1a 标量 | 1874 调用 / 391 findings / 20 根因（INTERNAL=369, NOT_IMPL=22）—— 与已提交基线**逐条**相同 |
+| Phase 1a 聚合 | 458 调用 / 191 findings / 13 根因（INTERNAL=185, NOT_IMPL=6）—— 同上 |
+| Phase 1a 窗口 | 79 调用 / 0 findings |
+| Phase 1b 语义 | 71 探针 · OK=59 · KNOWN_DIFF=10 · BOTH_ERROR=2 · **0 候选**（`--partitions 8` 结果相同） |
+| Phase 4 | +1 探针（集合操作符 `ALL` 变体的多重集语义） |
+| Phase 5 | `cargo fmt` / `clippy` / `test` / `daily_check.sh` 全绿 |
+| Phase 6 | 日报已发（21:00 无条件是当日汇总） |
+
+### Phase 0b — 早上批准之后毫无动静，本 slot 确认无事可做
+
+`OPEN` · head `268933e` · `APPROVED` · `MERGEABLE` · 42 项检查 = **38 SUCCESS / 3 SKIPPED / 1 FAILURE**。
+唯一红的仍是 `build and run with wasm-pack`，而且仍是**同一个 run**（38738221541，没有被重跑过）；
+`comments` 里唯一的"新"条目是 Codecov 机器人（15:17Z）。alamb 批准于 13:17Z，距本 slot 约 8 小时，
+而 nudge 的规矩是**至少间隔 3 天** —— 所以不催、不重推、不碰。球在 committer 那边：
+要么重跑一次失败 job，要么把 PR 丢进 merge queue（队列会在最新 main 上重跑必需检查）。
+
+### Phase 2/3 — 探到两个真缺陷，但两个都是上游 2024 年就开着的
+
+为了给目录开一块新地（集合操作符的 `ALL` 变体从未被任何扫描或探针覆盖），
+用 T1={1,1,1,2}（m 份）、T2={1,1,3}（n 份）做最小对照：
+
+```console
+$ lakewatch sql "… INTERSECT ALL …"   # DataFusion: 1,1,1     标准 / DuckDB: 1,1
+$ lakewatch sql "… EXCEPT ALL …"      # DataFusion: 2         标准 / DuckDB: 1,2
+```
+
+SQL-92 §7.10 规定 `INTERSECT ALL` 输出 min(m,n) 份、`EXCEPT ALL` 输出 max(m−n,0) 份。
+DataFusion 的行为等于把"该行在 RHS 出现过"当成"删光/全留"：`INTERSECT ALL` 把 LHS 的三份 1
+全留着（应留两份），`EXCEPT ALL` 把 LHS 的两份 1 全删掉（应留一份），1 与 4 分区结果相同，
+所以是语义缺陷而不是规划假象。
+
+**但它不是新 bug。** `gh search issues` 直接命中两个 OPEN 两年多的 issue，引用的是同一段标准原文：
+
+* apache/datafusion#12955 — *INTERSECT ALL returns wrong number of records from RHS*（2024-10-15 开）
+* apache/datafusion#12956 — *EXCEPT ALL returns the wrong number of records*（2024-10-15 开）
+
+按"绝不提重复"的规矩**不提 issue**。本轮的产出因此改成：一个探针 + `known_difference` 记录，
+把这个已知偏差钉住，让后续 slot 不再重复研判；等任一 issue 修复时，再把这条探针翻成
+pinned `expect_rows`。
+
+**一次有价值的人工对照（负结果）**：另外手写了约 40 条语料里没有的 SQL，同时跑 DataFusion 与
+DuckDB，专门找没人扫过的方向 —— interval 的月/年末尾钳制（`DATE '2024-01-31' + INTERVAL '1' MONTH`、
+`DATE '2024-02-29' + INTERVAL '1' YEAR`、跨月减）、混合单位 interval、interval 的乘/除/比较/
+`EXTRACT`/`SUM`、DECIMAL 溢出与混合精度算术、`CUBE`、多列 `GROUPING SETS`、无 `GROUP BY` 的
+`HAVING`、聚合 `FILTER`、多键 `DISTINCT`、窗口帧、`LEAD`/`LAG` 的负偏移、数组与字符串边界 ——
+**逐条一致，没有新偏差**；真正"两边都报错"的只有 `nth_value(x,0)`（已知）与 `NTILE(0)`（两边都干净报错）。
+记录这个负结果是为了让下一个 slot 不必再走一遍同样的路。
+
+### Phase 4 + harness — 一个探针，外加一处让报告真正可复现的修正
+
+探针（71 个，当日 8 个的预算至此用满）：`set_ops_intersect_except_all_multiset`，
+一条 SQL 同时覆盖两个操作符（同一组输入驱动两者，用 `op` 列区分），带 `known_difference` 记录
+上述两个 issue。
+
+harness 修正：`df_robust.py` 写出的 JSON **每次运行都会重排**，根因是
+`information_schema.routines` 只按 `routine_name` 排序，同名重载行的先后由引擎决定，
+而 findings 的排序键 `(verdict, function, profile)` 不足以区分重载行。后果是"与基线逐项一致"
+这句话此前只能用**计数**证明，不能逐条比对 —— 而这正是这些报告存在的意义。现在：
+
+1. 清单查询改为 `ORDER BY routine_name, data_type, syntax_example`（全序）；
+2. findings 排序键补全为 `(verdict, function, profile, documented_type, sql)`；
+3. 根因簇的排序加了 `signature` 兜底。
+
+验证：同一族连跑两次，输出**逐字节相同**（标量、聚合两族均已验证）。用这个新能力复核了本 slot
+的结论：391 条与 191 条 findings 与已提交基线是**逐条**相同（多重集相等），不只是计数相同。
+`reports/df-robust*.json` 因此在本轮重新生成并提交，此后再运行不会产生无意义 diff。
+
+### 今天四段合起来
+
+| slot | 健康闸门 | 标量 / 聚合 / 窗口 | 探针 | 实质产出 |
+|---|---|---|---|---|
+| 08:55 PR-response | — | — | — | reviewer 要求调整测试 → 已改并推送（`268933e`） |
+| 09:00 slot 1 | 7/7 | 391/20 · **191/13（首次扫描聚合族）** · — | 63→66 | **alamb 批准 #26329**；新根因 `nth_value(x,0)`；拦下会与 #25996 撞车的 PR |
+| 13:00 slot 2 | 7/7 | 391/20 · 191/13 · 0 | 66→68 | `--session-option` 落地；wasm-pack 红是环境故障（ChromeDriver SIGKILL）；ANSI 横扫与非 ANSI 逐项相同 |
+| 17:00 slot 3 | 7/7 | 391/20 · 191/13 · 0 | 68→70 | 无事可修；查同 workflow 的其他 PR run 证明是偶发 |
+| 21:00 slot 4 | 7/7 | 391/20 · 191/13 · 0 | 70→71 | 集合操作符缺陷确认为上游 #12955/#12956；报告确定性修正 |
+
+全天：**1 个新根因**（`nth_value(x,0)`，09:00 段），**1 个新方向的缺陷**（集合操作符，判定为
+`known_upstream`），**自提上游产物 0 个** —— PR #26329 在审，按"一天一个、绝不与在审 PR 并行"的
+规矩不新增；我们无法在 `apache/*` 开 issue，`nth_value` 的文本已备好交给用户。
+
+### 需要人做的三件（都不阻塞合并）
+
+1. 请 committer 重跑那个 flaky job 的一句评论：`findings/ci-rerun-request-comment.md`
+2. `nth_value(x, 0)` 的 issue 文本（`findings/nth-value-zero-index-issue.md`）
+3. PR 描述里过时的 "A unit test covering that failure" / "282 passed" 两行
+
+### Next
+
+* **明天 09:00 第一件事**：Phase 0b 看 #26329 是否被重跑或合并。合并之后，本 workflow 的下一个
+  PR 靶子是 `nth_value(x, 0)`（聚合侧的 `assert_or_internal_err!` + 窗口侧缺失的校验，两处一个 PR，
+  正是"同一根因一个 PR"的合适粒度）；
+* `map_extract` 家族等 **#25996** 合并后再定：它只把最内层换成 `plan_err!`，
+  而 `TypeSignature::UserDefined` 分支把 plan 期失败包成 `Execution error` 那一条它修不掉；
+* **目录下一块真正没扫过的地**：`information_schema.routines` 里还有 **TABLE 函数族**
+  （`generate_series`、`range`，本 slot 已确认可用），而 `df_robust.py` 的 `--function-type`
+  目前只认 SCALAR/AGGREGATE/WINDOW —— TABLE 型的调用形状不同（`SELECT * FROM f(...)`），
+  需要一小段新代码；
+* interval / DECIMAL / 嵌套类型今天人工对照过一遍，一致；再往前走应换"标准语义优先"的角度
+  （集合操作符其余变体、`MERGE` 是否已可用、`GROUPING SETS` 的更多形状）。
