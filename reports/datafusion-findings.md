@@ -1223,3 +1223,18 @@ separate partitions"，2026-09-26 开，至今 OPEN）。本轮用 slt oracle �
 
 **未发**：17:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发。本 slot 是
 "把已知上游 bug 钉进目录"，三者都不是。21:00 的日报会把今天四段合起来发。
+
+### 补记（同一 slot 的后半段）：又补两个空白，当日探针预算用满（3+2+1+2 = 8）
+
+* `is_distinct_from_three_valued`：`IS DISTINCT FROM` / `IS NOT DISTINCT FROM` 的四值组合
+  （NULL/NULL、1/NULL、1/1）。这是目录里**唯一没有覆盖的比较运算符**，而且它恰好是"结果不依赖三值逻辑"
+  的那个 —— 实现常常复用 `=`/`<>` 的代码路径，把 NULL/NULL 判成 NULL。DuckDB 逐列一致。
+* `date_bin_epoch_anchored_bins`：五列一次把 `date_bin` 的分桶规则钉全 —— 桶内向下取整、
+  **正好落在边界上不动**（防 off-by-one）、显式 origin 会把网格整体平移（`12:29:59` 归到 `11:30`
+  而不是 `12:30`）、不给 origin 时按 **1970-01-01 纪元**对齐而不是按年/按行
+  （7 天桶下 `2024-01-05` 归到 `2024-01-04`，即纪元之后第 2818 个整周）。这四条里任何一条变了都会
+  让期望值失败。DuckDB 没有 `date_bin`（它的 `time_bucket` 连 origin 语义都不同），所以这条用
+  pinned rows 当规范，并加 `known_difference` 说明"DuckDB 报函数不存在"不该被当成 DataFusion 的 bug。
+
+两条都通过；当日语义目录 **82 探针 · OK=68 · KNOWN_DIFF=12 · BOTH_ERROR=2 · 0 候选**。
+当日探针新增数达到上限 8 个，本日其余时间片不再新增探针。

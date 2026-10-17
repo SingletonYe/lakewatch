@@ -770,6 +770,36 @@
       "ordered": true,
       "why": "Signed zero is the sharpest test of what an engine means by \"equal enough to group together\": 0.0 = -0.0 is true, so a PARTITION BY that treats them as equal gives n = 2 for both rows, and one that compares bit patterns gives n = 1 for each. The probe is here because DataFusion answers the two ways in the same engine: `GROUP BY x` merges them (n = 2), the window path does not (n = 1) -- and DuckDB merges them in both.",
       "known_difference": "Known upstream, still open -- do not re-file. apache/datafusion#25766 'Window PARTITION BY puts 0.0 and -0.0 in separate partitions' (open since 2026-09-26). Measured 2026-10-17 on the pinned 55.2.0 *and* on main via the sqllogictest runner: the window path returns n = 1 for 0.0, -0.0 and 1.0 (three partitions), while `GROUP BY x` on the same values returns n = 2 for the two zeros. DuckDB groups them in both cases. The asymmetry with DataFusion's own GROUP BY is the strongest evidence that the window path is the wrong side of the inconsistency; recorded here so no slot re-triages it, and so a fix upstream is visible."
+    },
+    {
+      "id": "is_distinct_from_three_valued",
+      "category": "null_semantics",
+      "sql": "SELECT NULL IS DISTINCT FROM NULL AS a, 1 IS DISTINCT FROM NULL AS b, NULL IS NOT DISTINCT FROM NULL AS c, 1 IS DISTINCT FROM 1 AS d",
+      "expect_rows": [
+        [
+          "false",
+          "true",
+          "true",
+          "false"
+        ]
+      ],
+      "why": "`IS DISTINCT FROM` is the null-safe comparison the catalogue had no coverage for, and it is the one comparison operator whose answer never depends on three-valued logic: NULL IS DISTINCT FROM NULL is false (they are not distinct), 1 IS DISTINCT FROM NULL is true, and the NOT form inverts that. Worth pinning separately from the = / <> probes precisely because implementations often reuse the three-valued code path and get the NULL/NULL case wrong."
+    },
+    {
+      "id": "date_bin_epoch_anchored_bins",
+      "category": "datetime",
+      "sql": "SELECT date_bin(INTERVAL '15 minutes', TIMESTAMP '2024-01-01 12:37:45') AS floor_in_bin, date_bin(INTERVAL '15 minutes', TIMESTAMP '2024-01-01 12:30:00') AS on_boundary, date_bin(INTERVAL '1 hour', TIMESTAMP '2024-01-01 12:37:45', TIMESTAMP '2024-01-01 00:30:00') AS origin_0030, date_bin(INTERVAL '1 hour', TIMESTAMP '2024-01-01 12:29:59', TIMESTAMP '2024-01-01 00:30:00') AS origin_0030_before, date_bin(INTERVAL '7 days', TIMESTAMP '2024-01-05 00:00:00') AS week_from_epoch",
+      "expect_rows": [
+        [
+          "2024-01-01 12:30:00",
+          "2024-01-01 12:30:00",
+          "2024-01-01 12:30:00",
+          "2024-01-01 11:30:00",
+          "2024-01-04 00:00:00"
+        ]
+      ],
+      "why": "The five columns pin the whole bucketing rule at once, which is where `date_bin` bugs live: a value inside a bin floors to its start; a value sitting exactly on a boundary stays there (no off-by-one); an explicit origin shifts the grid (bins at :30, so 12:29:59 falls back to 11:30, not 12:30); and without an origin the bins are anchored to the 1970-01-01 epoch rather than to the row or to year boundaries -- 2024-01-05 in 7-day bins starts at 2024-01-04, which is 2818 whole weeks after the epoch. A change in any of those four behaviours shows up as a failed expectation.",
+      "known_difference": "DuckDB has no `date_bin` (it spells the operation `time_bucket`, which is also anchored differently in its origin handling), so the oracle cannot check this one; the pinned rows are the specification. Recorded so the ERROR_DIVERGENCE from DuckDB's missing function is not re-triaged as a DataFusion bug."
     }
   ]
 }
