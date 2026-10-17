@@ -1075,3 +1075,97 @@ Exists(Exists { subquery: <subquery>, negated: false })
   `does not support logical expression Exists(...)`"以及"该报错对应的 issue 已关闭、修复已进 main"。
   ANY/ALL（而不是 EXISTS）在 main 的投影里是否也已支持，留给下一轮用上面那个 CLI 一句话验证；
   在那之前不要把这条写成"已修"。
+
+## 2026-10-17 13:00 — slot 2
+
+**结论**：79 探针（+2）· 0 个待研判候选 · Tier-A 四族逐条复现（零 diff）· 健康闸门 7/7 ·
+**用 main 版 oracle 把上一轮两个悬案问清楚了** · 新增一份待发 issue 文本
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（fresh clone，build 6m52s，duckdb 1.5.6） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致 |
+| Phase 1b 语义 | **79 探针** · OK=67 · KNOWN_DIFF=10 · BOTH_ERROR=2 · **0 候选** |
+| Phase 4 | +2 探针（`SELECT * EXCLUDE`、`GROUP BY ALL` 的 NULL 组） |
+| 上游产物 | 0 个 PR（预算仍留给待点开的 `nth-value-zero-index`）；1 份 issue 文本已备好 |
+
+### Phase 0b — 仍然没有在审的 PR
+
+`gh pr list --author SingletonYe` 只有 #26329（MERGED）；`fix/nth-value-zero-index`（`dcaac3e1`）
+仍在等用户点开。今天唯一的 PR 预算继续留给它，本 slot 不另起分支。
+
+### 关键工具突破：**已建好的 slt runner 本身就是 main 版 oracle**
+
+上一轮为了判断"某个现象是不是已经被上游修好了"，去编 `datafusion-cli`，两次都因为 2 核不够而
+在 slot 内没编完。这一轮发现：**根本不需要 CLI** —— `df-fork` 里已经编好的 `sqllogictests`
+运行器就是一个 main 版 oracle：写一个临时 `.slt` 文件（期望值故意写错），运行它，
+diff 里就会打印 **main 的真实结果或真实报错**。
+
+```console
+$ ../../target/debug/deps/sqllogictests-<hash> test_files/_tmp_oracle_probe.slt
+1. query result mismatch:
+[SQL] SELECT CAST(2 > ALL (SELECT x FROM (VALUES (1),(0)) t(x)) AS VARCHAR) AS d;
+-   PLACEHOLDER_INTENTIONALLY_WRONG
++   true
+```
+
+这比读源码或翻 issue 都更硬。**建议写进流程**：以后遇到"这个现象上游修了吗"，先跑这个，几秒钟出答案；
+临时 `.slt` 用完即删（本轮已删，`df-fork` 工作区干净）。
+
+### 上一轮两个悬案，现在都有 main 上的实证
+
+1. **`= ANY` / `> ALL` 出现在投影里**：main 上**已经能用**，而且三值逻辑正确 ——
+   `2 > ALL (VALUES (1),(0))` → `true`；`1 = ANY (VALUES (NULL),(1))` → `true`（TRUE OR NULL）。
+   所以上一轮"pin 落后于 main"的结论成立，现在从"issue 状态推断"升级为"实跑确认"。
+   本仓库的 pin 是 55.2.0（2026-10-07 从 branch-55 切出的补丁版本），因此缺少 2026-09-15 进 main 的
+   #24972。**结论不变：不提 issue。**
+2. **相关性子查询 / `LATERAL` 的非等值关联**：main 上**仍然不支持**，而且报错依旧是内部 Debug 输出：
+   ```text
+   Physical plan does not support logical expression OuterReferenceColumn(Field { name: "x", data_type: Int64 }, Column { relation: Some(Bare { table: "a" }), name: "x" })
+   Physical plan does not support logical expression ScalarSubquery(<subquery>)
+   ```
+   等值关联的同一形状在 main 上是**能用**的，所以限制点是"非等值关联"而不是 `LATERAL` 本身。
+   行为缺口已由 #21201 / #5492 / #25789 追踪，**但"用户看到的是内部类型名"这件事没人提过**
+   （搜 `"Physical plan does not support logical expression"`、`"unsupported logical expression"` 均无
+   对应 issue）。源码在 `datafusion/physical-expr/src/planner.rs:541,703`（55.2.0 是 `:540,692`），
+   就是 `not_impl_err!("… {e:?}")` 里的 `{:?}` —— 上游注释自己都写明了是"没被改写成 join 的
+   相关子查询，或没被注册的非相关子查询"，完全可以换成一句 SQL 语言能懂的话。
+
+   因此备好一份 **issue 文本**：`findings/physical-plan-not-supported-message.md`（只请改善信息，
+   并明确链接既有的追踪 issue，避免被当成重复）。**是否发由用户决定。**
+
+### 另外两条被"先查上游"拦下来的
+
+* **`GROUP BY ALL` / `DISTINCT ON` 与 DuckDB 不一致**：DataFusion 把 NULL 组算作一个组（正确），
+  DuckDB 在 `SELECT g, COUNT(*) … GROUP BY ALL` 里把 NULL 组丢了。**是 DuckDB 的行为**，不是我们的问题。
+  用 `COALESCE(g,-1)` 写成探针后两个引擎一致（新探针 `group_by_all_keeps_null_group`）；
+  `why` 里特意写了这个坑，免得以后有人照搬裸 `g` 的形式并得到假候选。
+* **`SELECT * EXCLUDE (col)`** 两边一致，已作为新探针 `select_exclude_column` 固定下来。
+
+### 手工补的 Tier-A 盲区（负结果，值得记）
+
+`df_robust.py` 的 profile 是"同一个值套到所有参数位"，所以**类型正确但极端的组合**
+（第 1 位是合法字符串、第 2 位是 i64::MAX）从来不会被生成 —— 而"申请巨量内存"的那一类 bug
+恰好长这个样子。手动补测了最高危的三个，**全部干净报错，无 panic、无 OOM**：
+
+```console
+$ lakewatch sql "SELECT repeat('a', 9223372036854775807)"
+Execution error: string size overflow on repeat, max size is 2147483647, but got 9223372036854775807
+$ lakewatch sql "SELECT lpad('a', 9223372036854775807, 'b')"
+Execution error: lpad requested length 9223372036854775807 too large, maximum allowed length is 2147483647
+$ lakewatch sql "SELECT CAST(1e308 * 10 AS BIGINT)"     -- inf -> int
+Arrow error: Cast error: Can't cast value inf to type Int64
+```
+
+（`inf`/`NaN` 转整数是扫描器根本摇不到的一类：`float_max` profile 是 1e308，有限。
+两条都是干净的 Cast error，不是 panic。）
+
+**下一步建议（留给 09:00 那个 slot，不要中途改）**：给 `df_robust.py` 增加 2–3 个
+"异质极端" profile（如 `["'abc'", "9223372036854775807"]`、`["9223372036854775807", "'abc'"]`），
+让这类组合对整个多参函数族生效。它会让扫描变慢约三分之一，并且**会改变 391/20 的基线**，
+所以应当和新基线一起在同一轮里落定，而不是在 13:00 这个 slot 悄悄改掉。
+
+### 邮件
+
+**未发**：13:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发。本 slot 准备的是一份
+issue 文本（不在触发条件里），也没有新分支，所以不发；21:00 的日报会带上它。

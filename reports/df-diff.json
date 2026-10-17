@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 65,
+    "OK": 67,
     "KNOWN_DIFF": 10,
     "BOTH_ERROR": 2
   },
@@ -973,6 +973,26 @@
       "sql": "SELECT date_part('week', DATE '2024-01-01') AS w1, date_part('week', DATE '2023-01-01') AS w2",
       "why": "ISO-8601 week numbering has a trap: 2024-01-01 is week 1, but 2023-01-01 belongs to week 52 of 2022 (2023 started on a Sunday, so its first ISO week begins on 2023-01-02). An implementation that does US-style week numbering, or that simply divides the day-of-year by 7, returns 1 for the second column. Both engines return the ISO answer; the pinned rows make a regression visible without an oracle.",
       "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "select_exclude_column",
+      "category": "sql_surface",
+      "sql": "SELECT * EXCLUDE (v_text) FROM probe_values ORDER BY id LIMIT 3",
+      "why": "`SELECT * EXCLUDE (col)` is a recent SQL surface that nothing in the catalogue covered. The dropped column must be gone and the remaining columns must stay in table order; a projection bug here would swap or repeat columns, which the pinned rows show up immediately. DuckDB agrees.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "group_by_all_keeps_null_group",
+      "category": "grouping_sets",
+      "sql": "SELECT COALESCE(g, -1) AS g_key, COUNT(*) AS c FROM probe_values GROUP BY ALL ORDER BY g_key",
+      "why": "`GROUP BY ALL` must group by every non-aggregated projection expression -- here the COALESCE, not the bare `g` -- and the NULL group has to survive as its own group (2 rows in probe_values), because NULL is a group key like any other. Pinning both facts at once. Caution for future slots: write the plain `SELECT g, COUNT(*) ... GROUP BY ALL` form instead and the probe diverges, because DuckDB drops the NULL group there; keep the COALESCE so the two engines stay comparable.",
+      "ordered": true,
       "session_options": [],
       "status": "OK",
       "details": []
