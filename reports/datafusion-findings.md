@@ -847,3 +847,79 @@ bug：`canon()` 对所有日期类值都调用 `value.isoformat(sep=" ")`，但�
 
 这个 slot **没有发邮件**（09:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发，
 本轮三者都不是；发现的 bug 已进入仓库记录，交给 21:00 的日报汇总）。
+
+## 2026-10-17 01:30 — manual run (full slot)
+
+**结论**：**PR #26329 已合并 —— 本 workflow 的第一个上游合并** · 昨天被中断的那一段已补推 ·
+`nth_value(x, 0)` 的修复已在本地实现并提交（验证状态见下，诚实记录）· 基线逐条复现 · 0 候选
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0b | **#26329 `MERGED`**（2026-10-16 14:29:53Z，40 项检查全绿）→ "在审 PR 期间不开新 PR"的约束解除 |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致，重跑后 `reports/df-robust*.json` **零 diff** |
+| Phase 1b 语义 | 74 探针 · OK=62 · KNOWN_DIFF=10 · BOTH_ERROR=2 · **0 候选** |
+| Phase 5 健康闸门 | **未完成**（原因见"环境"一节；不做成绿色就不声称是绿色） |
+| 上游产物 | 修复分支已提交（`ee2c708`），本 run 未推送 —— 见下 |
+
+### Phase 0b — #26329 合并了
+
+`state=MERGED`，`mergedAt=2026-10-16T14:29:53Z`（10-16 10:29 EDT），合并后检查为
+**40 SUCCESS / 3 SKIPPED、0 FAILURE**：那个一直红的 `wasm-pack` 不再是失败项（committer 重跑或
+merge queue 重建后通过）。批准之后没有新的维护者评论，我们的分支头也没有被改动。
+
+这是这个 workflow 提交的第一个被上游合并的修复（`fix: report OneOf signature mismatches as
+planning errors`），从 10-14 22:19 手动开 PR 到 10-16 10:29 合并，约 36 小时。三件"死于没人回应"
+的风险都没有发生：reviewer 唯一的要求（把单测改成 slt）当天就改了，CI 那一个红项我们正确地
+判定为环境故障而没有乱推。
+
+**后续影响**：一天一个 PR、且不得与在审 PR 并行的约束不再阻塞；本 run 因此着手准备下一个产物。
+
+### Phase 3 — 第二个上游产物：`nth_value(x, 0)`（已实现、已提交，未推送）
+
+上一轮备好的 issue 文本仍在 `findings/nth-value-zero-index-issue.md`。这一轮不再只准备文本，
+而是把修复做出来了，落在 `SingletonYe/datafusion` 的分支 `fix/nth-value-zero-index`（提交
+`ee2c708`），改动四文件 36 行：
+
+* `datafusion/functions-aggregate/src/nth_value.rs`：在 `NthValue::accumulator()` 里——
+即索引从字面量读出来、两个累加器分叉之前——统一拒绝 `n == 0`，并删掉两处
+`assert_or_internal_err!`（它们是这两个 `try_new` 的唯一调用方）；
+* `datafusion/functions-window/src/nth_value.rs`：扩展已有的 `validate_nth_value_n`
+（它本来就在 `partition_evaluator` 里被调用，并且已经在挡 `i64::MIN`），补上同一个 0 检查；
+* `window.slt` / `aggregate.slt`：各一条断言新错误文本的用例（`window.slt` 那条紧挨着 NTILE 的
+负参数测试——那是同一类错误的既有先例）。
+
+两个调用点用**同一句**错误文本，因为它们本来是同一件事：`nth_value index must not be 0;
+indices are 1-based and negative values count from the end`。按本仓库 reviewer 在上一个 PR 里的
+明确偏好（"please adapt this test to .slt"），覆盖写成 slt 而不是单测。
+
+顺带查实了一件不再算 bug 的事：窗口侧**已经**有 `validate_nth_value_n` 在挡 `i64::MIN`（55.2.0
+就有），而**聚合侧**的 `-*value` 没有这道保护；但我从 SQL 无法触达 `is_reversed == true` 的路径
+（三种写法都返回 NULL 而不是 panic），所以没有把它塞进这个 PR，只在 PR 正文里作为已知不对称
+写清楚。这也正是"只在 main 上验证过的现象"与"读 main 源码"必须同时做的例子：一开始以为是
+窗口侧完全没校验，读了 main 才发现它只是漏了 0 这一种。
+
+**验证状态**：`cargo fmt --all --check` 干净；补丁已存为 `findings/nth-value-zero-index-fix.patch`。
+`cargo test -p datafusion-sqllogictest --test sqllogictests` 的**运行没能在本 run 内完成**
+（原因见下），所以**这一轮没有推送分支**——按规矩，未经验证的改动不作为待点开的 PR 交出去。
+补丁、PR 正文（`findings/nth-value-zero-index-pr-body.md`）都已在仓库里，下一个 slot 只要
+跑一次 slt 就能决定推还是弃。
+
+### 环境 —— 2 核 + 交换：两个 Rust 构建互相饿死
+
+这个沙箱 `nproc=2`、内存 3.9 GB。本 run 同时跑了两件重活：DataFusion workspace 的
+`slt` 运行器构建（依赖树巨大）和 lakewatch 的 `cargo build`/`clippy`。结果两边都卡住
+（`kswapd` 忙、`rustc` 只占 0.5% CPU），健康闸门两次被牺牲掉，slt 的最终链接在 13 分钟里几乎
+没有推进。**教训**：重活必须串行——先跑闸门与扫描（几分钟），再动 DataFusion 的构建；
+未来要为"验证一个上游修复"单独留出时间的 slot，或者干脆让 CI 去跑 slt，本地只保证
+`cargo fmt` + `cargo check -p <crate>`。
+
+另外两次踩到同一个坑：`pkill -f "cargo build"` / `pgrep -f "bash scripts/daily_check.sh"`
+**匹配到了我自己所在的 shell**（自己的命令行里就含这串字符），把自己 kill 掉。10-14 的
+`pgrep -f "cargo build"` 等待循环已经记过这一课，这次补一条操作规则：一律用 PID 或
+`[c]argo` 这样的括号技巧，不要用会匹配自身命令行的模式。
+
+### 邮件
+
+手动触发按"整段时间片"处理，但 21:00 才是日报；本 run 的邮件按下表判断：只有"提了上游产物 /
+准备了待点开的分支 / 运行失败"才发。本 run 三者都不是（PR #26329 的合并是上游动作，不是我们
+这一轮提交的产物；分支未推送），所以**不发邮件**。

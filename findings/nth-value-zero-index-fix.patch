@@ -1,0 +1,137 @@
+From ee2c70871c4dc8adfab7c0d5dfcbbf3c8196d473 Mon Sep 17 00:00:00 2001
+From: Singleton <135771543+SingletonYe@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 01:55:23 -0400
+Subject: [PATCH] fix: reject 0 as an index in nth_value
+
+The index is 1-based and negative values count back from the end, so 0 is never
+valid, but the two ways of calling nth_value disagreed:
+
+* the aggregate form tripped assert_or_internal_err!, so an ordinary typo was
+  reported as an internal error asking the user to file a bug report;
+* the window form was not validated at all -- NthValueEvaluator matches n.cmp(&0)
+  with an explicit Ordering::Equal arm, so a zero index meant 'never a result' and
+  every row came out NULL with no error.
+
+Both now report the same user-facing error, matching how NTILE rejects a
+non-positive argument.
+---
+ .../functions-aggregate/src/nth_value.rs      | 24 +++++++++----------
+ datafusion/functions-window/src/nth_value.rs  |  9 +++++++
+ .../sqllogictest/test_files/aggregate.slt     | 11 +++++++++
+ datafusion/sqllogictest/test_files/window.slt |  5 ++++
+ 4 files changed, 36 insertions(+), 13 deletions(-)
+
+diff --git a/datafusion/functions-aggregate/src/nth_value.rs b/datafusion/functions-aggregate/src/nth_value.rs
+index e3ed110..dbe9857 100644
+--- a/datafusion/functions-aggregate/src/nth_value.rs
++++ b/datafusion/functions-aggregate/src/nth_value.rs
+@@ -27,9 +27,7 @@ use arrow::array::{ArrayRef, AsArray, StructArray, new_empty_array};
+ use arrow::datatypes::{DataType, Field, FieldRef, Fields};
+ 
+ use datafusion_common::utils::{SingleRowListArrayBuilder, get_row_at_idx};
+-use datafusion_common::{
+-    Result, ScalarValue, assert_or_internal_err, exec_err, not_impl_err,
+-};
++use datafusion_common::{Result, ScalarValue, exec_err, not_impl_err};
+ use datafusion_expr::DistinctHandling;
+ use datafusion_expr::function::{AccumulatorArgs, StateFieldsArgs};
+ use datafusion_expr::utils::format_state_name;
+@@ -148,6 +146,16 @@ impl AggregateUDFImpl for NthValueAgg {
+             }
+         };
+ 
++        // The index is 1-based and negative values count back from the end, so 0 is
++        // never a valid index. Report that as a user error rather than letting the
++        // accumulators trip an internal assertion, which told the user to file a bug
++        // report for their own typo.
++        if n == 0 {
++            return exec_err!(
++                "nth_value index must not be 0; indices are 1-based and negative values count from the end"
++            );
++        }
++
+         let Some(ordering) = LexOrdering::new(acc_args.order_bys.to_vec()) else {
+             return TrivialNthValueAccumulator::try_new(
+                 n,
+@@ -213,11 +221,6 @@ impl TrivialNthValueAccumulator {
+     /// Create a new order-insensitive NTH_VALUE accumulator based on the given
+     /// item data type.
+     pub fn try_new(n: i64, datatype: &DataType) -> Result<Self> {
+-        // n cannot be 0
+-        assert_or_internal_err!(
+-            n != 0,
+-            "Nth value indices are 1 based. 0 is invalid index"
+-        );
+         Ok(Self {
+             n,
+             values: VecDeque::new(),
+@@ -344,11 +347,6 @@ impl NthValueAccumulator {
+         ordering_dtypes: &[DataType],
+         ordering_req: LexOrdering,
+     ) -> Result<Self> {
+-        // n cannot be 0
+-        assert_or_internal_err!(
+-            n != 0,
+-            "Nth value indices are 1 based. 0 is invalid index"
+-        );
+         let mut datatypes = vec![datatype.clone()];
+         datatypes.extend(ordering_dtypes.iter().cloned());
+         Ok(Self {
+diff --git a/datafusion/functions-window/src/nth_value.rs b/datafusion/functions-window/src/nth_value.rs
+index b3678e8..7c7d21b 100644
+--- a/datafusion/functions-window/src/nth_value.rs
++++ b/datafusion/functions-window/src/nth_value.rs
+@@ -126,6 +126,15 @@ fn validate_nth_value_n(n: i64) -> Result<i64> {
+         return exec_err!("The second argument of nth_value must not be i64::MIN");
+     }
+ 
++    // The index is 1-based and negative values count back from the end, so 0 is never
++    // a valid index. Without this the evaluator treats 0 as "never a result" and every
++    // row comes out NULL, while the aggregate form of the same call errored.
++    if n == 0 {
++        return exec_err!(
++            "nth_value index must not be 0; indices are 1-based and negative values count from the end"
++        );
++    }
++
+     Ok(n)
+ }
+ 
+diff --git a/datafusion/sqllogictest/test_files/aggregate.slt b/datafusion/sqllogictest/test_files/aggregate.slt
+index 0665b63..9119b60 100644
+--- a/datafusion/sqllogictest/test_files/aggregate.slt
++++ b/datafusion/sqllogictest/test_files/aggregate.slt
+@@ -10327,3 +10327,14 @@ DROP TABLE a;
+ 
+ statement ok
+ DROP TABLE b;
++
++# nth_value indices are 1-based, so 0 must be reported as an error rather than
++# tripping an internal assertion that asks the user to file a bug report.
++statement ok
++CREATE TABLE nth_value_zero_index (a int) AS VALUES (1), (2);
++
++query error DataFusion error: Execution error: nth_value index must not be 0; indices are 1-based and negative values count from the end
++SELECT nth_value(a, 0) FROM nth_value_zero_index;
++
++statement ok
++DROP TABLE nth_value_zero_index;
+diff --git a/datafusion/sqllogictest/test_files/window.slt b/datafusion/sqllogictest/test_files/window.slt
+index 254fdf2..bb08fbd 100644
+--- a/datafusion/sqllogictest/test_files/window.slt
++++ b/datafusion/sqllogictest/test_files/window.slt
+@@ -3732,6 +3732,11 @@ SELECT NTILE(9223372036854775809) OVER(ORDER BY a) FROM t1;
+ query error DataFusion error: Execution error: NTILE requires a positive integer
+ SELECT NTILE(-922337203685477580) OVER(ORDER BY a) FROM t1;
+ 
++# nth_value indices are 1-based, so 0 must be reported as an error. It used to be
++# accepted and returned NULL for every row.
++query error DataFusion error: Execution error: nth_value index must not be 0; indices are 1-based and negative values count from the end
++SELECT nth_value(a, 0) OVER (ORDER BY a) FROM t1;
++
+ query error DataFusion error: Execution error: Table 't' doesn't exist\.
+ DROP TABLE t;
+ 
+-- 
+2.43.0
+
