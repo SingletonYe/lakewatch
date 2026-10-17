@@ -587,6 +587,74 @@
       "ordered": true,
       "why": "The ALL variants of INTERSECT/EXCEPT are multiset operators with standard-fixed answers: with T1={1,1,1,2} (m copies) and T2={1,1,3} (n copies), INTERSECT ALL must emit min(m,n) copies of each row -- 1,1 -- and EXCEPT ALL must emit max(m-n,0) -- 1,2. One probe covers both operators because the same input pair drives both, and the `op` column keeps the two answers distinguishable.",
       "known_difference": "Known upstream, already open -- not a new bug. DataFusion's ALL set operators do not implement multiset semantics. Measured 2026-10-15 on 55.2.0 (1 and 4 partitions identical, so it is not a planning artifact): INTERSECT ALL returns 1,1,1 (all three LHS copies) where the standard and DuckDB give 1,1; EXCEPT ALL returns only 2 where the standard and DuckDB give 1,2, i.e. it removes every LHS copy of a row that appears at all on the RHS. Filed upstream as apache/datafusion#12955 'INTERSECT ALL returns wrong number of records from RHS' and #12956 'EXCEPT ALL returns the wrong number of records' (both open since 2024-10-15, both quoting the same SQL-92 paragraph). Recorded here so no slot re-files it as new; revisit when either issue is fixed, and flip this probe to a pinned `expect_rows` at that point."
+    },
+    {
+      "id": "table_function_int_series",
+      "category": "table_functions",
+      "sql": "SELECT 'gs' AS src, value AS v FROM generate_series(1,5) AS g(value) UNION ALL SELECT 'range' AS src, value AS v FROM range(5,-1,-2) AS r(value) ORDER BY src, v",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "gs",
+          "1"
+        ],
+        [
+          "gs",
+          "2"
+        ],
+        [
+          "gs",
+          "3"
+        ],
+        [
+          "gs",
+          "4"
+        ],
+        [
+          "gs",
+          "5"
+        ],
+        [
+          "range",
+          "1"
+        ],
+        [
+          "range",
+          "3"
+        ],
+        [
+          "range",
+          "5"
+        ]
+      ],
+      "why": "First coverage of the TABLE function family: `information_schema.routines` lists exactly two functions with function_type='TABLE' (`generate_series`, `range`) and nothing -- neither a probe nor `df_robust.py --function-type` -- had ever exercised them. Covers both functions, ascending and descending steps in one query. `range` is end-exclusive, so `range(5,-1,-2)` must stop before -1 and yield 5,3,1 (a difference in end-exclusivity or step direction is visible in the pinned rows)."
+    },
+    {
+      "id": "table_function_step_near_i64_max",
+      "category": "table_functions",
+      "sql": "SELECT COUNT(*) AS c, MIN(v) AS lo, MAX(v) AS hi FROM generate_series(1, 9223372036854775806, 9223372036854775805) AS g(v)",
+      "expect_rows": [
+        [
+          "2",
+          "1",
+          "9223372036854775806"
+        ]
+      ],
+      "why": "The series generator has to advance with a checked add: the naive `current + step` overflows i64 here (1 + i64::MAX-ish), and an overflow in a `next` computation is a PANIC-class regression, not a wrong answer. The correct series is [1, 9223372036854775806], i.e. exactly two rows, so the probe is bounded and safe to run every slot. Verified 2026-10-16 on 55.2.0: no panic, no wrap."
+    },
+    {
+      "id": "table_function_date_series",
+      "category": "table_functions",
+      "sql": "SELECT COUNT(*) AS c, MIN(CAST(v AS DATE)) AS lo, MAX(CAST(v AS DATE)) AS hi FROM generate_series(DATE '2024-01-01', DATE '2024-01-03', INTERVAL '1' DAY) AS g(v)",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "3",
+          "2024-01-01",
+          "2024-01-03"
+        ]
+      ],
+      "why": "The third argument of `generate_series` is an interval when the bounds are DATE/TIMESTAMP, a different code path from the integer form; the endpoints are asserted as DATEs so the pinned answer is free of timestamp-rendering differences between the engines. Three days inclusive must give three rows."
     }
   ]
 }

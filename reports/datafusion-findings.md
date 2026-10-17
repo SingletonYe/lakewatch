@@ -752,3 +752,98 @@ harness 修正：`df_robust.py` 写出的 JSON **每次运行都会重排**，�
   需要一小段新代码；
 * interval / DECIMAL / 嵌套类型今天人工对照过一遍，一致；再往前走应换"标准语义优先"的角度
   （集合操作符其余变体、`MERGE` 是否已可用、`GROUPING SETS` 的更多形状）。
+
+## 2026-10-16 09:00 — slot 1 (first slot of the day)
+
+**结论**：74 探针（+3，TABLE 函数族首次覆盖）· 0 个待研判候选 · **1 个新的 INTERNAL 类 bug（递归 CTE）**
+· 1 处 harness 修正
+
+> **记录说明**：这个 slot 在写记录之前被中断，所以本节由下一个时间片（10-17 01:30 手动运行）
+> 根据工作区里留下的、已验证的产物补写；该运行同时完成了 Phase 5 的提交与推送。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | 7/7 PASS（fresh clone，build 6m05s，duckdb 1.5.6） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致，且重跑后 `reports/df-robust*.json` **零 diff**（上一轮刚修好的确定性在此生效） |
+| Phase 1b 语义 | 74 探针 · OK=62 · KNOWN_DIFF=10 · BOTH_ERROR=2 · **0 候选** |
+| Phase 2/3 | 新 bug：递归 CTE 在标量子查询里自引用 → internal error（见下） |
+| Phase 4 | +3 探针（`generate_series` / `range`，即 `function_type='TABLE'` 的整个函数族） |
+
+### Phase 0b — #26329 依旧无事可做
+
+`OPEN` · head `268933e` · `APPROVED` · `MERGEABLE` · 42 项检查 38 SUCCESS / 3 SKIPPED / 1 FAILURE，
+唯一红的还是那个 `wasm-pack`（同一个 run 38738221541），无新人类评论。`updatedAt` 在凌晨被
+GitHub 刷新了一次（`main` 前进导致的重算），不是有人动过。按规矩不催、不重推。
+
+### Phase 3 — 新发现：递归 CTE 在标量子查询中自引用 → `Internal error: Unexpected empty work table.`
+
+给目录开"递归 CTE"这块新地时，一次人工对照（DataFusion vs DuckDB）撞出真问题：
+
+```sql
+WITH RECURSIVE t(n) AS (
+    SELECT 1
+    UNION ALL
+    SELECT n + 1 FROM t WHERE n < 3 AND n < (SELECT MAX(n) FROM t)
+)
+SELECT n FROM t ORDER BY n;
+```
+
+```console
+$ lakewatch sql "…"
+lakewatch: Internal error: Unexpected empty work table.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by
+filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+```
+
+关键在于**同一个错误的其它写法都得到了干净的报错**：把第二次自引用放进 `JOIN`、`EXISTS` 或
+`IN` 时，DataFusion 会说 `This feature is not implemented: Multiple recursive references to the
+same CTE are not supported` —— 而且这正是它自己的测试文件所断言的行为
+（`datafusion/sqllogictest/test_files/cte.slt:892`）。所以缺陷不是"这个形状不支持"，而是
+**一类形状绕过了那道检查**，最后在 work table 里以"内部不变量被破坏"的形式炸掉。
+
+定位（读的是 `main` 上今天的源码，不是只读 55.2.0 的现象）：
+
+* `assign_work_table`（`datafusion/physical-plan/src/recursive_query.rs:390-412`，由 `:98` 调用）
+  用 `transform_down` **只遍历递归项子树**来数 work-table 引用，而标量子查询的计划是递归项的
+  *兄弟*（`EXPLAIN` 里看得很清楚：`RecursiveQueryExec` 一个孩子是递归项，另一个
+  `AggregateExec → WorkTableExec` 是子查询），所以计数器停在 1，那句 `not_impl_err!` 永远不触发。
+* 真正抛错的是 `WorkTable::take`（`datafusion/physical-plan/src/work_table.rs:77-83`），
+  它把"work table 里没有批次"当成内部不变量被破坏。
+
+**不重复**：`gh search issues/prs` 试了 `"Unexpected empty work table"`、`"multiple recursive"`、
+`"recursive references"`、`"recursive subquery"`、`"work table"`，没有任何对应报告；最近的开着
+的相邻工作是 #25893（递归项类型被静默转换）、#26054/#26056（MIN/MAX 动态过滤未重置）、#19427
+（两个递归 CTE 的 join 不终止）、#26238（物化 CTE 计划节点），都不是这一条。详见
+`findings/recursive-cte-subquery-internal-error.md`（含修复方向）与可一键粘贴的 issue 文本
+`findings/recursive-cte-subquery-internal-error-issue.md`。**这是我们无法在 `apache/*` 开 issue
+的，需要用户代发。**
+
+### Phase 4 — 目录增长：TABLE 函数族（3 个探针）
+
+`information_schema.routines` 里有 4 类函数，`df_robust.py --function-type` 只认 SCALAR/AGGREGATE/
+WINDOW，而 `function_type='TABLE'` 的 `generate_series` 与 `range` **从未被任何扫描或探针碰过**：
+
+* `table_function_int_series` —— 两个函数、升序与降序步长一次覆盖（`range` 是右开区间，
+  `range(5,-1,-2)` 必须是 5,3,1）；
+* `table_function_step_near_i64_max` —— 步长贴着 i64::MAX：朴素的 `current + step` 会溢出，
+  而这里的溢出是 PANIC 级回归；正确结果是恰好两行 `[1, 9223372036854775806]`，输出有界所以每轮都能跑；
+* `table_function_date_series` —— DATE 边界 + INTERVAL 步长（与整数形式是两条代码路径），端点用
+  DATE 断言，避免时间戳渲染差异。
+
+顺手确认了两个"不是 bug"：`range(1,10,0)` / `generate_series(1,10,0)` 报
+`Error during planning: Step cannot be zero`（干净报错，DuckDB 同样拒绝）；步长取 `i64::MIN`
+也不 panic。注意前者**不能**进扫描目录 —— 一旦这个检查被删掉，不会干净失败而是死循环，所以
+本轮刻意没有为它写探针。
+
+### harness 修正：`canon()` 在裸 DATE 上抛异常
+
+新探针 `table_function_date_series` 第一次跑出 `ERROR_DIVERGENCE`，读细节发现是 harness 自己的
+bug：`canon()` 对所有日期类值都调用 `value.isoformat(sep=" ")`，但只有 `datetime.isoformat`
+接受 `sep`，**裸 `date` 会抛 `date.isoformat() takes no keyword arguments`**，于是任何返回 DATE 的
+探针在 DuckDB 一侧都会变成假候选。现在按类型分别处理。这类"oracle 同时审计工具自己"的记录，
+与之前的 `render.rs` 时间戳 panic、`canon()` DECIMAL 拼写、`df_robust.py` 报告重排是同一类问题。
+
+### 邮件
+
+这个 slot **没有发邮件**（09:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发，
+本轮三者都不是；发现的 bug 已进入仓库记录，交给 21:00 的日报汇总）。

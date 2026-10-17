@@ -74,8 +74,13 @@ def canon(value) -> str:
         if value != value:
             return "NaN"
         return format_number(float(value))
-    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+    if isinstance(value, datetime.datetime):
+        # only `datetime.isoformat` takes `sep`; passing it for a bare `date`
+        # raised `date.isoformat() takes no keyword arguments` and turned every
+        # DATE-valued probe into a false ERROR_DIVERGENCE candidate.
         return normalise_datetime(value.isoformat(sep=" "))
+    if isinstance(value, (datetime.date, datetime.time)):
+        return normalise_datetime(value.isoformat())
     if isinstance(value, (bytes, bytearray)):
         return value.hex()
     if isinstance(value, (list, tuple)):

@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 59,
+    "OK": 62,
     "KNOWN_DIFF": 10,
     "BOTH_ERROR": 2
   },
@@ -916,6 +916,36 @@
         "documented divergence: datafusion [4 row(s)] except_all,2 | intersect_all,1 | intersect_all,1 | intersect_all,1 vs duckdb [4 row(s)] except_all,1 | except_all,2 | intersect_all,1 | intersect_all,1"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "table_function_int_series",
+      "category": "table_functions",
+      "sql": "SELECT 'gs' AS src, value AS v FROM generate_series(1,5) AS g(value) UNION ALL SELECT 'range' AS src, value AS v FROM range(5,-1,-2) AS r(value) ORDER BY src, v",
+      "why": "First coverage of the TABLE function family: `information_schema.routines` lists exactly two functions with function_type='TABLE' (`generate_series`, `range`) and nothing -- neither a probe nor `df_robust.py --function-type` -- had ever exercised them. Covers both functions, ascending and descending steps in one query. `range` is end-exclusive, so `range(5,-1,-2)` must stop before -1 and yield 5,3,1 (a difference in end-exclusivity or step direction is visible in the pinned rows).",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "table_function_step_near_i64_max",
+      "category": "table_functions",
+      "sql": "SELECT COUNT(*) AS c, MIN(v) AS lo, MAX(v) AS hi FROM generate_series(1, 9223372036854775806, 9223372036854775805) AS g(v)",
+      "why": "The series generator has to advance with a checked add: the naive `current + step` overflows i64 here (1 + i64::MAX-ish), and an overflow in a `next` computation is a PANIC-class regression, not a wrong answer. The correct series is [1, 9223372036854775806], i.e. exactly two rows, so the probe is bounded and safe to run every slot. Verified 2026-10-16 on 55.2.0: no panic, no wrap.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "table_function_date_series",
+      "category": "table_functions",
+      "sql": "SELECT COUNT(*) AS c, MIN(CAST(v AS DATE)) AS lo, MAX(CAST(v AS DATE)) AS hi FROM generate_series(DATE '2024-01-01', DATE '2024-01-03', INTERVAL '1' DAY) AS g(v)",
+      "why": "The third argument of `generate_series` is an interval when the bounds are DATE/TIMESTAMP, a different code path from the integer form; the endpoints are asserted as DATEs so the pinned answer is free of timestamp-rendering differences between the engines. Three days inclusive must give three rows.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
     }
   ]
 }
