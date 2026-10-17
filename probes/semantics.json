@@ -655,6 +655,54 @@
         ]
       ],
       "why": "The third argument of `generate_series` is an interval when the bounds are DATE/TIMESTAMP, a different code path from the integer form; the endpoints are asserted as DATEs so the pinned answer is free of timestamp-rendering differences between the engines. Three days inclusive must give three rows."
+    },
+    {
+      "id": "nth_value_zero_index_window_returns_null",
+      "category": "window",
+      "sql": "SELECT i, nth_value(x, 0) OVER (ORDER BY i) AS n FROM (VALUES (1, 1), (2, 2), (3, 3)) t(i, x) ORDER BY i",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "1",
+          "NULL"
+        ],
+        [
+          "2",
+          "NULL"
+        ],
+        [
+          "3",
+          "NULL"
+        ]
+      ],
+      "why": "Pins the window form's answer for a zero index, which is NULL for every row in *both* engines. It matters because the aggregate form of the same call is a different story: `nth_value(x, 0)` without OVER rejects 0, and until 2026-10-17 it rejected it with an internal error asking the user to file a bug report. That asymmetry is deliberate on the window side -- upstream asserts it in window.slt under the heading 'test handle NULL and 0 value of nth_value' (NULL, an expression evaluating to NULL, and 0 all give NULL) -- so this probe records the intended behaviour rather than inviting a later slot to 'fix' it. Changing it would be a behaviour change, not a bug fix.",
+      "known_difference": "Not a divergence: DuckDB also returns NULL for a zero index in the window form, so the probe compares equal. Recorded in `why` for the aggregate/window asymmetry only."
+    },
+    {
+      "id": "split_part_index_semantics",
+      "category": "strings",
+      "sql": "SELECT split_part('a,b,c', ',', 1) AS a, split_part('a,b,c', ',', 2) AS b, split_part('a,b,c', ',', -1) AS c, split_part('a,b,c', ',', 4) AS d",
+      "expect_rows": [
+        [
+          "a",
+          "b",
+          "c",
+          ""
+        ]
+      ],
+      "why": "The field index is 1-based, negative counts back from the end (-1 -> 'c'), and an index past the last field yields the empty string (4 -> ''). Nothing in the catalogue covered string splitting, and index handling is where string functions usually go wrong. Both engines agree on all four columns. Index 0 is deliberately not in this probe: DataFusion rejects it with 'Execution error: field position must not be zero' while DuckDB returns '', a dialect difference that would only produce a false candidate."
+    },
+    {
+      "id": "iso_week_numbering",
+      "category": "datetime",
+      "sql": "SELECT date_part('week', DATE '2024-01-01') AS w1, date_part('week', DATE '2023-01-01') AS w2",
+      "expect_rows": [
+        [
+          "1",
+          "52"
+        ]
+      ],
+      "why": "ISO-8601 week numbering has a trap: 2024-01-01 is week 1, but 2023-01-01 belongs to week 52 of 2022 (2023 started on a Sunday, so its first ISO week begins on 2023-01-02). An implementation that does US-style week numbering, or that simply divides the day-of-year by 7, returns 1 for the second column. Both engines return the ISO answer; the pinned rows make a regression visible without an oracle."
     }
   ]
 }

@@ -970,3 +970,93 @@ https://github.com/apache/datafusion/compare/main...SingletonYe:fix/nth-value-ze
 ### 邮件
 
 本 run 属于"准备了一个待点开的分支"，按规矩发一封 intraday 提醒，compare URL 放在正文最显眼处。
+
+## 2026-10-17 09:00 — slot 1 (first slot of the day)
+
+**结论**：77 探针（+3）· 0 个待研判候选 · Tier-A 四族逐条复现（报告文件 **git 零 diff**）·
+健康闸门 **7/7 PASS** · 本 slot 无新上游产物（PR 预算被待开的 `nth_value` 分支占着，见下）
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（fresh clone，build 6m10s，duckdb 1.5.6） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致 |
+| Phase 1b 语义 | **77 探针** · OK=65 · KNOWN_DIFF=10 · BOTH_ERROR=2 · **0 候选** |
+| Phase 4 | +3 探针（窗口 `nth_value` 的 0 索引、`split_part` 索引语义、ISO-8601 周编号） |
+| Phase 0b | 无在审 PR；上一轮的分支仍待用户点开 |
+
+### Phase 0b — 没有在审的 PR，但有一件事在等用户
+
+`gh pr list --author SingletonYe` 只有 #26329（MERGED）。上一轮准备好的
+`fix/nth-value-zero-index`（`dcaac3e1`）**还没开成 PR**，只差用户点一下（compare URL 已在上轮邮件里）。
+因此本 slot **不动用今天唯一的 PR 预算**：一天一个，而且不与自己待开的分支抢跑道 —— 若今天再准备
+第二个分支，用户点两下就是两个我们自己的 PR 在飞，而"无人维护的 PR 比没有 PR 更糟"正是 #21032 的死法。
+递归 CTE 那个修复继续排队。
+
+### 本 slot 最有价值的产出：把 `nth_value` 的"不对称"钉进目录
+
+三个新探针里最重要的是 `nth_value_zero_index_window_returns_null`：窗口形式对 0 索引**两个引擎都返回
+NULL**，而聚合形式会报错。这个不对称是**上游有意为之**（`window.slt` 那段
+"test handle NULL and 0 value of nth_value"），现在它连同解释一起进了目录，免得未来某个 slot 把它
+当 bug"修掉"—— 那正是今天凌晨差点发生的事。另两个补的是真空白：字符串切分的索引语义
+（1/2/-1/越界，0 被刻意排除，因为那是 DataFusion 干净报错而 DuckDB 返回 `''` 的方言差异），
+以及 ISO-8601 周编号（`date_part('week', DATE '2023-01-01') = 52` —— 2023-01-01 是周日，
+属于 2022 年第 52 周；美国式编号或"年内天数/7"会给出 1）。
+
+### Tier-A：我们的修复在扫描报告里是可测量的
+
+聚合扫描的 191 条 findings 里有 6 条属于 `nth_value`，其中一条正是：
+
+```text
+INTERNAL | SELECT nth_value(0, 0) | This issue was likely caused by a bug in DataFusion's code …
+```
+
+`zero` profile 恰好把这个根因摇出来了。等 pinned 版本包含我们的修复，这条会变成干净错误
+（CLEAN_ERROR 不上报）→ 聚合族的 INTERNAL 计数下降，这就是**可测量的验收标准**
+（与 #26329 用"391 → 39"验收同一套路）。
+
+### 研判：`= ANY` / `> ALL` 在投影里报错 —— 版本落后，不是可提的 bug
+
+给"集合比较子查询"开新地时撞到：在 **SELECT 列表**里写 `= ANY (SELECT …)` / `> ALL (SELECT …)`，
+甚至相关的 `EXISTS (…)`，在 pinned 的 55.2.0 上都是
+
+```text
+This feature is not implemented: Physical plan does not support logical expression
+Exists(Exists { subquery: <subquery>, negated: false })
+```
+
+但**先查上游再下结论**救了这一条：`gh search issues "does not support logical expression"` 直接命中
+**#23022**（同一条错误信息），它已于 **2026-09-15 被以 `completed` 关闭**，由
+**#24972 "Support predicate subqueries in projections"**（2026-09-15 合并）与 #23039 完成；main 的
+`subquery_projection.slt:47` 现在正断言 `EXISTS (…)` 出现在投影里能正常工作。也就是说
+**我们的 pinned 55.2.0 缺少这个修复**（它是从 branch-55 切出来的补丁版本），这是 pin 落后的
+`known_upstream`，**不该提 issue**。
+
+顺带记两条给以后用：
+
+* 同一个形状在 **WHERE** 里则走 mark join 路线能跑（main 的 `null_aware_mark_join.slt:290` 明确写着
+  "In a filter the paper's `= ANY` form works today"），所以"能不能用"取决于子查询出现在哪一层 ——
+  写探针时必须固定层级，否则结论会随位置漂移。
+* 这轮也确认了 **pin 的代价**：`Cargo.toml` 固定 55.2.0 意味着凡是 2026-09-15 之后进入 main 的
+  subquery/projection 能力，我们的目录一概测不到。要跟进的话得单独排一次"升级 pin + 重建基线"
+  的 slot（会改变 391/20 的基线，不能顺手做）。
+
+### harness 保真度：±inf / NaN 在输出里被压成 NULL
+
+顺带发现（**未修**，只记录）：`src/render.rs:179/182` 用
+`serde_json::Number::from_f64(v).map_or(Value::Null, Value::Number)`，于是
+`SELECT ln(0.0)` 在 `-f json` 下是 `null`、在 `-f csv` 下是空字段（arrow 的 CSV 写入器对非有限浮点数
+就是空），而 `-f table` 才显示 `-inf`。影响：任何产生 ±inf/NaN 的探针在 DataFusion 一侧会变成
+"NULL/空"，而 DuckDB 一侧是 `inf` → **凭空造出一个假候选**（或把真实差异藏起来）。目前目录里没有
+产生 inf 的探针，所以不着急；修的话要么让 render 输出 `"inf"/"-inf"/"NaN"` 字符串，要么让 `canon()`
+对浮点列的 `null` 与 `inf` 做双向归一化。
+
+### 关于"如何分辨红是我们造成的" —— 一条环境规则
+
+`slt` 运行需要 `testing/` 数据子模块（datafusion-testing）。没有它时 `window.slt` 会报 **104 条假失败**。
+另外确认：`nproc=2`，两个 Rust 构建同时跑会互相饿死（本 slot 让闸门与扫描先跑完，DataFusion CLI 的
+构建放后面，闸门因此拿到了干净的 168s clippy）。
+
+### 邮件
+
+**未发**：09:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发，本 slot 三者都不是
+（发现的都是研判结论与目录增长）。21:00 的日报会汇总。
