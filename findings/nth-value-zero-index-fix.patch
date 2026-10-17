@@ -1,25 +1,28 @@
-From ee2c70871c4dc8adfab7c0d5dfcbbf3c8196d473 Mon Sep 17 00:00:00 2001
+From dcaac3e1154f51282f635d3f7ff39ce3ec2f2933 Mon Sep 17 00:00:00 2001
 From: Singleton <135771543+SingletonYe@users.noreply.github.com>
 Date: Sat, 17 Oct 2026 01:55:23 -0400
-Subject: [PATCH] fix: reject 0 as an index in nth_value
+Subject: [PATCH] fix: report a zero nth_value index as a user error in the
+ aggregate form
 
-The index is 1-based and negative values count back from the end, so 0 is never
-valid, but the two ways of calling nth_value disagreed:
+`nth_value(x, 0)` (the aggregate form, no OVER) tripped assert_or_internal_err!,
+so an ordinary typo was reported as
 
-* the aggregate form tripped assert_or_internal_err!, so an ordinary typo was
-  reported as an internal error asking the user to file a bug report;
-* the window form was not validated at all -- NthValueEvaluator matches n.cmp(&0)
-  with an explicit Ordering::Equal arm, so a zero index meant 'never a result' and
-  every row came out NULL with no error.
+  Internal error: Assertion failed: n != 0: Nth value indices are 1 based.
 
-Both now report the same user-facing error, matching how NTILE rejects a
-non-positive argument.
+together with the "please file a bug report" boilerplate. The index is read from
+the literal in NthValue::accumulator, where the ordered and unordered accumulators
+are chosen, so validate it once there and return an execution error instead -- the
+same way NTILE rejects a non-positive argument. The two assert_or_internal_err!
+guards in the accumulators go away; accumulator() is their only caller.
+
+Only the aggregate form is changed. The window form (`nth_value(x, 0) OVER (...)`)
+returns NULL for a zero index and window.slt asserts that on purpose, in a section
+titled "test handle NULL and 0 value of nth_value", so it is deliberately left
+alone; whether the two forms should agree is a maintainer decision.
 ---
  .../functions-aggregate/src/nth_value.rs      | 24 +++++++++----------
- datafusion/functions-window/src/nth_value.rs  |  9 +++++++
  .../sqllogictest/test_files/aggregate.slt     | 11 +++++++++
- datafusion/sqllogictest/test_files/window.slt |  5 ++++
- 4 files changed, 36 insertions(+), 13 deletions(-)
+ 2 files changed, 22 insertions(+), 13 deletions(-)
 
 diff --git a/datafusion/functions-aggregate/src/nth_value.rs b/datafusion/functions-aggregate/src/nth_value.rs
 index e3ed110..dbe9857 100644
@@ -77,26 +80,6 @@ index e3ed110..dbe9857 100644
          let mut datatypes = vec![datatype.clone()];
          datatypes.extend(ordering_dtypes.iter().cloned());
          Ok(Self {
-diff --git a/datafusion/functions-window/src/nth_value.rs b/datafusion/functions-window/src/nth_value.rs
-index b3678e8..7c7d21b 100644
---- a/datafusion/functions-window/src/nth_value.rs
-+++ b/datafusion/functions-window/src/nth_value.rs
-@@ -126,6 +126,15 @@ fn validate_nth_value_n(n: i64) -> Result<i64> {
-         return exec_err!("The second argument of nth_value must not be i64::MIN");
-     }
- 
-+    // The index is 1-based and negative values count back from the end, so 0 is never
-+    // a valid index. Without this the evaluator treats 0 as "never a result" and every
-+    // row comes out NULL, while the aggregate form of the same call errored.
-+    if n == 0 {
-+        return exec_err!(
-+            "nth_value index must not be 0; indices are 1-based and negative values count from the end"
-+        );
-+    }
-+
-     Ok(n)
- }
- 
 diff --git a/datafusion/sqllogictest/test_files/aggregate.slt b/datafusion/sqllogictest/test_files/aggregate.slt
 index 0665b63..9119b60 100644
 --- a/datafusion/sqllogictest/test_files/aggregate.slt
@@ -116,22 +99,6 @@ index 0665b63..9119b60 100644
 +
 +statement ok
 +DROP TABLE nth_value_zero_index;
-diff --git a/datafusion/sqllogictest/test_files/window.slt b/datafusion/sqllogictest/test_files/window.slt
-index 254fdf2..bb08fbd 100644
---- a/datafusion/sqllogictest/test_files/window.slt
-+++ b/datafusion/sqllogictest/test_files/window.slt
-@@ -3732,6 +3732,11 @@ SELECT NTILE(9223372036854775809) OVER(ORDER BY a) FROM t1;
- query error DataFusion error: Execution error: NTILE requires a positive integer
- SELECT NTILE(-922337203685477580) OVER(ORDER BY a) FROM t1;
- 
-+# nth_value indices are 1-based, so 0 must be reported as an error. It used to be
-+# accepted and returned NULL for every row.
-+query error DataFusion error: Execution error: nth_value index must not be 0; indices are 1-based and negative values count from the end
-+SELECT nth_value(a, 0) OVER (ORDER BY a) FROM t1;
-+
- query error DataFusion error: Execution error: Table 't' doesn't exist\.
- DROP TABLE t;
- 
 -- 
 2.43.0
 

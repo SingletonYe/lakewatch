@@ -1,37 +1,28 @@
-# Ready-to-open PR: reject `0` as an index in `nth_value` (both the aggregate and the window form)
+# Ready-to-open PR: report a zero `nth_value` index as a user error in the aggregate form
 
 Branch: `fix/nth-value-zero-index` on `SingletonYe/datafusion`
-Compare URL: see `findings/recursive-cte-subquery-internal-error-issue.md`-style handoff in the slot
-report; the automation prints it in the email.
+Commit: `dcaac3e` (2 files: `functions-aggregate/src/nth_value.rs`, `aggregate.slt`)
+Compare URL: printed by the slot's email; also
+`https://github.com/apache/datafusion/compare/main...SingletonYe:fix/nth-value-zero-index?expand=1`
 
 Post the issue first (text in `nth-value-zero-index-issue.md`) and put its number in the first line
-below, or leave that line as-is if you prefer to send the report inline instead of an issue.
+below, or leave the line as it is and let the body carry the report.
 
 ---
 
 ## Which issue does this PR close?
 
-Closes #<issue-number> — if no issue has been filed, this body contains the whole report.
+Closes #<issue-number> — if no issue was filed, this body contains the report.
 
 ## Rationale for this change
 
-`nth_value`'s index is 1-based (negative values count back from the end), so `0` is never valid. The
-two ways of calling the same function disagreed about it, and neither behaved acceptably:
+`nth_value`'s index is 1-based, so `0` is not a valid index. In the aggregate form it is rejected —
+but it is rejected as an *internal* error, which tells the user to file a bug report for their own
+typo:
 
-* **aggregate form** (`nth_value(x, 0)`) tripped `assert_or_internal_err!`, so an ordinary typo was
-  reported as `Internal error: Assertion failed: n != 0: Nth value indices are 1 based. 0 is invalid
-  index` and the user was asked to file a bug report against DataFusion;
-* **window form** (`nth_value(x, 0) OVER (...)`), which is the form most people write, was not
-  validated at all: `NthValueEvaluator` matches `self.n.cmp(&0)` and has an explicit
-  `Ordering::Equal` arm, so a zero index simply meant "never a result" and **every row came out NULL**
-  with no error at all.
-
-Both are the same kind of defect as `NTILE`, which reports `Execution error: NTILE requires a positive
-integer` for the same class of mistake, and that is the behaviour this PR brings `nth_value` to.
-
-### Before / after
-
-`SELECT nth_value(a, 0) FROM t` (aggregate form)
+```sql
+SELECT nth_value(a, 0) FROM t;
+```
 
 Before:
 
@@ -46,51 +37,52 @@ After:
 Execution error: nth_value index must not be 0; indices are 1-based and negative values count from the end
 ```
 
-`SELECT nth_value(a, 0) OVER (ORDER BY a) FROM t` (window form)
-
-Before: `NULL` for every row, no error.
-
-After: the same `Execution error: nth_value index must not be 0; ...` as above.
-
-`nth_value(x, 1)`, `nth_value(x, -1)`, `nth_value(x, i64::MIN)` (window form) and first/last value are
-unchanged; the existing `The second argument of nth_value must not be i64::MIN` guard in the window
-path is untouched.
+Nothing else changes: `nth_value(x, 1)`, `nth_value(x, -1)` and the ordered form
+(`nth_value(x, n ORDER BY ...)`) behave exactly as before, and the message is the only user-visible
+difference. This is the same class of fix as `NTILE`, which already answers
+`Execution error: NTILE requires a positive integer` for the analogous mistake.
 
 ## What changes are included in this PR?
 
-- `datafusion/functions-aggregate/src/nth_value.rs`: reject `n == 0` once in `NthValue::accumulator`,
-  where the index is read from the literal, and drop the two `assert_or_internal_err!` guards that
-  produced the `Internal error` (they are the only callers of the two `try_new`s).
-- `datafusion/functions-window/src/nth_value.rs`: extend the existing `validate_nth_value_n` helper —
-  already called from `partition_evaluator` and already guarding `i64::MIN` — with the same `0` check.
-- Two `sqllogictest` cases: `window.slt` next to the `NTILE` negative-argument test, and a
-  self-contained block at the end of `aggregate.slt`.
-
-The message is identical in both forms on purpose: they are one behaviour, and a single string is what
-the tests assert.
+- `datafusion/functions-aggregate/src/nth_value.rs`: check `n == 0` once in `NthValue::accumulator`,
+  where the index is read from the literal and the ordered/unordered accumulators are chosen, and
+  remove the two `assert_or_internal_err!` guards. `accumulator()` is their only caller, so no other
+  path loses its validation.
+- `datafusion/sqllogictest/test_files/aggregate.slt`: one case asserting the new message.
 
 ## Are these changes tested?
 
 Yes.
 
-- `cargo test -p datafusion-sqllogictest --test sqllogictests -- window` and `-- aggregate` pass with
-  the new cases, and the new cases fail on a tree without the fix (they assert the new error text).
+- `cargo test -p datafusion-sqllogictest --test sqllogictests -- test_files/aggregate.slt` passes,
+  including the new case (it fails on a tree without the fix).
 - `cargo fmt --all --check` is clean.
+- `window.slt` is untouched and still passes.
 
 ## Are there any user-facing changes?
 
-Yes, and they are the point of the PR: `nth_value(x, 0)` now produces a user-facing `Execution error`
-in both forms instead of an internal error in one and a silent `NULL` column in the other.
+Yes: the error text for `nth_value(x, 0)` in the aggregate form, from an internal error plus
+bug-report boilerplate to a plain execution error.
 
-## Notes
+## Notes — deliberately not changed
 
-* One asymmetry is left alone deliberately: the aggregate path still does `-*value` on the literal
-  without the `i64::MIN` guard the window path has. I could not reach it from SQL (`is_reversed` is
-  false for every form I tried, and `nth_value(x, i64::MIN)` as an aggregate returns NULL rather than
-  panicking), so it is not part of this PR. Happy to add the guard as a follow-up if you want the two
-  paths symmetric.
-* Not part of this PR, but found by the same harness and reported separately if you want it: a
-  recursive CTE that references itself inside a scalar subquery produces
-  `Internal error: Unexpected empty work table.` instead of the clean
-  `Multiple recursive references to the same CTE are not supported` its sibling shapes produce
-  (`datafusion/physical-plan/src/recursive_query.rs:390`).
+* **The window form is left alone.** `nth_value(x, 0) OVER (...)` returns `NULL` for a zero index,
+  and `window.slt` asserts exactly that in a section titled *"test handle NULL and 0 value of
+  nth_value"*. That is deliberate, documented behaviour, so changing it is a separate decision and
+  would be a behaviour change rather than an error-kind fix. If you want the two forms to agree,
+  either validate in `NthValueEvaluator`/`partition_evaluator` as well, or drop the check here and
+  return `NULL` in the aggregate form too — say which and I will send it.
+* **`i64::MIN` in the aggregate form.** The window path already rejects `i64::MIN` through
+  `validate_nth_value_n`, while the aggregate path evaluates `-*value` unguarded. I could not reach
+  that code from SQL (`is_reversed` was false in every form I tried, and
+  `nth_value(x, i64::MIN)` returns NULL rather than panicking), so it is not part of this PR.
+
+## Separate report, no PR
+
+A recursive CTE that references itself inside a scalar subquery fails with
+`Internal error: Unexpected empty work table.` where its sibling spellings (`JOIN`, `EXISTS`, `IN`)
+get the clean `Multiple recursive references to the same CTE are not supported` that `cte.slt:892`
+asserts. `assign_work_table` (`physical-plan/src/recursive_query.rs:390`) only walks the recursive
+term, so the subquery-embedded reference escapes the guard and the second reader dies in
+`WorkTable::take` (`physical-plan/src/work_table.rs:77`). I have not touched it here — one thing at a
+time. Happy to send that fix as well if you want it.

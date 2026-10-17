@@ -923,3 +923,50 @@ indices are 1-based and negative values count from the end`。按本仓库 revie
 手动触发按"整段时间片"处理，但 21:00 才是日报；本 run 的邮件按下表判断：只有"提了上游产物 /
 准备了待点开的分支 / 运行失败"才发。本 run 三者都不是（PR #26329 的合并是上游动作，不是我们
 这一轮提交的产物；分支未推送），所以**不发邮件**。
+
+## 2026-10-17 03:15 — 更正与验证：`nth_value` 修复收窄到聚合侧，分支已推送
+
+**更正上一节**：上一节写"窗口侧也补上了 0 检查" —— **那是错的，已回退**。把 slt 跑起来之后，
+`window.slt` 立刻说明了原因：文件里有一段标题就是 `## test handle NULL and 0 value of nth_value`
+的测试，明确断言 `nth_value(v2, NULL) OVER (...)`、`nth_value(v2, v2*null) OVER (...)` 和
+`nth_value(v2, 0) OVER (...)` **都返回 NULL**。也就是说窗口侧"0 → NULL"是**有意为之、并且已经
+写进测试的既有行为**，不是漏掉的校验。原来的改法会直接打破那 4 条断言 —— 而这正是"宁可少做，
+也不能让 PR 变红"要避免的；何况改它属于**行为变更**，不是错误信息种类的修正，轮不到我们自作主张。
+
+**收窄后的分支**（`SingletonYe/datafusion` 的 `fix/nth-value-zero-index`，提交 `dcaac3e1`，
+2 文件 22+/13-）：
+
+* `functions-aggregate/src/nth_value.rs`：只在 `NthValue::accumulator()` 里校验一次
+  （索引从字面量读出、两个累加器分叉之前），删掉两处 `assert_or_internal_err!` —— 它们是这两个
+  `try_new` 的唯一调用方，所以没有别的路径失去校验；
+* `sqllogictest/test_files/aggregate.slt`：一条断言新错误信息的用例；
+* 窗口侧**一行未动**；"两种形式是否应当一致"作为公开问题写进 PR 正文，由维护者决定。
+
+**验证（这次真的跑完了）**：
+
+```console
+$ cargo test -p datafusion-sqllogictest --test sqllogictests -- test_files/aggregate.slt   # exit 0
+$ cargo test -p datafusion-sqllogictest --test sqllogictests -- test_files/window.slt      # exit 0
+$ cargo fmt --all --check                                                                  # clean
+```
+
+待点开的 PR（**一步之遥**）：
+
+```text
+https://github.com/apache/datafusion/compare/main...SingletonYe:fix/nth-value-zero-index?expand=1
+```
+
+### 两条操作教训
+
+1. **`slt` 的期望文件是"行为的第二份文档"。** 这一轮如果顺手把那 4 条断言改成"期望报错"，测试
+   会全绿，但那是在**削弱测试**掩盖一个真实结论（窗口侧是有意设计）。规则里"Never weaken a
+   test to make something green"这一条，今天真的救了这个 PR —— 而且它救的方式是让结论从
+   "两种形式不一致的 bug"变成"一个错误信息种类的 bug + 一个待维护者裁决的行为问题"。
+2. **跑 slt 之前必须初始化数据子模块。** `testing/`（datafusion-testing）没初始化时，
+   `window.slt` 会报 **104 条假失败**（`aggregate_test_100` 的 CSV 不存在，计划里退化成
+   `EmptyExec`）。`git submodule update --init --depth 1 testing` 之后失败清零。之前若不做这一步，
+   根本分辨不出"哪些红是我们造成的"。
+
+### 邮件
+
+本 run 属于"准备了一个待点开的分支"，按规矩发一封 intraday 提醒，compare URL 放在正文最显眼处。
