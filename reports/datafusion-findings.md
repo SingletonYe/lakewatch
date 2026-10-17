@@ -1060,3 +1060,18 @@ Exists(Exists { subquery: <subquery>, negated: false })
 
 **未发**：09:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发，本 slot 三者都不是
 （发现的都是研判结论与目录增长）。21:00 的日报会汇总。
+
+### 补记（本 slot 结束前）
+
+* **`main` 版 CLI 没能编完**：为了把"是不是 55.2.0 落后于 main"这类问题一次问清楚，本 slot 在
+  `/home/user/workspace/df-fork`（upstream main 的浅克隆）里起了 `cargo build -p datafusion-cli`。
+  2 核机器上它走到 `datafusion-cli` 这个 crate 就没能在 slot 内结束，所以本 slot 关于 #23022 的结论
+  依据的是 **issue 状态 + main 的 slt 期望**（#24972 于 2026-09-15 合并、`subquery_projection.slt:47`
+  断言投影里的 `EXISTS` 可用），不是运行 main 得到的结果 —— 这一点必须说清楚。
+  **下一轮可直接复用**：沙箱在 run 之间保留，`df-fork/target/debug/datafusion-cli` 一旦编完就是一个
+  "main 版 oracle"，以后遇到"这个现象是不是已经在上游修好了"可以几秒钟验证，不必再靠读源码和 issue。
+  （注意 `RUSTUP_TOOLCHAIN=stable`：上游 `rust-toolchain.toml` 钉的 1.99.0 在本环境装不下来。）
+* **`= ANY`/`> ALL` 在投影里的 main 行为仍然待确认**：本 slot 只确认了"55.2.0 会报
+  `does not support logical expression Exists(...)`"以及"该报错对应的 issue 已关闭、修复已进 main"。
+  ANY/ALL（而不是 EXISTS）在 main 的投影里是否也已支持，留给下一轮用上面那个 CLI 一句话验证；
+  在那之前不要把这条写成"已修"。
