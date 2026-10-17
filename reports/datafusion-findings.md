@@ -1169,3 +1169,57 @@ Arrow error: Cast error: Can't cast value inf to type Int64
 
 **未发**：13:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发。本 slot 准备的是一份
 issue 文本（不在触发条件里），也没有新分支，所以不发；21:00 的日报会带上它。
+
+## 2026-10-17 17:00 — slot 3
+
+**结论**：80 探针（+1）· 0 个待研判候选 · Tier-A 四族逐条复现（零 diff）· 健康闸门 7/7 ·
+新把 **一个仍在 main 上复现的已知上游 bug** 钉进目录（附一条很强的旁证）
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（fresh clone，build 6m24s，duckdb 1.5.6） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致（`reports/df-robust*.json` 零 diff） |
+| Phase 1b 语义 | **80 探针** · OK=67 · KNOWN_DIFF=11 · BOTH_ERROR=2 · **0 候选** |
+| Phase 4 | +1 探针（`PARTITION BY` 的有符号零） |
+| 上游产物 | 0（PR 预算仍留给待点开的 `nth-value-zero-index`） |
+
+### Phase 0b — 仍然没有在审的 PR
+
+`gh pr list --author SingletonYe` 只有 #26329（MERGED），`fix/nth-value-zero-index`（`dcaac3e1`）
+继续等用户点开，已经等了约 14 小时。今天的时间片不再动这个分支，也不新起分支。
+
+### 本 slot 的产出：把"同一个引擎自己不一致"这件事钉死
+
+给有符号零找新角度时撞到一个**同引擎内部自相矛盾**的形状：
+
+```sql
+SELECT x, COUNT(*) OVER (PARTITION BY x) AS n FROM (VALUES (0.0),(-0.0),(1.0)) t(x) ORDER BY n, x;
+-- DataFusion: -0.0,1 | 0.0,1 | 1.0,1     ← 0.0 与 -0.0 被分到两个分区
+SELECT x, COUNT(*) AS n FROM (VALUES (0.0),(-0.0),(1.0)) t(x) GROUP BY x;
+-- DataFusion: 0.0,2 | 1.0,1              ← 同一个引擎的 GROUP BY 又把它们合在一起
+```
+
+DuckDB 两种写法都合并（`n = 2`）。也就是说：**DataFusion 自己的 `GROUP BY` 与
+`PARTITION BY` 对"0.0 = -0.0"给出了相反的回答**，而窗口那侧与 DuckDB 不一致。
+这不是新 bug —— 对应上游 **apache/datafusion#25766**（"Window PARTITION BY puts 0.0 and -0.0 in
+separate partitions"，2026-09-26 开，至今 OPEN）。本轮用 slt oracle 在 **main 上实跑确认它仍未修**
+（同样返回三个 n=1），因此按 `known_difference` 收进目录：既避免以后重复研判，也在上游修好时
+第一时间可见。`why` 里写明了那条"与自己的 GROUP BY 不对称"的旁证 —— 这是判断"哪一侧是错的"
+最有力的证据。
+
+### 顺手排掉的几个方向（都不构成 bug）
+
+* **`MERGE` / `DELETE` / `UPDATE` 在 lakewatch 的表上报 NOT_IMPL**：这些是只读的 listing table
+  （CSV），不是引擎缺功能；`INSERT` 的报错还带了"用 StreamTable / CREATE UNBOUNDED EXTERNAL TABLE"
+  的提示，信息很清楚。`{e:?}` 那种内部 Debug 泄漏问题在上一轮已经单独记录。
+* **`GROUP BY ()`（空分组集）报 `This feature is not implemented: Empty tuple not supported yet`**：
+  SQL 标准里有这个写法，DuckDB 也支持，属于一个**很小的缺口**，但报错干净、没有用户可误解之处，
+  而且 `GROUPING SETS ((g),())` 里的空集是能用的 —— 按 NOT_IMPL 的研判口径（"真缺口 or 文档化限制"）
+  记为已知限制，**不提 issue**（避免为这种边缘写法占用维护者时间）。
+* **`GROUPING SETS` 里重复集合**按标准保留重复行 ✓；`regexp_replace` 的 `'g'` 标志与 `$2$1`
+  反向引用都正常 ✓。
+
+### 邮件
+
+**未发**：17:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发。本 slot 是
+"把已知上游 bug 钉进目录"，三者都不是。21:00 的日报会把今天四段合起来发。

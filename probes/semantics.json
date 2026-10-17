@@ -762,6 +762,14 @@
         ]
       ],
       "why": "`GROUP BY ALL` must group by every non-aggregated projection expression -- here the COALESCE, not the bare `g` -- and the NULL group has to survive as its own group (2 rows in probe_values), because NULL is a group key like any other. Pinning both facts at once. Caution for future slots: write the plain `SELECT g, COUNT(*) ... GROUP BY ALL` form instead and the probe diverges, because DuckDB drops the NULL group there; keep the COALESCE so the two engines stay comparable."
+    },
+    {
+      "id": "window_partition_signed_zero",
+      "category": "float_semantics",
+      "sql": "SELECT x, COUNT(*) OVER (PARTITION BY x) AS n FROM (VALUES (0.0), (-0.0), (1.0)) t(x) ORDER BY n, x",
+      "ordered": true,
+      "why": "Signed zero is the sharpest test of what an engine means by \"equal enough to group together\": 0.0 = -0.0 is true, so a PARTITION BY that treats them as equal gives n = 2 for both rows, and one that compares bit patterns gives n = 1 for each. The probe is here because DataFusion answers the two ways in the same engine: `GROUP BY x` merges them (n = 2), the window path does not (n = 1) -- and DuckDB merges them in both.",
+      "known_difference": "Known upstream, still open -- do not re-file. apache/datafusion#25766 'Window PARTITION BY puts 0.0 and -0.0 in separate partitions' (open since 2026-09-26). Measured 2026-10-17 on the pinned 55.2.0 *and* on main via the sqllogictest runner: the window path returns n = 1 for 0.0, -0.0 and 1.0 (three partitions), while `GROUP BY x` on the same values returns n = 2 for the two zeros. DuckDB groups them in both cases. The asymmetry with DataFusion's own GROUP BY is the strongest evidence that the window path is the wrong side of the inconsistency; recorded here so no slot re-triages it, and so a fix upstream is visible."
     }
   ]
 }

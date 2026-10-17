@@ -3,7 +3,7 @@
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
     "OK": 67,
-    "KNOWN_DIFF": 10,
+    "KNOWN_DIFF": 11,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -162,6 +162,19 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [4 row(s)] except_all,2 | intersect_all,1 | intersect_all,1 | intersect_all,1 vs duckdb [4 row(s)] except_all,1 | except_all,2 | intersect_all,1 | intersect_all,1"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "window_partition_signed_zero",
+      "category": "float_semantics",
+      "sql": "SELECT x, COUNT(*) OVER (PARTITION BY x) AS n FROM (VALUES (0.0), (-0.0), (1.0)) t(x) ORDER BY n, x",
+      "why": "Signed zero is the sharpest test of what an engine means by \"equal enough to group together\": 0.0 = -0.0 is true, so a PARTITION BY that treats them as equal gives n = 2 for both rows, and one that compares bit patterns gives n = 1 for each. The probe is here because DataFusion answers the two ways in the same engine: `GROUP BY x` merges them (n = 2), the window path does not (n = 1) -- and DuckDB merges them in both.",
+      "ordered": true,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [3 row(s)] -0.0,1 | 0.0,1 | 1.0,1 vs duckdb [3 row(s)] 1.0,1 | 0.0,2 | 0.0,2"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
@@ -996,6 +1009,19 @@
       "session_options": [],
       "status": "OK",
       "details": []
+    },
+    {
+      "id": "window_partition_signed_zero",
+      "category": "float_semantics",
+      "sql": "SELECT x, COUNT(*) OVER (PARTITION BY x) AS n FROM (VALUES (0.0), (-0.0), (1.0)) t(x) ORDER BY n, x",
+      "why": "Signed zero is the sharpest test of what an engine means by \"equal enough to group together\": 0.0 = -0.0 is true, so a PARTITION BY that treats them as equal gives n = 2 for both rows, and one that compares bit patterns gives n = 1 for each. The probe is here because DataFusion answers the two ways in the same engine: `GROUP BY x` merges them (n = 2), the window path does not (n = 1) -- and DuckDB merges them in both.",
+      "ordered": true,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [3 row(s)] -0.0,1 | 0.0,1 | 1.0,1 vs duckdb [3 row(s)] 1.0,1 | 0.0,2 | 0.0,2"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
   ]
 }
