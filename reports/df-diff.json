@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 68,
+    "OK": 71,
     "KNOWN_DIFF": 12,
     "BOTH_ERROR": 2
   },
@@ -1058,6 +1058,36 @@
         "documented divergence: duckdb errored (Catalog Error: Scalar Function with name date_bin does not exist!)"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "percent_rank_cume_dist_with_ties",
+      "category": "window",
+      "sql": "SELECT v, PERCENT_RANK() OVER (ORDER BY v) AS pr, CUME_DIST() OVER (ORDER BY v) AS cd FROM (VALUES (1), (2), (2), (4)) t(v) ORDER BY v",
+      "why": "Both formulas are fixed by the standard and both are easy to get subtly wrong once there are ties: PERCENT_RANK is (rank - 1) / (rows - 1) -- rank, not row number, so the two rows with v = 2 share 1/3 and the answer must not be (row_number - 1) / 3 -- and CUME_DIST is (rows <= current) / rows, so the tied pair shares 3/4 instead of 2/4. The pair also pins that correct ranks are not compressed (v = 4 is 1.0, not 0.66).",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_groups_frame_peers",
+      "category": "window",
+      "sql": "SELECT v, SUM(v) OVER (ORDER BY v GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW) AS s FROM (VALUES (1), (2), (2), (4)) t(v) ORDER BY v",
+      "why": "GROUPS is the third frame mode and the only one the catalogue did not cover: it counts *peer groups*, not rows (ROWS) or values (RANGE). With peers {1}, {2, 2}, {4}, one preceding group makes the second group sum 1 + 2 + 2 = 5 (12 with a ROWS frame would give 1 + 2 = 3) and the last 2 + 2 + 4 = 8 (4 + 4 = 8 with ROWS). A frame implementation that treats GROUPS as ROWS fails on the middle and last rows.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_aggregate_with_filter",
+      "category": "window",
+      "sql": "SELECT v, SUM(v) FILTER (WHERE v > 1) OVER (ORDER BY v ROWS UNBOUNDED PRECEDING) AS s FROM (VALUES (1), (2), (3)) t(v) ORDER BY v",
+      "why": "A FILTER clause attached to an aggregate that is *also* a window function: the filter removes rows from the frame before aggregating, so the first row's frame is empty and SUM over an empty set is NULL (three-valued logic, not 0), then 2 and 5. Pinning this catches both a filter that is ignored and one that wrongly yields 0 for the empty frame.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
     }
   ]
 }

@@ -1276,3 +1276,34 @@ separate partitions"，2026-09-26 开，至今 OPEN）。本轮用 slt oracle �
 ### 邮件
 
 21:00 **无条件是当日汇总日报**，已发（key `lakewatch-digest:2026-10-17`）。
+
+## 2026-10-18 09:00 — slot 1 (first slot of the day)
+
+**结论**：85 探针（+3）· 0 个待研判候选 · 基线逐条复现（零 diff）· 健康闸门 7/7 · 本 slot 无上游产物
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（fresh clone，build 6m01s，duckdb 1.5.6） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致 |
+| Phase 1b 语义 | **85 探针** · OK=71 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+### Phase 0b — 分支仍未点开，预算继续留着
+
+`gh pr list --author SingletonYe --state open` 为空；`fix/nth-value-zero-index`（`dcaac3e1`）已就绪约
+26 小时。今天唯一的 PR 预算继续留给它 —— 不新起分支、不催、不重推。
+
+### Phase 4 — 补窗口函数的三个空白（三条都带 pinned 期望，无 oracle 也能跑）
+
+1. `percent_rank_cume_dist_with_ties`：两个公式在**有并列值**时的细节最容易写错 ——
+   `PERCENT_RANK` 用 *rank* 而不是 row_number（并列的两行共享 1/3，不是 0/1），
+   `CUME_DIST` 把并列一起算进 `<= 当前`（共享 3/4，不是 2/4）；同时钉住 rank 不压缩（v=4 是 1.0）。
+2. `window_groups_frame_peers`：`GROUPS` 是三种帧模式里唯一没覆盖的，它按 **peer 组**计数而不是按行 ——
+   用 ROWS 语义会把中段算成 3、末段算成 8 的前半，而正确答案是 5 与 8。
+3. `window_aggregate_with_filter`：窗口聚合上的 `FILTER`，第一行帧为空时 `SUM` 必须是 **NULL**（三值逻辑）
+   而不是 0 —— 一次同时抓住"忽略 filter"和"空帧给 0"两种实现错误。
+
+三条都与 DuckDB 逐行一致。当日探针预算已用 3 个。
+
+### 邮件
+
+**未发**：09:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发；本 slot 只增长目录。
