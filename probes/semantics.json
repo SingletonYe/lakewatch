@@ -380,7 +380,7 @@
           "1.0"
         ]
       ],
-      "known_difference": "DataFusion sorts with the float total ordering, so -0.0 sorts before 0.0, while `=`, GROUP BY and DISTINCT treat them as equal (#24432 chose total ordering deliberately). DuckDB uses IEEE ordering. Documented, not a bug.",
+      "known_difference": "DataFusion sorts with the float total ordering, so -0.0 sorts before 0.0, while `=`, GROUP BY and DISTINCT treat them as equal. That split is deliberate, and the grouped MIN/MAX accumulators were brought in line with it by #24432 (closed as completed 2026-08-20) -- before that fix they used `partial_cmp`, so grouped MIN/MAX were order-dependent and could keep whichever zero came first. DuckDB uses IEEE ordering throughout. Documented, not a bug.",
       "why": "Pins the total-ordering decision so a regression would be visible."
     },
     {
