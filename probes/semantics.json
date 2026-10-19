@@ -875,6 +875,63 @@
         ]
       ],
       "why": "A FILTER clause attached to an aggregate that is *also* a window function: the filter removes rows from the frame before aggregating, so the first row's frame is empty and SUM over an empty set is NULL (three-valued logic, not 0), then 2 and 5. Pinning this catches both a filter that is ignored and one that wrongly yields 0 for the empty frame."
+    },
+    {
+      "id": "extract_epoch_units",
+      "category": "datetime",
+      "sql": "SELECT EXTRACT(EPOCH FROM TIMESTAMP '2024-01-01 00:00:00') AS ts_epoch, EXTRACT(EPOCH FROM DATE '2024-01-01') AS date_epoch",
+      "expect_rows": [
+        [
+          "1704067200.0",
+          "1704067200.0"
+        ]
+      ],
+      "why": "Epoch extraction is where unit and timezone mistakes hide: the answer must be seconds since 1970-01-01T00:00:00Z, identical for a DATE and for the TIMESTAMP at its midnight, and it must not be shifted by the session timezone. 1704067200 is the value for 2024-01-01; a millisecond implementation, a local-time implementation or an off-by-one on the DATE path all miss it."
+    },
+    {
+      "id": "substring_standard_syntax",
+      "category": "strings",
+      "sql": "SELECT SUBSTRING('abcdef' FROM 2 FOR 3) AS with_for, SUBSTRING('abcdef' FROM 4) AS from_only",
+      "expect_rows": [
+        [
+          "bcd",
+          "def"
+        ]
+      ],
+      "why": "The SQL-standard `SUBSTRING(x FROM n [FOR m])` spelling is a different parser path from the `substring(x, n, m)` function call, and the FOR-less form has to run to the end of the string. Both give the 1-based answer here, so a regression that ignores FOR or that truncates the FOR-less form is visible without an oracle."
+    },
+    {
+      "id": "grouping_sets_with_filter",
+      "category": "grouping_sets",
+      "sql": "SELECT COALESCE(g, -1) AS g_key, COUNT(*) FILTER (WHERE v_int > 0) AS c FROM probe_values GROUP BY GROUPING SETS ((g), ()) ORDER BY g_key, c",
+      "ordered": true,
+      "expect_rows": [
+        [
+          "-1",
+          "2"
+        ],
+        [
+          "-1",
+          "8"
+        ],
+        [
+          "10",
+          "2"
+        ],
+        [
+          "20",
+          "2"
+        ],
+        [
+          "30",
+          "1"
+        ],
+        [
+          "40",
+          "1"
+        ]
+      ],
+      "why": "A FILTER inside a GROUPING SETS aggregate: the filter has to apply per row before the set is aggregated, and the grand total has to count only the filtered rows across the whole table (8 of 12), not per group. The -1 rows are the grand total of both sets, ordered after the real groups so the pinned order is unambiguous."
     }
   ]
 }

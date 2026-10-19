@@ -1339,3 +1339,51 @@ separate partitions"，2026-09-26 开，至今 OPEN）。本轮用 slt oracle �
 ### 邮件
 
 **未发**：13:00 的规则是只在提了上游产物 / 准备了待点开的分支 / 运行失败时发；本 slot 是基线复现 + 记录修正。
+
+## 2026-10-19 09:00 — 首次按"每天 09:00"运行
+
+**结论**：88 探针（+3）· 0 个待研判候选 · 基线逐条复现 · 健康闸门 7/7 · 排程自检通过
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（fresh clone，build 6m20s，duckdb 1.5.6） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20 · 191/13 · 0 —— 与基线逐条一致（报告文件零 diff） |
+| Phase 1b 语义 | **88 探针** · OK=74 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+### 两条新的自检项（本日流程第一次执行）
+
+* **连续性**：上一节是 `2026-10-18 13:00`，即昨天，无断档。需要说明的是 10-18 只跑了 09:00 与
+  13:00 两段 —— 当天 13:30 排程先被改成"每 3 天"、随后改成"每天 09:00"，17:00 与 21:00 两段因此
+  没有触发。从今天起固定每天 09:00 一轮。
+* **排程自检**：自动化 `enabled`，表达式 `0 9 * * *`（America/New_York）✓。运行中 `Next run` 显示
+  `-` 属于已知显示行为（10-14 首次观察到），不作为故障；自检规则已按这一点写清楚，避免以后误重建。
+
+### Phase 4 — 三个新探针（当日累计 3 个）
+
+1. `extract_epoch_units`：`EXTRACT(EPOCH …)` 对 TIMESTAMP 与 DATE 必须给同值 1704067200.0 ——
+   毫秒实现、本地时区实现、或 DATE 路径差一天，都会偏离。
+2. `substring_standard_syntax`：`SUBSTRING(x FROM n FOR m)` 是独立于 `substring(x,n,m)` 的解析路径，
+   且无 FOR 时必须取到串尾。
+3. `grouping_sets_with_filter`：`FILTER` 与 `GROUPING SETS` 组合 —— 过滤须在聚合前逐行生效，
+   总计只数被过滤后的行（8/12），不是逐组各算。
+
+三条都与 DuckDB 逐行一致。
+
+### 研判：不支持语法的报错把内部结构直接打印给用户
+
+`MATCH_RECOGNIZE`、`PIVOT` 在 DataFusion 里是**已知功能缺口**（#13583、#12907 追踪），但用户收到的
+报错是整个 sqlparser AST（`PIVOT` 那次约 2KB）：
+
+```text
+This feature is not implemented: Unsupported ast node MatchRecognize { table: Table { name: ObjectName([Identifier(Ident { value: "probe_values", … })]) … } } in create_relation
+```
+
+源码是 `datafusion/sql/src/relation/mod.rs:310` 与 `datafusion/sql/src/expr/mod.rs:842` 的
+`not_impl_err!("… {relation:?}")`，与上一轮记录的物理计划层 `physical-expr/src/planner.rs:541,703`
+属同一类问题。因此把上一轮备好的 issue 文本升级为**"一类问题、两层来源"**的版本
+（`findings/unsupported-feature-errors-dump-internals.md`，含四处独立可修的源码位置），
+并删除被取代的旧文本 —— 一份 issue 比两份更容易被接受。
+
+### 邮件
+
+已按新规则发送当日报告（每次运行一封，key `lakewatch-report:2026-10-19`）。
