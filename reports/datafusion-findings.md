@@ -1387,3 +1387,85 @@ This feature is not implemented: Unsupported ast node MatchRecognize { table: Ta
 ### 邮件
 
 已按新规则发送当日报告（每次运行一封，key `lakewatch-report:2026-10-19`）。
+
+## 2026-10-20 09:00 — 首次撞到 `main` 上的 INTERNAL 回归
+
+**结论**：91 探针（+3）· 0 个待研判候选 · 健康闸门 7/7 · **1 个新的 INTERNAL 级 bug（`main` 专属）**
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（沙箱沿用昨日的 clone，与 `origin/main` 零差异、工作区干净；warm build 后全流程 4s） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20（与基线**逐字节相同**，`reports/df-robust.json` 零 diff） |
+| Phase 1b 语义 | **91 探针** · OK=77 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+### 两条自检
+
+* **连续性**：上一节是 `2026-10-19 09:00`，即昨天，无断档。
+* **排程自检**：`okou workflow automation list 3740d7fe-…` 显示 `enabled`，表达式 `0 9 * * *`（America/New_York）✓。
+  运行中 `Next run` 显示 `-` 属已知显示行为。**注意**：技能里写的 `okou workflow trigger show <name>` 现在报
+  `400: id: Invalid UUID` —— 该命令只收 automation UUID，正确用法是
+  `okou workflow automation list <workflow-id|workflow-name>`。这也是技能文本需要修的地方（下次改）。
+* 顺带发现第二条 automation（`595ffcb7-…`，Gmail 通知触发器）的事件过滤写死了已合并的 PR 号 `26329`，
+  所以对**新** PR 的通知不会触发 PR-response run。本条未改动（属工作流配置变更，且当前无 open PR），
+  留给用户决定是否放宽过滤。
+
+### Phase 2 — 逐条复核目录引用的上游 issue（技能第 7 步）
+
+14 个被引用的 issue/PR 全部复核：`#11886 #12955 #12956 #13850 #7301 #23929 #24950 #25766 #20501 #19004`
+仍是 open，`#24432`（closed/completed）与 `#12907`（open）与备注一致，`#21032`/`#26329` 状态不变。
+**只有一处过期**：`#13583`（MATCH_RECOGNIZE）已于 2026-08-11 以 *completed* 关闭，但关闭理由是
+"不进 core，走 planning-extension 用扩展实现"，不是功能落地。已把
+`findings/unsupported-feature-errors-dump-internals.md` 里的引用改成准确表述。
+
+### 新发现：`> ALL` 在**无别名投影**里触发优化器不变量断言（INTERNAL，`main` 专属）
+
+```sql
+SELECT 2 > ALL (SELECT x FROM (VALUES (1),(0)) t(x));        -- Internal error: Assertion failed: compatible …
+SELECT 2 > ALL (SELECT x FROM (VALUES (1),(0)) t(x)) AS d;   -- true（正常）
+```
+
+* 触发面很窄也很机械：**`Expr::SetComparison`（`> ALL`/`< ANY` 等）出现在没有别名的投影里**。
+  加别名就好；`EXISTS`/`IN` 同位置无事；同样的表达式放 `WHERE` 里也正常；加一列 `9 AS k` 后仍复现。
+* 不是 debug-only：`optimizer.rs:686` 的 `assert_valid_optimization` 未被 `debug_assertions` 门控，
+  且 `skip_failed_rules` 默认为 `false`，所以**用户会直接吃到"请提 bug report"的内部错误**。
+* 版本归属：pin 的 55.2.0 复现不出来（那里是同一条 `Physical plan does not support … Exists` 消息），
+  差异来自 apache/datafusion#24972（2026-09-15 合并，*Support predicate subqueries in projections*）——
+  即这是**尚未发布的 main 回归**。
+* 失败点是 `assert_expected_schema`（`invariants.rs:114`）比较"名字 + 类型"，这里只有名字不同
+  （`Int64(2) > ALL` vs 改写后的 `CASE WHEN EXISTS …`）；规则的投影分支本会保留原名
+  （`decorrelate_predicate_subquery.rs:71–93`），所以线索就在这条 SetComparison 路径上。
+* 上游先搜后写（`decorrelate_predicate_subquery`、`Check optimizer-specific invariants`、
+  `difference in schemas`、`SetComparison`、`> ALL`、`24972`，open+closed）**无重复**。
+  已备好可直接粘贴的 issue 文本：`findings/set-comparison-projection-internal-error.md`。
+
+**另有两条按"记录而非提 issue"处理的（避免重复）：**
+
+* `INTERVAL * n` / `INTERVAL / n` 不支持（DuckDB、PostgreSQL 支持；缺口由 #13850 追踪，故不提 issue），
+  但报错把用户没写过的操作数打了出来：`Interval(MonthDayNano) * Int64` → 消息却是
+  `Interval(MonthDayNano) * Interval(MonthDayNano)`（`expr-common/src/type_coercion/binary.rs:322`
+  格式化的是 coercion 之后的 `{coerced}`）。已作为"同类"附录并入上文那份报错 issue 文本。
+* `LIKE … ESCAPE '!'`（显式 ESCAPE 子句）被拒绝：`LIKE does not support escape_char other than the
+  backslash (\)`；`SIMILAR TO … ESCAPE` 是 `does not support escape_char yet`
+  （`physical-expr/src/planner.rs:293,324`）。标准允许任意单字符 ESCAPE，DuckDB 支持。与 #13291
+  （"没有隐式转义符的 LIKE"）同一族但不同点，未搜到已提 issue；**若用户愿意，可作为独立小 issue**，
+  本轮不铺开：报错本身清晰、不误导，优先级低于上面那条。
+
+### Phase 4 — 三个新探针（当日累计 3 个）
+
+1. `interval_month_end_clamp`：`DATE '2024-01-31' + INTERVAL '1' MONTH` 必须夹到月末 2024-02-29
+   （不是 3 月 2 日，也不是报错），1-30 加一月同理，3-31 减一月同值。`CAST(… AS DATE)` 让
+   `date_add_year_leap` 里记录的 DATE/TIMESTAMP 类型分歧不会掩盖规则本身。
+2. `position_in_standard_syntax`：标准 `POSITION(x IN y)` 是独立解析路径，且必须是 1 起算、
+   未找到返回 **0**（不是 strpos 形状的 -1），空 needle 命中 1。
+3. `window_range_offset_frame`：`RANGE BETWEEN 2 PRECEDING AND CURRENT ROW` 的边界是**值**语义且含
+   peers —— x=2 的两行都得 5，x=3 回看到 1 得 8；按 ROWS 实现会给出 1,2,4,6。
+
+三条都与 DuckDB 逐行一致、均带 `expect_rows`。**88 → 91。**
+
+### Next
+
+1. **等用户一步**：`fix/nth-value-zero-index` 分支已推、无 open PR，只差点开 compare 链接（邮件里已置顶）。
+   上游 `main` 的 `nth_value.rs` 至今仍带那两处断言（2026-10-15 后无人改动），所以这个修复仍然有效。
+2. **两份待发 issue 文本**：`findings/set-comparison-projection-internal-error.md`（新，INTERNAL，建议优先）、
+   `findings/unsupported-feature-errors-dump-internals.md`（报错信息类，今日已修正 MATCH_RECOGNIZE 复现与 #13583 状态）。
+3. 下次复核 `#13583` 一类"关闭理由 ≠ 功能落地"的引用，别再拿 closed 当"已支持"。

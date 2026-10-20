@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 74,
+    "OK": 77,
     "KNOWN_DIFF": 12,
     "BOTH_ERROR": 2
   },
@@ -1114,6 +1114,36 @@
       "category": "grouping_sets",
       "sql": "SELECT COALESCE(g, -1) AS g_key, COUNT(*) FILTER (WHERE v_int > 0) AS c FROM probe_values GROUP BY GROUPING SETS ((g), ()) ORDER BY g_key, c",
       "why": "A FILTER inside a GROUPING SETS aggregate: the filter has to apply per row before the set is aggregated, and the grand total has to count only the filtered rows across the whole table (8 of 12), not per group. The -1 rows are the grand total of both sets, ordered after the real groups so the pinned order is unambiguous.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "interval_month_end_clamp",
+      "category": "datetime",
+      "sql": "SELECT CAST(DATE '2024-01-31' + INTERVAL '1' MONTH AS DATE) AS jan31_plus1, CAST(DATE '2024-01-30' + INTERVAL '1' MONTH AS DATE) AS jan30_plus1, CAST(DATE '2024-03-31' - INTERVAL '1' MONTH AS DATE) AS mar31_minus1",
+      "why": "Month arithmetic on a day the target month does not have must clamp to that month's last day: 31 January + 1 month is 29 February 2024, not 2 March and not an error, and 31 March - 1 month is also 29 February. 2024 is a leap year, so a non-leap implementation or an overflow-to-next-month implementation both show up here. The CAST pins the result as DATE so the DATE-versus-TIMESTAMP divergence recorded in `date_add_year_leap` cannot hide the rule.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "position_in_standard_syntax",
+      "category": "strings",
+      "sql": "SELECT POSITION('b' IN 'abc') AS found, POSITION('' IN 'abc') AS empty_needle, POSITION('z' IN 'abc') AS absent",
+      "why": "The SQL-standard `POSITION(x IN y)` spelling is a distinct parser path from the `strpos` function, and POSITION is 1-based with 0 meaning absent -- not -1, which is what a strpos-shaped implementation would return. An empty needle matches at position 1.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_range_offset_frame",
+      "category": "window",
+      "sql": "SELECT x, SUM(x) OVER (ORDER BY x RANGE BETWEEN 2 PRECEDING AND CURRENT ROW) AS s FROM (VALUES (1),(2),(2),(3)) AS t(x) ORDER BY x, s",
+      "why": "An offset boundary in RANGE mode is value-based and includes peers: the frame for x=2 is every row whose key lies in [0,2], so both 2s get 1+2+2=5, and x=3 reaches back to 1 for 8. A ROWS-shaped implementation of the same clause would give 1,2,4,6, so the offset semantics are pinned without an oracle.",
       "ordered": true,
       "session_options": [],
       "status": "OK",
