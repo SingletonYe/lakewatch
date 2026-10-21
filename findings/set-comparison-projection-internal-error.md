@@ -10,6 +10,13 @@ this token lacks `read:org`), so this is handed to the user to post at
 <https://github.com/apache/datafusion/issues/new>. Paste from the horizontal rule down; the
 title line goes in the title box.
 
+**A fix is already prepared** (2026-10-21): branch `fix/set-comparison-projection-field-name` on
+the fork is pushed and verified, so the two can go out together — post this issue, then open the
+PR from
+<https://github.com/apache/datafusion/compare/main...SingletonYe:fix/set-comparison-projection-field-name?expand=1>
+with `findings/set-comparison-projection-field-name-pr-body.md` pasted in (put this issue's number
+in its first line). Posting only the PR is also fine.
+
 **Upstream search before writing this** (open *and* closed, by message text and by feature):
 `decorrelate_predicate_subquery`, `Check optimizer-specific invariants`, `difference in
 schemas`, `SetComparison`, `predicate subquery projection`, `> ALL`, `CASE WHEN EXISTS`,
@@ -113,5 +120,5 @@ unconditionally when the name changes *after* the plan is built, then assert).
   So this is `main`-only today, and it lands in the next release unless the name is preserved.
 * Introduced by apache/datafusion#24972 *"Support predicate subqueries in projections"*
   (merged 2026-09-15).
-* A sqllogictest case is just the two statements above (with and without the alias); the second
-  one currently fails in a debug build, so it would have caught this.
+* A sqllogictest case is just the two statements above (with and without the alias); the unaliased
+  one currently fails, so it would have caught this. The prepared fix adds exactly those cases.

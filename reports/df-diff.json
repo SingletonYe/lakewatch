@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 77,
+    "OK": 80,
     "KNOWN_DIFF": 12,
     "BOTH_ERROR": 2
   },
@@ -1145,6 +1145,36 @@
       "sql": "SELECT x, SUM(x) OVER (ORDER BY x RANGE BETWEEN 2 PRECEDING AND CURRENT ROW) AS s FROM (VALUES (1),(2),(2),(3)) AS t(x) ORDER BY x, s",
       "why": "An offset boundary in RANGE mode is value-based and includes peers: the frame for x=2 is every row whose key lies in [0,2], so both 2s get 1+2+2=5, and x=3 reaches back to 1 for 8. A ROWS-shaped implementation of the same clause would give 1,2,4,6, so the offset semantics are pinned without an oracle.",
       "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "aggregate_order_by_clause",
+      "category": "aggregates",
+      "sql": "SELECT string_agg(v, ',' ORDER BY v DESC) AS s FROM (VALUES ('a'),('c'),('b')) AS t(v)",
+      "why": "The aggregate-level ORDER BY clause (inside the call, not the query's ORDER BY) decides the order the aggregate sees: descending here, so the separator-joined string must be c,b,a. An implementation that ignores the inner ORDER BY, or that applies it after aggregation, produces a,b,c. Pinned as a scalar string so the comparison is exact.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_null_order",
+      "category": "window",
+      "sql": "SELECT x, ROW_NUMBER() OVER (ORDER BY x) AS rn FROM (VALUES (2),(NULL),(1)) AS t(x) ORDER BY rn",
+      "why": "The default null placement of a window's ORDER BY (NULLS LAST for ASC here) is a separate code path from a query-level ORDER BY, and it decides the row numbers: the NULL must get rn=3, not rn=1. Pinned by ordering the output on rn, so the null's position is asserted rather than left to the renderer.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "having_aggregate_not_in_select",
+      "category": "aggregates",
+      "sql": "SELECT g, COUNT(*) AS n FROM (VALUES (1,10),(1,20),(2,5)) AS t(g,v) GROUP BY g HAVING SUM(v) > 10 ORDER BY g",
+      "why": "HAVING may filter on an aggregate that the projection does not select (SUM(v) here, while the output is g and COUNT(*)). The group with SUM(v)=5 must be dropped and the other kept with n=2; an implementation that rewrites HAVING into a projection-level filter or that recomputes the aggregate differently shows up as either two rows or a wrong count.",
+      "ordered": false,
       "session_options": [],
       "status": "OK",
       "details": []

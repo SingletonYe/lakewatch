@@ -1469,3 +1469,68 @@ SELECT 2 > ALL (SELECT x FROM (VALUES (1),(0)) t(x)) AS d;   -- true（正常）
 2. **两份待发 issue 文本**：`findings/set-comparison-projection-internal-error.md`（新，INTERNAL，建议优先）、
    `findings/unsupported-feature-errors-dump-internals.md`（报错信息类，今日已修正 MATCH_RECOGNIZE 复现与 #13583 状态）。
 3. 下次复核 `#13583` 一类"关闭理由 ≠ 功能落地"的引用，别再拿 closed 当"已支持"。
+
+## 2026-10-21 09:00 — 修好了昨天那个 INTERNAL 回归，分支已推
+
+**结论**：94 探针（+3）· 0 个待研判候选 · 健康闸门 7/7 · **1 个修复分支已推（待点开 PR）**
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（clone 与 `origin/main` 零差异，工作区干净） |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20，与基线**逐字节相同** |
+| Phase 1b 语义 | **94 探针** · OK=80 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+### 两条自检
+
+* **连续性**：上一节 `2026-10-20 09:00`，即昨天，无断档。
+* **排程自检**：`okou workflow automation list lakewatch-datafusion-hunt` → `enabled`、`0 9 * * *`
+  （America/New_York）✓。（昨天写进技能的修正命令今天直接可用，不再报 `Invalid UUID`。）
+
+### Phase 0b — 无 open PR，把昨天的新发现做成了修复
+
+`gh pr list --author SingletonYe --state open` 为空；`fix/nth-value-zero-index` 仍在等用户点开。
+所以今天的 PR 名额用在昨天新发现的 INTERNAL 回归上。
+
+**根因（读源码 + 实跑确认）**：`RewriteSetComparison` 用 `LogicalPlan::map_expressions` 把
+`x > ALL (…)` 换成 `CASE WHEN EXISTS …`；`map_expressions` 对 Projection **保留旧 schema**（这正是
+不变量所要求的），于是留下一个"表达式名 ≠ 字段名"的计划。随后
+`DecorrelatePredicateSubquery` 从表达式重建投影，用 `Expr::schema_name()` 当字段名 —— 但那是
+*过期* 的名字（`CASE WHEN EXISTS …`），而计划 schema 里写的是 `Int64(2) > ALL`，
+`assert_valid_optimization` 于是判 schema 变了 → INTERNAL。`skip_failed_rules` 默认 false，用户直接看到。
+
+**修复**：字段名以投影自己的 schema 为准；比较时用"重建后该表达式实际会得到的名字"
+（column 取裸名、alias 取别名、其余取 display name），只在真的会变时才补 alias。
+
+**一次踩坑值得记下来**：第一版只把 `original_name` 换成 schema 字段名，结果
+`subquery.slt` 里 10 个既有用例挂了 —— 因为 `Expr::schema_name()` 对限定列返回 `t.k`，而字段名是
+`k`，于是给限定列也补了 alias、**丢了 qualifier**，从另一个方向违反同一个不变量。
+（`gs_*`/`oj_*` 那批用例正是这么发现的。）改成上面的比较方式后两侧都过。
+
+**验证**（在 `apache/datafusion@main 5f21582` 上重编译，19m04s）：
+`SELECT 2 > ALL (…)` 无别名 / 加括号 / 带第二列 / 带别名 / `1 = ANY (…)` 六种形态全部返回正确值；
+`subquery.slt`、`null_aware_mark_join.slt`、`prepare.slt` 全绿；`cargo test -p datafusion-optimizer`
+941+29+5 全过；`cargo fmt --all --check` 干净。
+
+**分支**：`SingletonYe/datafusion@fix/set-comparison-projection-field-name`（`0973cfa`，基于 main 一个提交）。
+PR 文本：`findings/set-comparison-projection-field-name-pr-body.md`。
+沙箱事实：这轮 2 核 + 磁盘吃紧 —— `target/debug/incremental` 涨到 9.1G，`cargo test -p datafusion-optimizer`
+直接 ENOSPC；删掉 incremental 后正常。下次做上游构建前先看这一项。
+
+### Phase 4 — 三个新探针（当日累计 3 个）
+
+1. `aggregate_order_by_clause`：聚合内部的 `ORDER BY`（`string_agg(v, ',' ORDER BY v DESC)`）必须
+   c,b,a；忽略内层排序或聚合后再排序会给 a,b,c。
+2. `window_null_order`：窗口 `ORDER BY` 的默认空值位置（ASC 下 NULLS LAST）是独立路径，
+   NULL 必须拿到 rn=3。
+3. `having_aggregate_not_in_select`：`HAVING` 可以过滤投影里没选的聚合（`SUM(v)`），只留一组、n=2。
+
+三条都与 DuckDB 逐行一致、均带 `expect_rows`。**91 → 94。**
+
+### Next
+
+1. **等用户一步（两个链接，都已在邮件里）**：
+   - 新：`fix/set-comparison-projection-field-name` → 点开即 PR（附 PR 文本）。
+   - 旧：`fix/nth-value-zero-index` → 同上（上游 `nth_value.rs` 至今未改，修复仍有效）。
+2. 待发 issue 文本两份：`set-comparison-projection-internal-error.md`（与新 PR 配套）、
+   `unsupported-feature-errors-dump-internals.md`。
+3. 上游 issue 复核：14 条引用全部与备注一致，本轮无过期项（`#24972` 已 merged、`#13850`/`#13291` 仍 open）。
