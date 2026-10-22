@@ -3,6 +3,16 @@
 Branch: `fix/set-comparison-projection-field-name` on `SingletonYe/datafusion` (based on
 `apache/datafusion@main` `5f21582`).
 
+Re-checked on 2026-10-22 against `main@2717e25`: the projection-name code this patch changes is
+byte-identical there, `rewrite_set_comparison.rs` is untouched (so the bug is still live), and the
+commit cherry-picks onto today's main with **no conflicts**. The only change upstream made to this
+rule since then (#25391) rewrites the mark-join construction, which is orthogonal to this hunk.
+A full end-to-end suite run on today's main was not possible in the build sandbox (disk), so the
+first complete run against current main will be this PR's CI. Against `5f21582` the patch was
+verified directly: all six query shapes return the right answer, `subquery.slt`,
+`null_aware_mark_join.slt` and `prepare.slt` are green, and `cargo test -p datafusion-optimizer`
+passes (941 + 29 + 5 tests).
+
 We can push the branch but **cannot open the PR** (`apache` organisation OAuth App restrictions),
 so the remaining action is the compare link, and this text is pasted into the PR description:
 

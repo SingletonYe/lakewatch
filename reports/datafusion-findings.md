@@ -1534,3 +1534,70 @@ PR 文本：`findings/set-comparison-projection-field-name-pr-body.md`。
 2. 待发 issue 文本两份：`set-comparison-projection-internal-error.md`（与新 PR 配套）、
    `unsupported-feature-errors-dump-internals.md`。
 3. 上游 issue 复核：14 条引用全部与备注一致，本轮无过期项（`#24972` 已 merged、`#13850`/`#13291` 仍 open）。
+
+## 2026-10-22 09:00 — 主线前移，两个待点分支都复核过了
+
+**结论**：97 探针（+3）· 0 个待研判候选 · 健康闸门 7/7 · 修复分支与今日 main **可干净合并**（端到端验证未能在本沙箱完成，见下）
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20，与基线**逐字节相同** |
+| Phase 1b 语义 | **97 探针** · OK=83 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+**自检**：连续性（上一节 `2026-10-21`，无断档）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 仍无 open PR，改为复核两个待点分支是否还有效
+
+用户还没点开任何 compare 链接（`gh pr list --state open` 为空），所以本轮不新起分支（第三个待点链接只会变成噪音），
+而是回答一个问题：**这两个分支今天点开还有意义吗？**
+
+| 分支 | 上游对应文件自 2026-10-16 起 | 结论 |
+|---|---|---|
+| `fix/nth-value-zero-index` | `functions-aggregate/src/nth_value.rs` **零改动** | 两处 `assert_or_internal_err!` 仍在，修复仍有效 |
+| `fix/set-comparison-projection-field-name` | `optimizer/src/decorrelate_predicate_subquery.rs` 被 #25391 改过（+240/−14）；`rewrite_set_comparison.rs` **零改动** | 见下 |
+
+`set-comparison` 那个分支的细节：
+
+* 我改的那段（投影重建、名字判定）在今日 main 上**逐字节相同**（`Expr::schema_name()` 仍在用），
+  `RewriteSetComparison` 也没动 —— 所以**这个 INTERNAL 仍然能复现**，修复没有过时。
+* 把修复 commit `0973cfa` **cherry-pick 到今日 main（`2717e25`）上自动合并成功**（两个文件都 auto-merge、无冲突），
+  即用户点开 compare 链接会得到一个可合并的 PR。
+* #25391 改的是 `build_join` / mark-join 构造与相关子查询重写，**与我这段是正交的**；两者不冲突。
+
+**必须如实说明的一点**：我**没有**在今日 main 上跑完整验证。原因是磁盘：main 这轮把 arrow 升到 60，
+重编译把所有 arrow / datafusion crate 都拖下水，`cargo test -p datafusion-sqllogictest --no-run` 在
+`datafusion-functions-nested` 处 **ENOSPC**（磁盘 24G，df-fork target 已 20G；删掉 4.0G 的 `incremental` 后
+仍需再腾 1.4G 以上才敢重链那个 1.4G 的 slt 二进制，而那会毁掉下一个 run 的 oracle）。
+所以今日的结论边界是：**代码路径未变 + cherry-pick 干净**，端到端（含 #25391 交互）的第一次全量验证
+会是 PR 上的 CI。上一轮该修复在 `5f21582` 上是逐条实跑验证过的（六种形态 + 三个 slt 文件 + optimizer 单测 975 项）。
+
+### Phase 2 第 7 步 — 上游 issue 复核
+
+12 条被引用的 issue 全部与备注一致（`#11886 #23929 #7301 #24950 #12955 #12956 #25766 #20501 #19004 #12907 #13291 #13850` 均 open）。
+另外按错误文本搜了一遍**有没有别人先报了 `set-comparison` 那个不变量失败**（`difference in schemas decorrelate`、
+`predicate subquery projection`、`SetComparison`）：**无**。
+
+### Phase 4 — 三个新探针（当日累计 3 个）
+
+1. `date_trunc_week_start`：`DATE_TRUNC('week', …)` 必须锚在**周一**（2024-01-03 → 2024-01-01，周一自身不变）。
+2. `lpad_rpad_truncation`：长度不足要截断（abc→ab）、长度更长要**循环**填充（abc+xy→abcxy）、lpad 从左侧补。
+3. `case_without_else_is_null`：无 ELSE 的 `CASE` 对不匹配行是 **NULL**：`SUM` 跳过得 1、`COUNT(*)` 仍 3、
+   `COUNT(expr)` 只 1。把它改写成 `ELSE 0` 会保住 SUM 却把 `COUNT(expr)` 变成 3。
+
+三条都与 DuckDB 逐行一致、均带 `expect_rows`。**94 → 97。**
+
+### 沙箱事实（写给下一个 run）
+
+* 磁盘 24G 是这活儿的硬约束。只做 sweep 没问题（lakewatch target 2G + 现有 df-fork target）。
+  一旦要**在移动过的 main 上重编译**（依赖升级时尤甚），先确认 ≥5G 空闲，否则会在中途 ENOSPC。
+* `target/debug/incremental` 是本沙箱最容易回收的一块（昨日 9.1G、今日 4.0G），`rm -rf` 后 cargo 只会变慢。
+* `df-fork` 工作区现在停在 `verify-on-main`（今日 main + 修复的 cherry-pick），target 里是**混合指纹**；
+  下次要么接着编完，要么 `git checkout fix/set-comparison-projection-field-name` 后按需重编。
+
+### Next
+
+1. **等用户一步（两个链接）**：`fix/set-comparison-projection-field-name`（今日复核：可合并、修复仍对症）、
+   `fix/nth-value-zero-index`（上游文件零改动）。PR 文本都在 `findings/*-pr-body.md`。
+2. 待发 issue：`set-comparison-projection-internal-error.md`、`unsupported-feature-errors-dump-internals.md`。
+3. 若用户点开 PR：**先跑 CI 结果**，再谈别的 —— 那是今日 main 上的第一次端到端验证。

@@ -1027,6 +1027,44 @@
         ]
       ],
       "why": "HAVING may filter on an aggregate that the projection does not select (SUM(v) here, while the output is g and COUNT(*)). The group with SUM(v)=5 must be dropped and the other kept with n=2; an implementation that rewrites HAVING into a projection-level filter or that recomputes the aggregate differently shows up as either two rows or a wrong count."
+    },
+    {
+      "id": "date_trunc_week_start",
+      "category": "datetime",
+      "sql": "SELECT CAST(DATE_TRUNC('week', DATE '2024-01-03') AS DATE) AS mid_week, CAST(DATE_TRUNC('week', DATE '2024-01-01') AS DATE) AS monday",
+      "expect_rows": [
+        [
+          "2024-01-01",
+          "2024-01-01"
+        ]
+      ],
+      "why": "Week truncation is anchored on Monday: Wednesday 2024-01-03 truncates back to Monday 2024-01-01, and a Monday truncates to itself. A Sunday-anchored implementation gives 2023-12-31 for the first value, and a timestamp-returning one hides the anchor behind a time-of-day. Cast to DATE so the answer is compared as a date."
+    },
+    {
+      "id": "lpad_rpad_truncation",
+      "category": "strings",
+      "sql": "SELECT lpad('abc', 2, 'x') AS truncated, rpad('abc', 5, 'xy') AS padded, lpad('7', 3, '0') AS zeros",
+      "expect_rows": [
+        [
+          "ab",
+          "abcxy",
+          "007"
+        ]
+      ],
+      "why": "Three rules in one call: a target length shorter than the value truncates it (abc -> ab, from the right), a longer one pads cyclically with the fill string (abc + xy -> abcxy, not abcxyxy cut arbitrarily), and lpad pads on the left (7 -> 007). Catches pad-on-the-wrong-side, non-cyclic padding and truncate-to-empty."
+    },
+    {
+      "id": "case_without_else_is_null",
+      "category": "aggregates",
+      "sql": "SELECT SUM(CASE WHEN x = 1 THEN 1 END) AS s, COUNT(*) AS n, COUNT(CASE WHEN x = 1 THEN 1 END) AS c FROM (VALUES (1),(2),(3)) AS t(x)",
+      "expect_rows": [
+        [
+          "1",
+          "3",
+          "1"
+        ]
+      ],
+      "why": "A CASE with no ELSE yields NULL for the rows it does not match, and the aggregates must treat that as unknown rather than as zero: SUM skips the NULLs (1, not 3), COUNT(*) still counts every row (3), and COUNT(expr) counts only the non-NULL one (1). An ELSE 0 rewrite keeps SUM right but turns c into 3."
     }
   ]
 }
