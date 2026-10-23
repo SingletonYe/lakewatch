@@ -1601,3 +1601,53 @@ PR 文本：`findings/set-comparison-projection-field-name-pr-body.md`。
    `fix/nth-value-zero-index`（上游文件零改动）。PR 文本都在 `findings/*-pr-body.md`。
 2. 待发 issue：`set-comparison-projection-internal-error.md`、`unsupported-feature-errors-dump-internals.md`。
 3. 若用户点开 PR：**先跑 CI 结果**，再谈别的 —— 那是今日 main 上的第一次端到端验证。
+
+## 2026-10-22 手动补跑 — 今日 main 上的端到端验证通过了
+
+**结论**：98 探针（+1）· 0 个待研判候选 · 健康闸门 7/7 · **修复在今日 main（`2717e25`）上端到端验证通过**
+
+用户手动要求再跑一轮。今天 09:00 那轮留了一个明确的缺口：`set-comparison` 修复**只在 `5f21582` 上实跑验证过**，
+今日 main 上只证明了"代码路径未变 + cherry-pick 干净"，端到端被磁盘挡掉。这轮就是来补这个缺口的。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20，与基线**逐字节相同** |
+| Phase 1b 语义 | **98 探针** · OK=84 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性 —— 今日已有 `2026-10-22 09:00` 一节，这是**同日第二次运行**，不是断档；排程 `enabled`、
+`0 9 * * *`，`Next run 2026-10-23T09:00:00-04:00` ✓；`gh pr list --state open` 仍为空。
+
+### 补上的验证（在 `main@2717e25` + cherry-picked `0973cfa` 上重编译，18m24s）
+
+* 六种形态全部返回正确值：无别名、加括号、带第二列、带别名、`1 = ANY`、`CAST(... AS VARCHAR)`
+  （修复前第一种就是 INTERNAL）。
+* `subquery.slt`（此时已含 #25391 新增的 +282 行用例）、`null_aware_mark_join.slt`、`prepare.slt`
+  → **exit=0，0 个错误**。这同时覆盖了与 #25391 的交互。
+* 我自己那三条用例随 cherry-pick 一起进了 `subquery.slt` 并在本次运行中通过。
+
+**如实标注两个没做的**：
+1. 没有跑"未修改的今日 main"作为对照组（要再整一轮 18 分钟编译，磁盘不够）。"bug 仍存在"的依据是
+   源码同一性：`rewrite_set_comparison.rs` 零改动、投影重建那段逐字节相同。
+2. `cargo test -p datafusion-optimizer` 没在今日树上重跑（构建后只剩 1G，dev-deps 编译要几 GB）。
+   所以 PR 的 CI 仍值得看一眼。
+
+### 沙箱事实（磁盘这条越来越关键）
+
+* 这轮开始时有 4.0G 空闲，编译到 `datafusion-functions-nested` 时 ENOSPC；删掉 `target/debug/incremental`（4.0G）后
+  又失败一次；最后**删掉旧 slt 二进制**（1.4G）才编完，结束只剩 1013M。
+* 删旧二进制不只是腾地方，也是卫生：它属于**旧树**（Oct 16），而工作区已是今日 main —— 留着一个与源码不匹配的
+  oracle 比没有更危险（它会安静地替另一棵树作答）。**教训：切树之后先删旧二进制。**
+* 下次要在这台沙箱上验证"移动过的 main"，先确认 ≥5G 空闲（含 1.4G 链接空间）。
+
+### Phase 4 — 1 个新探针
+
+`having_on_unprojected_grouping_column`：`HAVING` 可以过滤**没被投影选中的分组列**
+（`SELECT COUNT(*), MIN(g) FROM t(g) GROUP BY g HAVING g > 1` → n=1、surviving=2）。
+只允许聚合出现在 HAVING、或把条件推到投影层的实现会报错或多留一组。与 DuckDB 一致。**97 → 98。**
+
+### Next
+
+1. 两个待点分支不变，现在 `set-comparison` 那条**已在今日 main 上端到端验证**，可以放心点：
+   `https://github.com/apache/datafusion/compare/main...SingletonYe:fix/set-comparison-projection-field-name?expand=1`
+2. PR 开出来后看 CI（尤其 optimizer 单测）；这也是通知过滤器仍是 #26329 时要留意的地方。

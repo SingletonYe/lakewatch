@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
   "counts": {
-    "OK": 83,
+    "OK": 84,
     "KNOWN_DIFF": 12,
     "BOTH_ERROR": 2
   },
@@ -1204,6 +1204,16 @@
       "category": "aggregates",
       "sql": "SELECT SUM(CASE WHEN x = 1 THEN 1 END) AS s, COUNT(*) AS n, COUNT(CASE WHEN x = 1 THEN 1 END) AS c FROM (VALUES (1),(2),(3)) AS t(x)",
       "why": "A CASE with no ELSE yields NULL for the rows it does not match, and the aggregates must treat that as unknown rather than as zero: SUM skips the NULLs (1, not 3), COUNT(*) still counts every row (3), and COUNT(expr) counts only the non-NULL one (1). An ELSE 0 rewrite keeps SUM right but turns c into 3.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "having_on_unprojected_grouping_column",
+      "category": "aggregates",
+      "sql": "SELECT COUNT(*) AS n, MIN(g) AS surviving FROM (VALUES (1),(2)) AS t(g) GROUP BY g HAVING g > 1",
+      "why": "HAVING may filter on a grouping column that the projection does not select: only the g=2 group survives, so n=1 and MIN(g)=2 (which is what makes the surviving group identifiable). An implementation that only allows aggregates in HAVING, or that pushes the condition into the projection instead of the group filter, gives either an error or both groups.",
       "ordered": false,
       "session_options": [],
       "status": "OK",
