@@ -1774,4 +1774,4 @@ open；`#13583` closed/completed 与备注一致；`#24972` merged）。无过�
 
 1. **PR #26657**：现在 `mergeable: true`，等维护者批准 CI 跑起来 + 合并。若有人提修改意见，按 Phase 0b 处理。
 2. **PR 正文**：仍未精简（用户侧操作，我无权编辑 apache/* 的 PR 正文）。
-3. **`fix/nth-value-zero-index`**：分支已与 main 同步；但 main 在 13:26Z 之后又动了，**点开前需要重新确认是否仍无冲突**。
+3. **`fix/nth-value-zero-index`**：已本地试合并 `upstream/main`（`c6869995`）—— **无冲突**，可以直接点开。
