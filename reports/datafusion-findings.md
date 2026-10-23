@@ -1717,3 +1717,61 @@ open；`#13583` closed/completed 与备注一致；`#24972` merged）。无过�
 1. **PR #26657**：等维护者批准 CI / review；若有人提修改意见，下一轮按 Phase 0b 处理（改代码 + 推分支 + 由用户回复）。
 2. **PR 正文**：请用户把 description 精简成从 `## Which issue does this PR close?` 开始的部分。
 3. **`fix/nth-value-zero-index`**：已与 main 同步、可直接点开（无冲突）。
+
+## 2026-10-23 21:00 — PR #26657 又冲突了（main 前移），再解一次并推送
+
+**触发**：用户在 web chat 里发来 PR 页面截图（显示 *Checks awaiting conflict resolution*）并问"检查 PR 合并没有"。
+不是排程运行，所以只做 Phase 0b（PR 维护），不跑探针扫描、不新增探针。
+
+**先回答那个问题：没有合并。** `#26657` 仍是 `OPEN` —— 而且 `mergeable: CONFLICTING` / `mergeStateStatus: DIRTY`，
+即"又冲突了"。原因和上午那次一样：**上午我推完合并之后（13:26Z），main 又动了**。
+
+| | |
+|---|---|
+| 分支 head（本轮开始时） | `67a3126`（上午那个合并提交） |
+| main（本轮开始时） | `c6869995` — 18:52Z 的 #26213「multi-column null-aware NOT IN」 |
+| 冲突文件 | 仍然**只有** `subquery.slt`（`decorrelate_predicate_subquery.rs` 自动合并成功） |
+| 冲突原因 | 上游这次追加的是 #25258 的回归测试，正好又是未别名集合比较、又落在文件末尾 |
+
+### 这次改了一个解决顺序，顺手把这类冲突断根
+
+上午那轮把"上游的在前、我们的三条在后" —— 也就是**我们的块永远贴着文件末尾**，所以上游每往末尾追加一次就撞一次。
+本轮反过来：**我们的三条放在上游新增块之前**。
+
+理由（三方合并的机制，不是经验之谈）：合并提交之后，`subquery.slt` 里上游的 #25258 块成了双方**共同**的内容，
+于是它成了一个锚点 —— 我们新增的行在它**上面**，上游以后新增的行在它**下面**，两侧不再争同一段上下文。
+预期以后上游继续往文件末尾追加时不会再冲突（这是推断，下一轮实证）。
+
+### 验证（不重编译就下结论是不行的）
+
+* `cargo test --test sqllogictests --no-run` → **EXIT=0，37m39s，0 错误**。合并后的树能编过。
+* `subquery.slt` → **exit=0**（523 条记录，0 错误）。
+* `subquery_projection.slt` + `null_aware_anti_join.slt` + `null_aware_mark_join.slt` + `prepare.slt` → **exit=0**。
+* 推 `73e0a4b7b`（**加合并提交，未 force-push**）→ `gh api .../pulls/26657` 立刻返回 **`mergeable: true`**
+  （`mergeable_state: blocked` 只是等必需检查 / 维护者批准首次贡献者的 CI，不是冲突）。
+
+### 评审状态：有一条正面评论，但不是正式 approval
+
+`raghavyadav01` 在 20:36Z 评论（**就在用户截图前 24 分钟**）：
+
+> Verified: fails on main exactly as you describe, returns `true` with the field name intact on your branch.
+> Taking the name from the projection's schema is right — `schema_name()` was never the field name.
+> Also checked the `Expr::Column` arm earns its place: delete it and 7 existing `subquery.slt` tests fail.
+> subquery.slt + 948 optimizer tests green locally.
+
+即：独立复现了 main 上的失败、确认了修复、还验证了 `Expr::Column` 那一支是必要的（删掉会有 7 个既有用例挂）。
+`reviews` 数组仍为空、`reviewDecision: REVIEW_REQUIRED` —— **他验了，但没点 approve**。这不需要我改代码，只需等。
+
+### 沙箱事实（新的，会再遇到）
+
+* `rust-toolchain.toml` pin `1.99.0`，但镜像里只装了 `stable` = **1.99.1**，且 `/usr/local/rustup/tmp` 属 root
+  不可写 → 直接 `cargo` 会死在 `could not create temp file … Permission denied`。
+  **解法：`RUSTUP_TOOLCHAIN=stable` 绕过 pin**（1.99.1 比 pin 新一个 patch，验证用足够）。
+* 4 GB 内存 / 2 vCPU 下，`rust-lld` 链接 `sqllogictests` 那一个二进制就吃掉 ~20 分钟（kswapd0 全程在跑），
+  编译整体 **37m39s**。调试二进制 1.5 GB。**别把"编译"当成几分钟的事来排期。**
+
+### Next
+
+1. **PR #26657**：现在 `mergeable: true`，等维护者批准 CI 跑起来 + 合并。若有人提修改意见，按 Phase 0b 处理。
+2. **PR 正文**：仍未精简（用户侧操作，我无权编辑 apache/* 的 PR 正文）。
+3. **`fix/nth-value-zero-index`**：分支已与 main 同步；但 main 在 13:26Z 之后又动了，**点开前需要重新确认是否仍无冲突**。
