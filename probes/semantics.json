@@ -1077,6 +1077,30 @@
         ]
       ],
       "why": "HAVING may filter on a grouping column that the projection does not select: only the g=2 group survives, so n=1 and MIN(g)=2 (which is what makes the surviving group identifiable). An implementation that only allows aggregates in HAVING, or that pushes the condition into the projection instead of the group filter, gives either an error or both groups."
+    },
+    {
+      "id": "date_trunc_quarter",
+      "category": "datetime",
+      "sql": "SELECT CAST(DATE_TRUNC('quarter', DATE '2024-05-15') AS DATE) AS mid_quarter, CAST(DATE_TRUNC('quarter', DATE '2024-01-01') AS DATE) AS quarter_start",
+      "expect_rows": [
+        [
+          "2024-04-01",
+          "2024-01-01"
+        ]
+      ],
+      "why": "Quarter truncation is calendar-anchored, not a rolling 3-month window: 15 May 2024 truncates to 1 April 2024, and a 1 January is already a quarter start. A 90-day rolling implementation or a January-anchored month index both miss the first value; cast to DATE so the anchor is compared as a date."
+    },
+    {
+      "id": "bit_length_vs_char_length",
+      "category": "strings",
+      "sql": "SELECT length('héllo') AS chars, bit_length('héllo') AS bits",
+      "expect_rows": [
+        [
+          "5",
+          "48"
+        ]
+      ],
+      "why": "Two different counts of the same string: `length` counts characters (5, because é is one character) while `bit_length` counts UTF-8 bytes times eight (é is two bytes, so 6 bytes = 48 bits). An implementation that counts bytes in `length`, or characters in `bit_length`, or that mixes bytes with bits, is visible in one of the two numbers."
     }
   ]
 }

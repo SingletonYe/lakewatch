@@ -1,6 +1,8 @@
 # Ready-to-open PR: keep a projection's field names when decorrelating a predicate subquery
 
-Branch `fix/set-comparison-projection-field-name` (commit `0973cfa`, 2 files) on `SingletonYe/datafusion`.
+Branch `fix/set-comparison-projection-field-name` on `SingletonYe/datafusion` — the PR is **open as
+[#26657](https://github.com/apache/datafusion/pull/26657)** (head `67a3126`, which merges `main` into
+the original `0973cfa`).
 Open at:
 `https://github.com/apache/datafusion/compare/main...SingletonYe:fix/set-comparison-projection-field-name?expand=1`
 

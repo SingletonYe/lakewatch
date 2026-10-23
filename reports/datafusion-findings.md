@@ -1651,3 +1651,69 @@ PR 文本：`findings/set-comparison-projection-field-name-pr-body.md`。
 1. 两个待点分支不变，现在 `set-comparison` 那条**已在今日 main 上端到端验证**，可以放心点：
    `https://github.com/apache/datafusion/compare/main...SingletonYe:fix/set-comparison-projection-field-name?expand=1`
 2. PR 开出来后看 CI（尤其 optimizer 单测）；这也是通知过滤器仍是 #26329 时要留意的地方。
+
+## 2026-10-23 09:00 — PR #26657 冲突已修，现在可合并
+
+**结论**：用户开出了 PR **#26657**，但它带着合并冲突（`DIRTY`）—— 本轮把它修好并推上，现在 **MERGEABLE**；
+另一个待点分支也顺手与 main 同步了。100 探针（+2）· 0 候选 · 闸门 7/7。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20，与基线**逐字节相同** |
+| Phase 1b 语义 | **100 探针** · OK=86 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性（上一节 `2026-10-22 手动补跑`，无断档）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 这是本轮的重点：把 open PR 从 DIRTY 修成 MERGEABLE
+
+`gh pr list --state open` 第一次不再为空：`#26657`（10-23T12:23Z 由用户创建，head `0973cfa`），
+`mergeable: CONFLICTING`、`mergeStateStatus: DIRTY`。按技能，"一个红的、无人管的 PR 是最坏结果"，所以本轮先干这个。
+
+* **冲突来源**：`subquery.slt`。上游 10-22/10-23 有两个 PR（#26013、#26544）往**文件末尾**追加用例，
+  而我们的三条用例也是追加在末尾 —— 同一区域撞车。`decorrelate_predicate_subquery.rs` 反而自动合并成功。
+* **修法**：把 `upstream/main` 合并进分支（加合并提交，**不 force-push**），冲突处保留**双方**用例：
+  上游的在前，我们的三条在后。
+* **一次踩坑**：第一版解决时忘了在两侧之间留空行，slt runner 把 `statement ok DROP TABLE …` 和后面的
+  `query B` 当成同一条记录，直接报 `statement should have no result, use query instead`。**跑一遍测试就抓到了**
+  —— 冲突解决后必须实跑，不能只看 diff 干净。
+* **验证**（合并后的 `main@6a280f1` + 修复，重编译 19m03s）：六种形态全部返回正确值；
+  `subquery.slt`（已含上游新用例）、`null_aware_mark_join.slt`、`prepare.slt` → **exit=0，0 错误**。
+* **结果**：推 `67a3126` 后 `mergeable: MERGEABLE`（`mergeStateStatus: BLOCKED` 只是等必需检查/维护者批准
+  首次贡献者的 CI，不是我们的问题）。CI 已在新 head 上重跑（轻量检查在跑，重型的 SKIPPED 待批准）。
+
+**顺带（预防同类问题）**：`fix/nth-value-zero-index` 的 `aggregate.slt` 上游也改过 3 次，点开很可能同样冲突。
+本轮把 main 合并进该分支（**这次零冲突**，推 `982d4f7`）。验证方式取巧但诚实：用当前二进制（含 set-comparison 修复、
+**不含** nth_value 修复）跑合并后的 `aggregate.slt` —— 结果**只有我那条用例失败**，且失败原因正是二进制里没有该修复
+（仍报旧内部错误）；上游新增用例全过。这同时证明合并解决无误、且那条用例确实在测修复。
+
+**只有用户能做的一件事**：PR 的 description 目前粘的是整份准备稿（含横线以上的操作说明和 `Closes # —` 占位行）。
+apache 的组织限制让我**无法编辑 PR 正文**（读可以、写不行，本轮再次确认），所以建议在 GitHub 上把正文替换成
+从 `## Which issue does this PR close?` 开始的部分（`Closes` 那行改成真 issue 号或删掉）。
+
+### Phase 2 第 7 步 — 上游 issue 复核
+
+14 条引用全部与备注一致（`#11886 #23929 #7301 #24950 #12955 #12956 #25766 #20501 #19004 #12907 #13291 #13850`
+open；`#13583` closed/completed 与备注一致；`#24972` merged）。无过期项。
+
+### Phase 4 — 两个新探针（当日累计 2 个）
+
+1. `date_trunc_quarter`：季度截断按**日历**而非滚动 90 天 —— 2024-05-15 → 2024-04-01，1-1 自身不变。
+2. `bit_length_vs_char_length`：同一个串的两种计数 —— `length('héllo')`=5（字符），`bit_length('héllo')`=48
+   （é 占 2 字节 → 6 字节 ×8）。把字节当字符、或字符当位，必有一处露馅。
+
+两条都与 DuckDB 一致、均带 `expect_rows`。**98 → 100。**
+
+### 沙箱事实
+
+* 今天又撞了两次 ENOSPC：上游 113 个提交让 `datafusion` 主体重编译，target 涨到 24G 满。
+  靠删 `target/debug/incremental`（3.5G）、旧 slt 二进制（1.4G）、上一轮留下的两个单测二进制（1.5G）共腾出 ~6.5G 才编完。
+  **`incremental` 会在每次构建中重新长回来**，别以为删过一次就完事。
+* 浅克隆做合并要**足够深度**：`--depth 1` 会报 `refusing to merge unrelated histories`，
+  用 `--depth 200` 拿到 merge-base（本例是 `5f21582`）后即可正常合并。
+
+### Next
+
+1. **PR #26657**：等维护者批准 CI / review；若有人提修改意见，下一轮按 Phase 0b 处理（改代码 + 推分支 + 由用户回复）。
+2. **PR 正文**：请用户把 description 精简成从 `## Which issue does this PR close?` 开始的部分。
+3. **`fix/nth-value-zero-index`**：已与 main 同步、可直接点开（无冲突）。
