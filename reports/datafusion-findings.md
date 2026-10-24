@@ -1832,3 +1832,94 @@ cancelled push run." 也就是说：
 2. **上游没有对应 issue**（`gh search issues --author SingletonYe` 为空，按报错文本也搜不到）。
    模板写着 "We generally require a GitHub issue to be filed for all bug fixes"。已给出一份 issue 草稿；
    不补的话至少要把 `Closes # —` 那行改成诚实的说法。
+
+## 2026-10-24 09:00 — 排程运行：答完 PR 的第二条评审并推上
+
+**结论**：103 探针 · **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**；
+本轮的重点是 Phase 0b —— 有第二条评审、且是**有内容的具体修改要求**，已在本地验证后推上（`12a42d9`）。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，`reports/df-robust.json` 与已提交版本**逐字节相同** |
+| Phase 1b 语义 | **103 探针**（+3）· OK=89 · KNOWN_DIFF=12 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-23 → 10-24）；排程 `enabled`、`0 9 * * *` ✓。
+第二个 automation 的 Gmail 过滤器**仍然指着已合并的 `26329`**（见文末"阻塞"）。
+
+### Phase 0b — 第二条评审要求把自写 helper 换成 `Expr::qualified_name`
+
+`namanjain24-sudo` 于 09:15Z 提交 review（state=COMMENTED），三条意见，**第一条是实打实的修改要求**：
+
+> `projected_field_name` duplicates `Expr::qualified_name()` in `datafusion/expr/src/expr.rs`, which has
+> the same three arms (`Column` → bare name, `Alias` → alias name, otherwise `schema_name()`) and is
+> documented for exactly this case … Dropping the helper and using `rewritten_expr.qualified_name().1`
+> instead keeps 951 `datafusion-optimizer` tests and `subquery.slt` green locally.
+
+**先去源码里核对，而不是照抄**（`git show upstream/main:datafusion/expr/src/expr.rs`）：
+
+```rust
+pub fn qualified_name(&self) -> (Option<TableReference>, String) {
+    match self {
+        Expr::Column(Column { relation, name, spans: _ }) => (relation.clone(), name.clone()),
+        Expr::Alias(Alias { relation, name, .. })     => (relation.clone(), name.clone()),
+        _ => (None, self.schema_name().to_string()),
+    }
+}
+```
+
+三个 arm 与我们那个 helper **完全等价**（`.1` 分别是裸列名 / 别名 / `schema_name()`），而且它的文档注释
+写的就是"当表达式构成某个 plan 的输出字段时用它"。他是对的：我们的 helper 是这条规则的**第二份拷贝**。
+采纳。另外两条一并做掉：
+
+* `projection.expr.into_iter().zip(field_names)` —— 配对从"按 `[index]` 取"变成**结构性**的；
+* `subquery.slt` 里那条 `as aliased` 用例**在 main 上也过**，所以它是**对照组**而不是回归用例 ——
+  在注释里写明它钉的是别名的那个 arm。这个观察很好，写清楚比让下一个人以为它在测修复强。
+
+净变化 **−19 / +10**。**改动后重新验证（不是引用他的结果）**：
+
+| 验证 | 结果 |
+|---|---|
+| `cargo test --test sqllogictests` 重建（增量，链接约 25 分钟） | EXIT=0 |
+| `subquery.slt` | **exit=0** |
+| `subquery_projection.slt` + `null_aware_anti_join.slt` + `null_aware_mark_join.slt` + `prepare.slt` | **exit=0** |
+| `cargo test -p datafusion-optimizer` | **951 + 29 + 5 passed, 0 failed** |
+| `cargo fmt -p datafusion-optimizer -- --check` | 干净 |
+
+推 `12a42d9` 后 `mergeable: true`；**fork CI 自己就起来了**（Rust/Dev/Dependencies 全部 in_progress）。
+
+**修正昨天那条教训**：fork 上 Actions 启用之后，**push 会自动触发 fork CI，不需要手动 dispatch**。
+昨天要靠手动的唯一原因就是 Actions 被禁用。
+
+### Phase 1a / 1b / 4
+
+* Tier-A：`reports/df-robust.json` **git 里没有 diff** —— 391/20 与基线逐字节相同，是硬证据不是印象。
+* 语义：100 → **103 探针**，三条新探针都先用两个引擎实测过才写进去：
+  1. `list_index_one_based_out_of_range_null`（`nested_types` 此前只有 2 条探针，且都是 map 相关）——
+     `l[0]` 和越界都是 NULL 而不是报错；**0 基引擎会返回 20**，所以一条同时钉住基数和越界规则。
+  2. `set_ops_treat_null_as_not_distinct`（`set_operators` 此前只有 1 条）—— 集合运算按
+     "not distinct from" 比较，NULL 匹配 NULL（尽管 `NULL = NULL` 是 unknown），且**去重**。
+  3. `group_by_cube_grand_total_and_subtotals`（目录里只有 ROLLUP / GROUPING SETS，**没有 CUBE**）——
+     3 行输入出 8 行，小计行里被折叠的列是 NULL，不能被丢掉也不能和真实 NULL 组合并。
+* 三条都与 DuckDB 一致，写回 `probes/semantics.json`（`ce64ed7`）。
+
+### 沙箱事实
+
+* **`pkill -f "cargo build --release"` 把自己那条命令也杀了**（技能里明确警告过，还是踩了）：
+  我自己的 shell 命令行里包含该字符串，于是 SIGTERM 打到自己身上，`Command exited with code 143`。
+  要杀进程就按 PID 杀，不要用会匹配到自己的 `-f` 模式。
+* 这个沙箱其实比"2 CPU 很慢"的印象快：lakewatch 全量 `cargo build` **6m22s**。
+  真正慢的是 DataFusion 的**链接**：`rust-lld` 在 4 GB 内存下对 `sqllogictests` 一个二进制就要 **~25 分钟**。
+  排期时要为链接留时间，而不是为编译。
+
+### 只有用户能做的两件事
+
+1. **在 PR 线程回复这条 review**（我无法在 apache/* 上写评论）—— 已给出现成文本。
+2. **PR 正文仍然是准备稿**：开头三行是写给我自己的操作说明，`Closes # —` 是字面占位符。
+   昨天已给出干净版本。**评审者也独立指出了这一点**，所以它已经从"不整洁"变成"有人在看"。
+
+### Next
+
+1. **PR #26657**：等 `Rust (fork)` 绿 + 等一个 approving review；若再有修改要求，下一轮按 Phase 0b 处理。
+2. **PR 正文 + 回复**：等用户动手（两件都在用户侧）。
+3. **`fix/nth-value-zero-index`**：仍与 main 无冲突、修复仍缺失（见 10-24 08:15 一节），可以随时点开。
