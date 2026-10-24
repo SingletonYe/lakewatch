@@ -1,8 +1,8 @@
 {
   "oracle": "duckdb",
-  "binary": "/home/user/workspace/lakewatch-daily/target/debug/lakewatch",
+  "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 86,
+    "OK": 89,
     "KNOWN_DIFF": 12,
     "BOTH_ERROR": 2
   },
@@ -1234,6 +1234,36 @@
       "category": "strings",
       "sql": "SELECT length('h\u00e9llo') AS chars, bit_length('h\u00e9llo') AS bits",
       "why": "Two different counts of the same string: `length` counts characters (5, because \u00e9 is one character) while `bit_length` counts UTF-8 bytes times eight (\u00e9 is two bytes, so 6 bytes = 48 bits). An implementation that counts bytes in `length`, or characters in `bit_length`, or that mixes bytes with bits, is visible in one of the two numbers.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "list_index_one_based_out_of_range_null",
+      "category": "nested_types",
+      "sql": "SELECT l[1] AS the_first, l[3] AS the_last, l[0] AS index_zero, l[4] AS past_the_end FROM (SELECT [10, 20, 30] AS l) t",
+      "why": "List indexing is 1-based, and both index 0 and an index past the end must yield NULL rather than an error. A 0-based engine returns 20 and a value here, so the pair pins the base and the out-of-range rule at once.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "set_ops_treat_null_as_not_distinct",
+      "category": "set_operators",
+      "sql": "SELECT (SELECT count(*) FROM (SELECT v FROM (VALUES (1),(1),(NULL)) t(v) INTERSECT SELECT v FROM (VALUES (1),(2),(NULL)) u(v)) x) AS intersect_rows, (SELECT count(*) FROM (SELECT v FROM (VALUES (NULL),(NULL)) t(v) UNION SELECT v FROM (VALUES (NULL)) u(v)) y) AS union_rows",
+      "why": "Set operations compare with 'not distinct from', so NULL matches NULL even though `NULL = NULL` is unknown, and they deduplicate: the repeated 1 and the repeated NULLs each collapse to one row. Two counts catch an engine that either drops NULL pairs or keeps duplicates.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "group_by_cube_grand_total_and_subtotals",
+      "category": "grouping_sets",
+      "sql": "SELECT a, b, count(*) AS n FROM (VALUES ('x',1),('x',2),('y',1)) t(a,b) GROUP BY CUBE(a,b) ORDER BY a NULLS LAST, b NULLS LAST",
+      "why": "CUBE(a, b) is the four grouping sets (a, b), (a), (b) and (), each with its own count, so a 3-row input yields 8 rows. The subtotal rows carry NULL in the collapsed column and must not be dropped or merged with a real NULL group.",
       "ordered": false,
       "session_options": [],
       "status": "OK",
