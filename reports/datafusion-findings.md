@@ -1886,7 +1886,13 @@ pub fn qualified_name(&self) -> (Option<TableReference>, String) {
 | `cargo test -p datafusion-optimizer` | **951 + 29 + 5 passed, 0 failed** |
 | `cargo fmt -p datafusion-optimizer -- --check` | 干净 |
 
-推 `12a42d9` 后 `mergeable: true`；**fork CI 自己就起来了**（Rust/Dev/Dependencies 全部 in_progress）。
+推 `12a42d9` 后 `mergeable: true`；**fork CI 自己就起来了**（Rust/Dev/Dependencies 全部 in_progress），
+13:40 起跑、**14:07 全绿**，镜像检查 `Rust (fork)` 在 14:16 跟上变成 **Fork run success**。
+
+**镜像检查会滞后，这是上游工具的设计而不是故障**：`fork_ci_status.yml` 每 15 分钟只更新**仍在跑**的 fork 运行
+（"Active or missing runs … every 15 minutes"）；fork 运行一旦完成，就归到那个「few hours」的轮转扫描里。
+所以 `Rust (fork)` 在 fork 侧完成之后还会挂在 `in_progress` 一阵子才翻成 success（本次约 9 分钟）。
+它**不是**必需检查，不挡合并。
 
 **修正昨天那条教训**：fork 上 Actions 启用之后，**push 会自动触发 fork CI，不需要手动 dispatch**。
 昨天要靠手动的唯一原因就是 Actions 被禁用。
