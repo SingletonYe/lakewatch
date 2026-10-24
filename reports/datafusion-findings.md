@@ -1775,3 +1775,60 @@ open；`#13583` closed/completed 与备注一致；`#24972` merged）。无过�
 1. **PR #26657**：现在 `mergeable: true`，等维护者批准 CI 跑起来 + 合并。若有人提修改意见，按 Phase 0b 处理。
 2. **PR 正文**：仍未精简（用户侧操作，我无权编辑 apache/* 的 PR 正文）。
 3. **`fix/nth-value-zero-index`**：已本地试合并 `upstream/main`（`c6869995`）—— **无冲突**，可以直接点开。
+
+## 2026-10-24 08:15 — PR #26657 现在只剩 review；fork CI 已修好
+
+**回答用户的两个问题**：①"需要 ping 维护者请求批准 CI 吗" → **不需要，那个东西不存在**；
+②"现在还需要我做什么" → 只剩**清理 PR 正文**（+ 可选：补一个 issue）。
+
+### 关键发现：DataFusion 对 fork PR 根本不跑上游重型 CI
+
+`rust.yml` 头部注释与 `docs/source/contributor-guide` 都写明：
+
+> A PR from a fork to `main` runs the Rust workflow **on your fork** … The main repository runs only the
+> fast lint jobs … The **merge queue** runs the full workflow on the merged result before a PR merges.
+
+所以重型 job 显示 `skipped` 是**设计如此，不是"等批准"**；全程没有任何 `action_required`。
+`Rust (fork)` 只是镜像 fork 那次运行、且**不在** `.asf.yaml` 的 37 个必需检查里。
+真正的门 = **1 个 approving review**（`required_approving_review_count: 1`）+ merge queue。
+
+### 真问题：fork 上的 Actions 被禁用（用户已修）
+
+10-22/10-23 我们推了三次，fork 上**一次 workflow 都没跑**，`Rust (fork)` 报 "No fork run for this commit"。
+直查根因：`gh workflow run rust.yml --repo SingletonYe/datafusion` 返回
+**`HTTP 422: Actions has been disabled for this repository.`** —— fork 的 Actions 被禁用了。
+API 侧 `actions/permissions` 明明报 `enabled: true`，`PUT` 也改不动；缺的是 **UI 上那次确认**
+（贡献指南第 1 步："open the Actions tab on your fork. Confirm the prompt to enable workflows"）。
+用户启用后，10-23T23:23Z 那次推送的 fork CI **Rust/Dev/Dependencies 全绿**，`Rust (fork)` = **Fork run success**。
+
+**给以后的自己：** 每次同步完 main，确认 fork 的 `Rust` 运行出现在新 SHA 上；没有就去查 Actions 是否又被禁用。
+
+### 踩坑（我自己造的，记下来别再犯）
+
+我用 `gh workflow run` 想补一次 fork CI —— 但那时同一 SHA 上**已经有一次成功的 push 运行**了。
+`fork_ci_status.yml` 取的是 `workflow_runs[0]`（最新一次），**注释原文**："A newer manual run can replace a
+cancelled push run." 也就是说：
+* 我那次多余的 dispatch 一旦**失败**，`Rust (fork)` 就会从 success 翻成 failure —— 白白弄脏一个已就绪的 PR；
+* 我取消它之后更糟：最新一次运行变成 `cancelled`，镜像就会显示 `cancelled`。
+* 最后靠 **cancel → 等它进入 completed → `DELETE` 该 run** 才恢复（进行中的 run 删不掉，403）。
+**结论：只有当新 SHA 上确实没有 fork 运行时才去 dispatch，且先确认没有更旧的绿色运行会被顶掉。**
+
+### 当前状态（2026-10-24 08:15Z）
+
+| | |
+|---|---|
+| PR #26657 | `OPEN` · `mergeable: true` · `mergeStateStatus: BLOCKED` · `reviewDecision: REVIEW_REQUIRED` |
+| head | `aea1cf9`（**用户在网页上按了 "Update branch"**，把 main 合进分支，23:23Z；不是 force-push） |
+| 检查 | 必需检查全绿、0 失败；`Rust (fork)` = success |
+| main | `039c0b99`（10-24 06:50Z）—— 合并后 main 又动了两次，**没有新冲突** |
+
+**"我们三条用例放在上游块之前"这个顺序确实断根了**：aea1cf9 合并 main 后上游又前移，仍无冲突。
+
+### 只剩用户能做的两件事
+
+1. **PR 正文仍是准备稿**：开头三行是写给我自己的操作说明（"Post the issue first (text in
+   `set-comparison-projection-internal-error.md`)…"），且 `Closes # —` 是**字面占位符**。
+   apache 的组织限制让我读得到、写不了。已给出一份可直接粘贴的干净正文。
+2. **上游没有对应 issue**（`gh search issues --author SingletonYe` 为空，按报错文本也搜不到）。
+   模板写着 "We generally require a GitHub issue to be filed for all bug fixes"。已给出一份 issue 草稿；
+   不补的话至少要把 `Closes # —` 那行改成诚实的说法。
