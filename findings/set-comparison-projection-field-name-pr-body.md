@@ -1,20 +1,23 @@
-# Ready-to-open PR: keep a projection's field names when decorrelating a predicate subquery
+# PR body for `fix/set-comparison-projection-field-name` (apache/datafusion#26657)
 
-Branch `fix/set-comparison-projection-field-name` on `SingletonYe/datafusion` — the PR is **open as
-[#26657](https://github.com/apache/datafusion/pull/26657)** (head `67a3126`, which merges `main` into
-the original `0973cfa`).
-Open at:
-`https://github.com/apache/datafusion/compare/main...SingletonYe:fix/set-comparison-projection-field-name?expand=1`
+**Everything below the `<!-- BEGIN PASTABLE BODY -->` marker is the PR description, ready to
+paste as-is. Nothing above it is part of the body** — the previous revision of this file put
+authoring notes *inside* the pastable region, and the reviewer noticed them on the PR
+(`namanjain24-sudo`, 2026-10-24). Do not reintroduce that.
 
-Post the issue first (text in `set-comparison-projection-internal-error.md`) and put its number in the
-first line below, or leave the line as it is and let the body carry the report.
-**Paste from the horizontal rule down.**
+PR: [#26657](https://github.com/apache/datafusion/pull/26657) · head `12a42d9` (merges `main` at
+`702803d`, on top of `0973cfa`) · branch `fix/set-comparison-projection-field-name` on
+`SingletonYe/datafusion`.
 
----
+The issue text, if we ever file one, is in
+`set-comparison-projection-internal-error.md`. No issue was filed, so the `Closes` line below says
+so instead of carrying a placeholder.
+
+<!-- BEGIN PASTABLE BODY -->
 
 ## Which issue does this PR close?
 
-Closes #<issue-number> — if no issue was filed, this body contains the report.
+No issue was filed; this body carries the report.
 
 ## Rationale for this change
 
@@ -42,21 +45,25 @@ Not on the release line: 55.2.0 does not contain #24972, so the same query still
 ## What changes are included in this PR?
 
 * `datafusion/optimizer/src/decorrelate_predicate_subquery.rs`: take the field names from the
-  projection's own schema, and compare them against the name the rebuilt projection *would* use (the
-  bare column name for a column, the alias name for an alias, the display name otherwise), so an
-  alias is added only when it would really differ. Comparing against the schema name alone would
-  alias a qualified column and lose its qualifier — the same check failing from the other side.
+  projection's own schema, and compare them against the name the rebuilt projection would use
+  (`Expr::qualified_name`, i.e. the bare column name for a column, the alias name for an alias, the
+  display name otherwise), so an alias is added only when it would really differ. Comparing against
+  the schema name alone would alias a qualified column and lose its qualifier — the same check
+  failing from the other side.
 * `datafusion/sqllogictest/test_files/subquery.slt`: three cases — unaliased, unaliased with a second
-  projected column, and aliased.
+  projected column, and aliased. The aliased one is a control rather than a regression test: it
+  passes on `main` too, and pins the alias arm of the name comparison.
 
-## Are these changes tested?
+## What is the testing strategy for this PR?
 
-Yes. Cherry-picked onto `main@2717e25` and rebuilt: all six query shapes return the right answer, and
-`subquery.slt` (by then also containing #25391's new cases), `null_aware_mark_join.slt` and
-`prepare.slt` pass with 0 errors. On the base `5f21582` the same checks passed, plus
-`cargo test -p datafusion-optimizer` (941 + 29 + 5 tests) and `cargo fmt --all --check`; the optimizer
-unit tests were not re-run on `2717e25`.
+The two unaliased `.slt` cases fail on `main` with `Optimizer rule 'decorrelate_predicate_subquery'
+failed` and pass with the change; the aliased case is the control described above. On the branch
+merged with `main`, `subquery.slt`, `subquery_projection.slt`, `null_aware_anti_join.slt`,
+`null_aware_mark_join.slt` and `prepare.slt` all pass with 0 errors, `cargo test -p
+datafusion-optimizer` is 951 + 29 + 5 passed and 0 failed, and `cargo fmt --all --check` is clean.
 
 ## Are there any user-facing changes?
 
 No.
+
+<!-- END PASTABLE BODY -->
