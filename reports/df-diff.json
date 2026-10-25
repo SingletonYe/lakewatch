@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 89,
-    "KNOWN_DIFF": 12,
+    "OK": 91,
+    "KNOWN_DIFF": 13,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -188,6 +188,19 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: duckdb errored (Catalog Error: Scalar Function with name date_bin does not exist!)"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "negative_nan_ordering_is_sign_sensitive",
+      "category": "float_semantics",
+      "sql": "SELECT (CAST('-NaN' AS DOUBLE) = CAST('NaN' AS DOUBLE)) AS neg_equals_pos, (CAST('-NaN' AS DOUBLE) > 1.0) AS neg_above_one, (CAST('-NaN' AS DOUBLE) < 1.0) AS neg_below_one",
+      "why": "Pins the sign-sensitivity of NaN so that the day #26091 lands, this probe reports a changed answer instead of silently going stale.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] false,false,true vs duckdb [1 row(s)] true,true,false"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
@@ -1268,6 +1281,39 @@
       "session_options": [],
       "status": "OK",
       "details": []
+    },
+    {
+      "id": "nan_is_one_group_and_self_equal",
+      "category": "float_semantics",
+      "sql": "SELECT COUNT(DISTINCT x) AS distinct_vals, COUNT(*) AS rows_all, SUM(CASE WHEN x = x THEN 1 ELSE 0 END) AS self_equal_rows FROM (VALUES (CAST('NaN' AS DOUBLE)), (CAST('NaN' AS DOUBLE)), (1.0)) t(x)",
+      "why": "NaN is one value for DISTINCT and GROUP BY, not one group per row, and `NaN = NaN` is TRUE -- deliberately unlike IEEE 754, which makes every comparison with NaN false. An engine that kept the two NaNs apart would report distinct_vals=3; one that followed IEEE would report self_equal_rows=1.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "nan_is_a_value_that_sorts_above_numbers",
+      "category": "float_semantics",
+      "sql": "SELECT isnan(MIN(x)) AS min_is_nan, isnan(MAX(x)) AS max_is_nan, COUNT(x) AS counted, (CAST('NaN' AS DOUBLE) > 1.0) AS nan_above_one FROM (VALUES (CAST('NaN' AS DOUBLE)), (1.0)) t(x)",
+      "why": "NaN is a value rather than a missing one (COUNT counts it), and under the float total ordering it is larger than every number, so MIN returns the number while MAX returns NaN. Pins the grouped MIN/MAX placement that #24432 had to correct.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "negative_nan_ordering_is_sign_sensitive",
+      "category": "float_semantics",
+      "sql": "SELECT (CAST('-NaN' AS DOUBLE) = CAST('NaN' AS DOUBLE)) AS neg_equals_pos, (CAST('-NaN' AS DOUBLE) > 1.0) AS neg_above_one, (CAST('-NaN' AS DOUBLE) < 1.0) AS neg_below_one",
+      "why": "Pins the sign-sensitivity of NaN so that the day #26091 lands, this probe reports a changed answer instead of silently going stale.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] false,false,true vs duckdb [1 row(s)] true,true,false"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
   ]
 }
