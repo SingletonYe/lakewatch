@@ -25,10 +25,12 @@ so it does not read as evidence for the fix.
 Re-verified after the change rather than reusing your numbers: `subquery.slt`, `subquery_projection.slt`,
 `null_aware_anti_join.slt`, `null_aware_mark_join.slt` and `prepare.slt` all pass with 0 errors,
 `cargo test -p datafusion-optimizer` is 951 + 29 + 5 passed and 0 failed, and `cargo fmt --all --check`
-is clean. That is `12a42d9`, and I have tidied the description as you flagged.
+is clean. That is `12a42d9`.
 
 @raghavyadav01 — thanks for the LGTM, and for calling out that the comment is the part worth keeping.
 That is the bit I did not want to lose, so it stayed when the helper went.
+
+You are both right about the description scaffolding; it is replaced with the template body now.
 
 The branch merges cleanly with `main` and the fork run is green. Is there anything else you would like
 to see before this can go in?
