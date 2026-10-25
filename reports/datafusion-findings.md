@@ -1929,3 +1929,86 @@ pub fn qualified_name(&self) -> (Option<TableReference>, String) {
 1. **PR #26657**：等 `Rust (fork)` 绿 + 等一个 approving review；若再有修改要求，下一轮按 Phase 0b 处理。
 2. **PR 正文 + 回复**：等用户动手（两件都在用户侧）。
 3. **`fix/nth-value-zero-index`**：仍与 main 无冲突、修复仍缺失（见 10-24 08:15 一节），可以随时点开。
+
+## 2026-10-25 09:00 — 排程运行：PR 拿到 LGTM，本轮补上 NaN 覆盖
+
+**结论**：106 探针（+3）· **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**。
+Phase 0b 无事可修（评审是正面结论），但要**补一条欠着的回复**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS**（收尾又跑一遍，含新探针） |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，`reports/df-robust.json` 与已提交版本**零 diff** |
+| Phase 1b 语义 | **106 探针**（+3）· OK=91 · KNOWN_DIFF=13 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-24 → 10-25）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — `raghavyadav01` 给了 LGTM，所以本轮没有代码要改
+
+10-24T20:13Z 的 review（state=COMMENTED）：
+
+> Looks right now. Taking the name from `projection.schema` and comparing against
+> `qualified_name().1` is the correct pair — `schema_name()` was never the field name.
+> The comment is the part worth keeping: it explains why naming from the expression is the tempting
+> wrong answer, which isn't obvious from the diff. **LGTM.**
+
+**没有任何修改要求**，所以按技能的表，本轮 PR 侧"什么都不用做"。但有一件**我们欠着的事**：
+
+* `namanjain24-sudo` 10-24 09:15Z 提的修改要求，我们在当天 13:40 改完推了 —— **却从来没有在 PR 上回过一句话**。
+  `gh api .../issues/26657/comments` 只有 `raghavyadav01` 一个人；`reviews` 里两条都是 COMMENTED。
+  也就是说**这个 PR 从头到尾没有一条来自我们的评论**。
+* 所以本轮准备**一条**评论同时收两个口：给 `namanjain24-sudo` 交代改了什么 + 验证结果，
+  谢 `raghavyadav01` 的 LGTM，并在结尾问一句还有没有别的要看的。
+  这**不是**催办 —— 技能允许的 nudge 是"每 3 天最多一次"，而这条是我们**本来就必须回**的答复。
+
+状态核对：head `12a42d9` · `mergeable: true` · 检查 **16 success / 29 skipped / 0 failed** ·
+`Rust (fork)` = **success** · 两条 review 都是 COMMENTED，所以 `reviewDecision` 仍是 `REVIEW_REQUIRED`
+（**缺的是 GitHub 意义上的那一次 approve，不是任何技术问题**）。分支 22 个提交落后 main，仍无冲突。
+
+### Phase 2 第 7 步 — 上游 issue 复核（本轮全部重查）
+
+14 条引用全部与记录一致（`#11886 #23929 #7301 #24950 #12955 #12956 #25766 #20501 #19004 #12907 #13291 #13850`
+open；`#13583` closed/completed；`#24972` 已合并）。**无过期项。**
+
+顺手核了 `#24432`（`probes/semantics.json` 里 `signed_zero_ordering` 的立论依据）：它是
+**closed/completed（2026-08-20，comphead）**，由 **#24435「fix: use total_cmp for grouped float MIN/MAX
+accumulators」** 修掉。**这条笔记上一轮已经写对了**（写明"closed as completed 2026-08-20"、以及修之前
+分组 MIN/MAX 用 `partial_cmp` 会依赖顺序），所以不用改 —— 但值得记下：**issue 状态是会变的，每轮都得重新查，
+不能因为"上次查过"就跳过**。
+
+### Phase 4 — 3 条新探针：NaN（此前覆盖为 **0**）
+
+`grep -c -i nan probes/semantics.json` 之前是 **0**：目录里有 3 条 signed-zero 探针，**完全没有 NaN**。
+而上游正在这个点上动工：**#26138**（EPIC，把 `-0.0`/NaN 的 key 处理收拢到一处）和
+**#26091**（feat，Treat all NaNs as the same value / `-NaN = NaN`）。两边都在改的地方，正该钉住。
+
+三条都先实测两个引擎再写：
+
+1. `nan_is_one_group_and_self_equal` —— NaN 对 DISTINCT/GROUP BY 是**一个值**而不是每行一组，
+   且 **`NaN = NaN` 为 true**（**故意不同于 IEEE**）。期望 `2,3,3`；拆开 NaNs 的引擎会给 3，
+   照 IEEE 走的会给 1。**两边一致。**
+2. `nan_is_a_value_that_sorts_above_numbers` —— NaN 是**值**不是缺失（COUNT 数它），
+   在浮点**全序**里它比任何数都大，所以 `MIN` 返回那个数、`MAX` 返回 NaN（`isnan()` 判定）。
+   期望 `false,true,2,true`。**两边一致。**
+3. `negative_nan_ordering_is_sign_sensitive` —— **已知差异**：DataFusion **保留 NaN 的符号**
+   （`-NaN = NaN` 为 false，全序里 -NaN 排在任何数**之下**），DuckDB 把每个 NaN 当同一个值
+   （`true,true,false`）。已在 `known_difference` 里写明并挂上 #26091 / #26138。
+   **#26091 落地那天，这条探针会自己报出答案变了**，而不是悄悄过期。
+
+**一个会影响以后探针设计的发现**：DataFusion 在 CSV 输出里把 NaN **渲染成空字符串**
+（`SELECT CAST('NaN' AS DOUBLE)` → 空行）。所以**输出里含 NaN 的探针无法直接比较**
+（DuckDB 给 `nan`，DataFusion 给 ``，`canon()` 会把后者当普通空串）。
+上面三条因此全部只用**标量**（计数、布尔）做输出，不把 NaN 本身放进结果集。
+
+### 沙箱事实
+
+* 开局磁盘 **90% 满（仅剩 2.5G）**：`df-fork/target/debug/incremental` 一晚上长回 **7.9G**。
+  删掉后回到 11G 空闲 —— 再次印证"删过一次不代表以后不用删"。
+* 本轮**不需要** DataFusion 构建（PR 侧没有代码改动），所以省下了那 ~25 分钟的链接。
+
+### Next
+
+1. **PR #26657**：只剩"有人点 Approve 并合并"。若再收到修改要求，下一轮按 Phase 0b 处理；
+   若两三天后仍无人动，可以加**一条**简短提醒（本轮的评论已经算答复，不算 nudge）。
+2. **用户侧两件事仍未做**：PR 正文仍是准备稿（`Closes # —` 字面占位符）；本条回复尚未贴出。
+3. **`fix/nth-value-zero-index`**：仍可随时点开（与 main 无冲突、修复仍缺失）。
