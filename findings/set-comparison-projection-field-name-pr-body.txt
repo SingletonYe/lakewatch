@@ -1,0 +1,65 @@
+` marker is the PR description, ready to
+paste as-is. Nothing above it is part of the body** — the previous revision of this file put
+authoring notes *inside* the pastable region, and the reviewer noticed them on the PR
+(`namanjain24-sudo`, 2026-10-24). Do not reintroduce that.
+
+PR: [#26657](https://github.com/apache/datafusion/pull/26657) · head `12a42d9` (merges `main` at
+`702803d`, on top of `0973cfa`) · branch `fix/set-comparison-projection-field-name` on
+`SingletonYe/datafusion`.
+
+The issue text, if we ever file one, is in
+`set-comparison-projection-internal-error.md`. No issue was filed, so the `Closes` line below says
+so instead of carrying a placeholder.
+
+<!-- BEGIN PASTABLE BODY -->
+
+## Which issue does this PR close?
+
+No issue was filed; this body carries the report.
+
+## Rationale for this change
+
+A set comparison in a projection that has no alias fails with an internal error:
+
+```console
+> SELECT 2 > ALL (SELECT x FROM (VALUES (1),(0)) t(x));
+Internal error: Assertion failed: compatible: Failed due to a difference in schemas:
+original schema: … Field { name: "Int64(2) > ALL", data_type: Boolean } …
+new schema:      … Field { name: "CASE WHEN EXISTS THEN Boolean(false) …" } …
+```
+
+`DecorrelatePredicateSubquery` rebuilds a projection from its expressions, and it preserved the output
+field names from `Expr::schema_name()`. That is not the name the rebuilt projection uses, for two
+reasons: `schema_name()` keeps a column's qualifier (`t.k`) while the field is named after the bare
+column, and earlier rules rewrite expressions with `map_expressions`, which keeps the schema but can
+leave an expression whose display name no longer matches its field name. `RewriteSetComparison` does
+exactly that — it replaces `x > ALL (…)` with a `CASE WHEN EXISTS …` — so this rule rebuilt the
+projection under the stale name and the optimizer's schema-invariance check failed.
+`datafusion.optimizer.skip_failed_rules` defaults to false, so the user sees the internal error.
+
+Not on the release line: 55.2.0 does not contain #24972, so the same query still reports
+`Physical plan does not support logical expression Exists(…)` there.
+
+## What changes are included in this PR?
+
+* `datafusion/optimizer/src/decorrelate_predicate_subquery.rs`: take the field names from the
+  projection's own schema, and compare them against the name the rebuilt projection would use
+  (`Expr::qualified_name`, i.e. the bare column name for a column, the alias name for an alias, the
+  display name otherwise), so an alias is added only when it would really differ. Comparing against
+  the schema name alone would alias a qualified column and lose its qualifier — the same check
+  failing from the other side.
+* `datafusion/sqllogictest/test_files/subquery.slt`: three cases — unaliased, unaliased with a second
+  projected column, and aliased. The aliased one is a control rather than a regression test: it
+  passes on `main` too, and pins the alias arm of the name comparison.
+
+## What is the testing strategy for this PR?
+
+The two unaliased `.slt` cases fail on `main` with `Optimizer rule 'decorrelate_predicate_subquery'
+failed` and pass with the change; the aliased case is the control described above. On the branch
+merged with `main`, `subquery.slt`, `subquery_projection.slt`, `null_aware_anti_join.slt`,
+`null_aware_mark_join.slt` and `prepare.slt` all pass with 0 errors, `cargo test -p
+datafusion-optimizer` is 951 + 29 + 5 passed and 0 failed, and `cargo fmt --all --check` is clean.
+
+## Are there any user-facing changes?
+
+No.
