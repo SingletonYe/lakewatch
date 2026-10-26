@@ -1,18 +1,3 @@
-` marker is the PR description, ready to
-paste as-is. Nothing above it is part of the body** — the previous revision of this file put
-authoring notes *inside* the pastable region, and the reviewer noticed them on the PR
-(`namanjain24-sudo`, 2026-10-24). Do not reintroduce that.
-
-PR: [#26657](https://github.com/apache/datafusion/pull/26657) · head `12a42d9` (merges `main` at
-`702803d`, on top of `0973cfa`) · branch `fix/set-comparison-projection-field-name` on
-`SingletonYe/datafusion`.
-
-The issue text, if we ever file one, is in
-`set-comparison-projection-internal-error.md`. No issue was filed, so the `Closes` line below says
-so instead of carrying a placeholder.
-
-<!-- BEGIN PASTABLE BODY -->
-
 ## Which issue does this PR close?
 
 No issue was filed; this body carries the report.
