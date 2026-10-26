@@ -1,12 +1,8 @@
-Thanks both.
+Sorry for the silence @namanjain24-sudo — the change went in on 10-24: `projected_field_name` is gone in
+favour of `Expr::qualified_name()`, I took the `.zip()`, and the `as aliased` case is marked as a control.
 
-@namanjain24-sudo — sorry, the change went in on 10-24 but I never said so here. `projected_field_name`
-is gone in favour of `Expr::qualified_name()`; I also took the `.zip()` and marked the `as aliased` case
-as a control in the comment. Re-verified after the change: `subquery.slt` plus the four related files
-pass, `cargo test -p datafusion-optimizer` is 951 + 29 + 5 green, `fmt` clean — that is `12a42d9`.
+Re-verified after the change (`subquery.slt` plus the four related files; `cargo test -p
+datafusion-optimizer` 951 + 29 + 5 green; `fmt` clean) — that is `12a42d9`, and the description
+scaffolding is being replaced with the template body.
 
-@raghavyadav01 — thanks for the LGTM, and for calling out that the comment is the part worth keeping.
-
-You are both right about the description scaffolding; replacing it with the template body now.
-
-Anything else you would like to see before this can go in?
+Thanks for the LGTM @raghavyadav01 — anything else you would like to see before this can go in?
