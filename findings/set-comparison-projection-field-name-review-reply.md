@@ -19,13 +19,7 @@ has never been acknowledged, so the PR currently looks unanswered.
 
 
 
+
 ---
 
-Sorry for the silence @namanjain24-sudo — the change went in on 10-24: `projected_field_name` is gone in
-favour of `Expr::qualified_name()`, I took the `.zip()`, and the `as aliased` case is marked as a control.
-
-Re-verified after the change (`subquery.slt` plus the four related files; `cargo test -p
-datafusion-optimizer` 951 + 29 + 5 green; `fmt` clean) — that is `12a42d9`, and the description
-scaffolding is being replaced with the template body.
-
-Thanks for the LGTM @raghavyadav01 — anything else you would like to see before this can go in?
+Fixed in 12a42d9, verified — thanks, anything else?
