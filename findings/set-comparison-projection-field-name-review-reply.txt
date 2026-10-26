@@ -17,7 +17,8 @@ is clean. That is `12a42d9`.
 @raghavyadav01 — thanks for the LGTM, and for calling out that the comment is the part worth keeping.
 That is the bit I did not want to lose, so it stayed when the helper went.
 
-You are both right about the description scaffolding; it is replaced with the template body now.
+You are both right about the description scaffolding — thanks for flagging it; I am replacing it with the
+template body.
 
 The branch merges cleanly with `main` and the fork run is green. Is there anything else you would like
 to see before this can go in?

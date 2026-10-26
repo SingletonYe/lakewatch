@@ -9,6 +9,14 @@ answer, and `raghavyadav01` said LGTM the same evening. Nothing else is outstand
 **not** a nudge — it is the reply we owe. If nobody picks it up in another two or three days, the
 next run may add one short reminder, and not before.
 
+**This text is order-independent: post it as it is, with or without the description tidy-up.** The
+sentence about the description is phrased as in-progress on purpose, so it is true either way.
+
+Why it matters more than politeness: the contributor guide's PR lifecycle step 3 says *"Please respond
+to all feedback on the PR ... you should acknowledge the feedback. PRs waiting for the feedback for
+more than a few days will be marked as draft."* The code change went in on 2026-10-24, but the thread
+has never been acknowledged, so the PR currently looks unanswered.
+
 ---
 
 Thanks both.
@@ -30,7 +38,8 @@ is clean. That is `12a42d9`.
 @raghavyadav01 — thanks for the LGTM, and for calling out that the comment is the part worth keeping.
 That is the bit I did not want to lose, so it stayed when the helper went.
 
-You are both right about the description scaffolding; it is replaced with the template body now.
+You are both right about the description scaffolding — thanks for flagging it; I am replacing it with the
+template body.
 
 The branch merges cleanly with `main` and the fork run is green. Is there anything else you would like
 to see before this can go in?

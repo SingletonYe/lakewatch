@@ -1216,6 +1216,58 @@
       ],
       "known_difference": "DataFusion keeps the sign of NaN: `-NaN = NaN` is false, and the total ordering puts -NaN below every number while NaN sits above them. DuckDB treats every NaN as one value (`true, true, false`). Upstream is moving toward the DuckDB reading -- apache/datafusion#26091 'Treat all NaNs as the same value (`-NaN = NaN`)', with the sign handling tracked in one place by apache/datafusion#26138. Pinned so the change is visible here when it lands.",
       "why": "Pins the sign-sensitivity of NaN so that the day #26091 lands, this probe reports a changed answer instead of silently going stale."
+    },
+    {
+      "id": "full_outer_join_using_key_not_coalesced",
+      "category": "joins",
+      "sql": "SELECT k IS NULL AS key_is_null, lv, rv FROM (VALUES (1, 'l1'), (2, 'l2')) l(k, lv) FULL OUTER JOIN (VALUES (2, 'r2'), (3, 'r3')) r(k, rv) USING (k) ORDER BY COALESCE(lv, rv)",
+      "expect_rows": [
+        [
+          "false",
+          "l1",
+          "NULL"
+        ],
+        [
+          "false",
+          "l2",
+          "r2"
+        ],
+        [
+          "true",
+          "NULL",
+          "r3"
+        ]
+      ],
+      "known_difference": "For `FULL OUTER JOIN ... USING (k)` the merged key must be `COALESCE(l.k, r.k)`, so the right-only row should keep k = 3. DataFusion resolves the unqualified key to the left column only and returns NULL there; DuckDB returns 3. `INNER` and `LEFT JOIN USING` are unaffected, and the `ON l.k = r.k` form is correct, so this is specific to the USING column when the left side is NULL-padded. Filed upstream as apache/datafusion#22881 (open), which covers RIGHT, FULL and NATURAL joins alike.",
+      "why": "Pins the wrong answer deliberately, because it is silent: the query plans and runs, and only the key value is lost. #22881 landing will make this probe report a changed answer."
+    },
+    {
+      "id": "interval_comparison_is_component_wise",
+      "category": "datetime",
+      "sql": "SELECT (INTERVAL '1' DAY > INTERVAL '25' HOUR) AS day_gt_25h, (INTERVAL '1' DAY = INTERVAL '24' HOUR) AS day_eq_24h, (INTERVAL '1' HOUR + INTERVAL '30' MINUTE = INTERVAL '90' MINUTE) AS hour_plus_min",
+      "expect_rows": [
+        [
+          "true",
+          "false",
+          "true"
+        ]
+      ],
+      "known_difference": "DataFusion orders intervals component-wise -- months, then days, then nanoseconds -- because it uses Arrow's `IntervalMonthDayNano` ordering. A one-day interval therefore compares greater than 25 hours, and `INTERVAL '1' DAY = INTERVAL '24' HOUR` is false, while adding hour and minute intervals does normalise (the third column is true in every engine). DuckDB and PostgreSQL convert to a common unit first and answer false, true, true. Defensible rather than wrong: a calendar day is not 24 hours across a DST boundary, which is why the components are kept apart.",
+      "why": "Pins the component-wise ordering and, in the same row, that interval addition does normalise -- so a change to either behaviour is visible instead of silent."
+    },
+    {
+      "id": "list_length_counts_nulls_and_contains_is_three_valued",
+      "category": "nested_types",
+      "sql": "SELECT array_length([1, NULL, 3]) AS len_with_null, list_contains([1, NULL, 3], NULL) AS contains_null, list_contains([1, NULL, 3], 3) AS contains_three, array_length([]) AS empty_len",
+      "expect_rows": [
+        [
+          "3",
+          "NULL",
+          "true",
+          "0"
+        ]
+      ],
+      "why": "A NULL element still counts toward the length, an empty list has length 0 rather than NULL, and asking whether a list contains NULL is unknown rather than false -- so `WHERE list_contains(l, NULL)` must drop the row. Three separate answers that are easy to get wrong together."
     }
   ]
 }

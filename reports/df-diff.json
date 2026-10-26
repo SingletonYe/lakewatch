@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 91,
-    "KNOWN_DIFF": 13,
+    "OK": 92,
+    "KNOWN_DIFF": 15,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -201,6 +201,32 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] false,false,true vs duckdb [1 row(s)] true,true,false"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "full_outer_join_using_key_not_coalesced",
+      "category": "joins",
+      "sql": "SELECT k IS NULL AS key_is_null, lv, rv FROM (VALUES (1, 'l1'), (2, 'l2')) l(k, lv) FULL OUTER JOIN (VALUES (2, 'r2'), (3, 'r3')) r(k, rv) USING (k) ORDER BY COALESCE(lv, rv)",
+      "why": "Pins the wrong answer deliberately, because it is silent: the query plans and runs, and only the key value is lost. #22881 landing will make this probe report a changed answer.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [3 row(s)] false,l1,NULL | false,l2,r2 | true,NULL,r3 vs duckdb [3 row(s)] false,l1,NULL | false,l2,r2 | false,NULL,r3"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "interval_comparison_is_component_wise",
+      "category": "datetime",
+      "sql": "SELECT (INTERVAL '1' DAY > INTERVAL '25' HOUR) AS day_gt_25h, (INTERVAL '1' DAY = INTERVAL '24' HOUR) AS day_eq_24h, (INTERVAL '1' HOUR + INTERVAL '30' MINUTE = INTERVAL '90' MINUTE) AS hour_plus_min",
+      "why": "Pins the component-wise ordering and, in the same row, that interval addition does normalise -- so a change to either behaviour is visible instead of silent.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] true,false,true vs duckdb [1 row(s)] false,true,true"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
@@ -1314,6 +1340,42 @@
         "documented divergence: datafusion [1 row(s)] false,false,true vs duckdb [1 row(s)] true,true,false"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "full_outer_join_using_key_not_coalesced",
+      "category": "joins",
+      "sql": "SELECT k IS NULL AS key_is_null, lv, rv FROM (VALUES (1, 'l1'), (2, 'l2')) l(k, lv) FULL OUTER JOIN (VALUES (2, 'r2'), (3, 'r3')) r(k, rv) USING (k) ORDER BY COALESCE(lv, rv)",
+      "why": "Pins the wrong answer deliberately, because it is silent: the query plans and runs, and only the key value is lost. #22881 landing will make this probe report a changed answer.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [3 row(s)] false,l1,NULL | false,l2,r2 | true,NULL,r3 vs duckdb [3 row(s)] false,l1,NULL | false,l2,r2 | false,NULL,r3"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "interval_comparison_is_component_wise",
+      "category": "datetime",
+      "sql": "SELECT (INTERVAL '1' DAY > INTERVAL '25' HOUR) AS day_gt_25h, (INTERVAL '1' DAY = INTERVAL '24' HOUR) AS day_eq_24h, (INTERVAL '1' HOUR + INTERVAL '30' MINUTE = INTERVAL '90' MINUTE) AS hour_plus_min",
+      "why": "Pins the component-wise ordering and, in the same row, that interval addition does normalise -- so a change to either behaviour is visible instead of silent.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] true,false,true vs duckdb [1 row(s)] false,true,true"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "list_length_counts_nulls_and_contains_is_three_valued",
+      "category": "nested_types",
+      "sql": "SELECT array_length([1, NULL, 3]) AS len_with_null, list_contains([1, NULL, 3], NULL) AS contains_null, list_contains([1, NULL, 3], 3) AS contains_three, array_length([]) AS empty_len",
+      "why": "A NULL element still counts toward the length, an empty list has length 0 rather than NULL, and asking whether a list contains NULL is unknown rather than false -- so `WHERE list_contains(l, NULL)` must drop the row. Three separate answers that are easy to get wrong together.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
     }
   ]
 }
