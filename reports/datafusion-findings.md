@@ -2012,3 +2012,88 @@ accumulators」** 修掉。**这条笔记上一轮已经写对了**（写明"clo
    若两三天后仍无人动，可以加**一条**简短提醒（本轮的评论已经算答复，不算 nudge）。
 2. **用户侧两件事仍未做**：PR 正文仍是准备稿（`Closes # —` 字面占位符）；本条回复尚未贴出。
 3. **`fix/nth-value-zero-index`**：仍可随时点开（与 main 无冲突、修复仍缺失）。
+
+## 2026-10-26 09:00 — 排程运行：PR 无新动静，但"必须回复"这条被我低估了
+
+**结论**：109 探针（+3）· **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（连续第三天）。
+Phase 0b 仍然没有代码要改，但本轮把"回复评审"从"礼貌"提升到了"**有期限的义务**"。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **109 探针**（+3）· OK=92 · KNOWN_DIFF=15 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-25 → 10-26）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — PR 停在原地，而贡献指南说沉默有代价
+
+`#26657` 的 `updated_at` 仍是 **10-24T20:13:55Z**（`raghavyadav01` 的 LGTM），也就是说**41 小时里没有任何动静**：
+没有新评审、没有新评论、CI 全绿、`mergeable: true`。**没有任何技术问题需要处理。**
+
+真正值得记的是本轮去读了贡献指南的 PR 生命周期，第 3 步原文：
+
+> Your PR will be reviewed. **Please respond to all feedback on the PR: you don't have to change the code,
+> but you should acknowledge the feedback. PRs waiting for the feedback for more than a few days will be
+> marked as draft.**
+
+我们**改完代码却从未在 PR 上回过一句话**（`issues/26657/comments` 只有 `raghavyadav01` 一人，
+两条 review 都是 COMMENTED）。从外部看，这个 PR 就是"评审提了意见、作者没理"。
+代码层面的答复（`12a42d9`）`raghavyadav01` 是自己看出来的 —— **那是我运气好，不是流程对**。
+所以这条回复不是"要不要发"，而是"**再不发 PR 有被标成 draft 的风险**"。
+
+第 4 步还说明：合并要**有写权限的 committer** 来 approve 再 merge。两条 review 都是 COMMENTED
+（不是 APPROVED），所以 `reviewDecision` 一直是 `REVIEW_REQUIRED` —— 缺的是 committer 的那一次 approve。
+第 92 行给的许可是"**已批准之后**过了几天可以友好 ping 那位 committer"—— 我们还没到那一步，
+所以本轮**不加**任何催促，只把欠着的那条答复准备好。
+
+**本轮对回复做的一个改动**：把"正文已经换好了"这句改成进行时（"I am replacing it with the template body"）。
+上一轮我把它写成完成时，于是**回复必须等正文改完才能发** —— 我自己给用户加了一道前置条件。
+现在这句**两种顺序都成立**，用户想先发回复就先发回复。
+
+**关于"我能不能自己发"**：本轮又确认了一次没有别的路径。`okou connector custom` 只支持
+`create/update/show/delete/connect`，**没有"调用"子命令**；Data Router 里也没有 github 家族。
+而且 `okou connector status github` 显示 `authMethod: oauth` —— 与 `gh` 同属第三方 OAuth App，
+同样吃 apache 那条组织限制。**这不是权限配置问题，是 apache 的组织策略**，无解，只能由用户来发。
+
+### Phase 4 — 3 条新探针，其中一条来自真正的猎捕
+
+`joins` 是目录里最薄的分类之一（3 条，且全是 NULL 键相关）。本轮按这个方向去找，**先撞到一个看起来是
+真 bug 的**：
+
+```sql
+SELECT k, lv, rv FROM (VALUES (1,'l1'),(2,'l2')) l(k,lv)
+  FULL OUTER JOIN (VALUES (2,'r2'),(3,'r3')) r(k,rv) USING (k);
+```
+
+DataFusion 对**只在右侧存在**的那行把 `k` 返回成 **NULL**，而标准（SQL:2003）与 DuckDB 都要求
+`USING` 列是 `COALESCE(l.k, r.k)`，也就是 **3**。**静默错误**：查询能计划、能跑，只是键值丢了，
+下游 `WHERE`/`GROUP BY` 会被污染。我先做了控制实验确认边界 —— `ON l.k = r.k` 的形式是对的、
+`INNER`/`LEFT JOIN USING` 也正常，只有左侧被 NULL 填充时（`RIGHT`/`FULL`）才错。
+
+**然后去搜上游 —— 已经有人提了：`#22881`「RIGHT/FULL/NATURAL JOIN ... USING(k) does not coalesce the
+join key」，open，2026-06-10，描述与我实测逐条吻合。** 所以分类是 `known_upstream`，**不提重复 issue**，
+而是写成一条带 `known_difference` 的探针挂上 #22881 —— #22881 修好那天它会自己报出答案变了。
+
+这就是"先搜再报"的价值：一个看起来全新的静默错误结果，其实两个月前就有人报过。**搜一次的成本是一分钟，
+提一个重复 issue 的成本是维护者的时间。**
+
+另外两条：
+
+* `interval_comparison_is_component_wise`（`datetime`）—— DataFusion **按分量比较**区间
+  （月、日、纳秒，因为直接用 Arrow 的 `IntervalMonthDayNano` 排序），所以 `INTERVAL '1' DAY > INTERVAL '25' HOUR`
+  为 **true**、`= INTERVAL '24' HOUR` 为 **false**；DuckDB 和 PostgreSQL 先归一化到同一单位，答案是 false/true。
+  同一条探针里第三列 `1 hour + 30 minutes = 90 minutes` **两边都是 true**，说明**加法会归一化而比较不会**。
+  判定 `by_design` 而不是 bug：日历日跨 DST 就不是 24 小时，分量分开正是为了这个。
+  （另：`INTERVAL * Int` 在 DataFusion 里直接报"无法推断结果类型" —— 那是 **#13850** 已记录的未支持项。）
+* `list_length_counts_nulls_and_contains_is_three_valued`（`nested_types`）—— NULL 元素**计入**长度、
+  空列表长度是 **0** 而不是 NULL、`list_contains(l, NULL)` 是 **NULL 而不是 false**（三值逻辑），
+  所以 `WHERE list_contains(l, NULL)` 必须把行滤掉。三个答案放在一行里，容易一起做错。**两边一致。**
+
+### Next
+
+1. **PR #26657**：等 committer 的一次 approve（两条 review 都只是 COMMENTED）。技术侧已全部就绪。
+   **回复仍然欠着，且指南明说会因此被标 draft —— 这是本轮最该做掉的一件事。**
+2. **PR 正文**：仍是准备稿（`Closes # —` 占位符）。已改成与回复**无顺序依赖**。
+3. **`#22881`**：已记录，等上游修；修好后我们的探针会报出来。
+4. **`fix/nth-value-zero-index`**：仍可随时点开（与 main 无冲突、修复仍缺失）。
