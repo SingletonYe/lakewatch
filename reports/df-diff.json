@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 92,
+    "OK": 94,
     "KNOWN_DIFF": 15,
     "BOTH_ERROR": 2
   },
@@ -1372,6 +1372,26 @@
       "category": "nested_types",
       "sql": "SELECT array_length([1, NULL, 3]) AS len_with_null, list_contains([1, NULL, 3], NULL) AS contains_null, list_contains([1, NULL, 3], 3) AS contains_three, array_length([]) AS empty_len",
       "why": "A NULL element still counts toward the length, an empty list has length 0 rather than NULL, and asking whether a list contains NULL is unknown rather than false -- so `WHERE list_contains(l, NULL)` must drop the row. Three separate answers that are easy to get wrong together.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "unnest_keeps_null_elements_as_rows",
+      "category": "table_functions",
+      "sql": "SELECT COUNT(*) AS rows_all, COUNT(v) AS non_null FROM UNNEST([1, NULL, 3]) AS t(v)",
+      "why": "UNNEST materialises one row per element with NULLs included, so COUNT(*) is 3 while COUNT(v) is 2. An engine that drops NULL elements, or treats the list as a set, returns 2 and 2 -- one pair of counts separates those three readings.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "decimal_cast_scale_reduction_rounds_half_up",
+      "category": "casts",
+      "sql": "SELECT CAST(CAST('0.125' AS DECIMAL(10,3)) AS DECIMAL(10,2)) AS a, CAST(CAST('0.145' AS DECIMAL(10,3)) AS DECIMAL(10,2)) AS b, CAST(CAST('0.25' AS DECIMAL(10,3)) AS DECIMAL(10,1)) AS c",
+      "why": "Reducing a DECIMAL's scale rounds half away from zero: 0.125 becomes 0.13 and 0.25 becomes 0.3. Banker's rounding (half to even), which some engines use, would answer 0.12, 0.14 and 0.2 -- all three columns differ, so the probe separates the two modes instead of just pinning values. The reductions deliberately keep a fractional scale: at scale 0 the two engines render the same value differently (DataFusion `3`, DuckDB `3.0`), which is noise, not a divergence.",
       "ordered": false,
       "session_options": [],
       "status": "OK",
