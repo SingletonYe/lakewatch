@@ -2097,3 +2097,78 @@ join key」，open，2026-06-10，描述与我实测逐条吻合。** 所以分�
 2. **PR 正文**：仍是准备稿（`Closes # —` 占位符）。已改成与回复**无顺序依赖**。
 3. **`#22881`**：已记录，等上游修；修好后我们的探针会报出来。
 4. **`fix/nth-value-zero-index`**：仍可随时点开（与 main 无冲突、修复仍缺失）。
+
+## 2026-10-27 09:00 — 排程运行：PR 静止 15 小时；本轮把"合并队列会不会过"这个未知项验掉了
+
+**结论**：111 探针（+2）· **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第四天）。
+PR 无技术动作可做，但本轮**在本地验证了我们的修复与当前 main 的整合** —— 并且**刻意没有推**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **111 探针**（+2）· OK=94 · KNOWN_DIFF=15 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-26 → 10-27）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 状态没动，但发现上游动了我们两个文件
+
+`#26657` 的 `updated_at` 仍是 **10-26T21:27:27Z**（`raghavyadav01` 那次 approve），15 小时无动静。
+正文**仍是准备稿**（2973 字符，开头还是 "Post the issue first…"），`requested_reviewers` 为空 ——
+也就是说，上一轮给的两件事（换正文、请 committer）都还没做。
+
+`raghavyadav01` 的 APPROVED 不计入所需的那 1 个批准，这一点在他自己的评论里已经写明
+（"Needs a committer from here."），GitHub 底部横幅也写着 "required by **reviewers with write access**"。
+
+**本轮真正的新信息**：上游在我们的合并点（`702803d`）之后**改动了我们改的那两个文件两次**：
+
+| 提交 | 日期 | 对我们的文件 |
+|---|---|---|
+| `836b4dd` fix(optimizer): preserve correlated columns when removing filter above SubqueryAlias (#26551) | 10-24 | `+34/-0` 与 `+20/-0` |
+| `4b7bc8b` fix: reject correlated IN/NOT IN over a groupless aggregate (#26677) | 10-25 | `+29/-0` 与 `+35/-5` |
+
+两者都落在 `decorrelate_predicate_subquery.rs` **和** `subquery.slt` —— 正是我们的修复所在处。
+所以本轮把当前 main（`6286f5e`）**在本地**合进分支并跑了完整验证：
+
+* 合并**零冲突**；
+* `subquery.slt` → **exit=0**（此时它已经同时含有 #26551、#26677 与我们的用例）；
+* `subquery_projection.slt` + `null_aware_anti_join.slt` + `null_aware_mark_join.slt` + `prepare.slt` → **exit=0**；
+* `cargo test -p datafusion-optimizer` → **952 + 29 + 5 passed, 0 failed**（952 而非 951，上游多了一个测试）。
+
+**结论：合并队列不会因为整合问题失败。** 这是本轮唯一还悬着的技术未知项，现在有了答案。
+
+**为什么刻意不推这个合并提交**（这是一个决定，不是疏忽）：
+
+1. PR 已经是 `mergeable: true`，合并队列本来就会在合并结果上跑全量 —— 推上去没有增加新信息；
+2. **推新提交会 dismiss 掉 `raghavyadav01` 的 APPROVED**（若仓库开了 "dismiss stale approvals"）。那个 approve 虽然不计入必需的 1 个批准，但它是 PR 上**唯一一个可见的正面信号**，删掉是净损失；
+3. 两位评审说的 "all three points are in `12a42d9`" 都是**针对具体 SHA** 的表态，换 head 会让这些表态失去指向；
+4. 技能明确警告不要"为了唤醒 CI 而重推" —— 而让 `updated_at` 跳一下从而重新出现在维护者的"最近更新"里，本质上是同一件事。
+
+所以本地验证、**不推**，把 PR 保持在 `12a42d9` 这个两位评审都已确认、且已有一个 approve 的状态。
+
+**顺带确认 10-23 那个顺序修复仍然有效**：上游这轮又往 `subquery.slt` 追加了两次内容，我们依然 `mergeable: true`。
+（当初把我们的三条用例放在上游块**之前**，正是为了这个。）
+
+### Phase 4 — 2 条新探针，其中一条撞上了 harness 噪声
+
+挑了目录里最薄的分类（`table_functions` 3 条、`casts` 6 条），两条都先用两个引擎实测：
+
+1. `unnest_keeps_null_elements_as_rows`（`table_functions`）—— `UNNEST([1, NULL, 3])` 生成 **3 行**（NULL 也是一个元素），
+   所以 `COUNT(*)`=3 而 `COUNT(v)`=2。丢掉 NULL 元素的引擎、或把列表当集合的引擎，会给出 2/2 —— 一对计数就能把三种读法分开。
+2. `decimal_cast_scale_reduction_rounds_half_up`（`casts`）—— DECIMAL 降 scale 是**四舍五入（远离零）**：
+   `0.125 → 0.13`、`0.25 → 0.3`。用 banker's rounding（四舍六入五取偶）的引擎会给 `0.12 / 0.14 / 0.2`，
+   三列全部不同，所以这条探针能**区分两种舍入模式**，而不只是钉住几个值。
+
+**踩到的 harness 噪声（值得记）**：我最初第三列用 `CAST(... AS DECIMAL(10,0))`，结果是 **MISMATCH**，
+但两边**语义相同、只是渲染不同** —— DataFusion 输出 `3`，DuckDB 输出 `3.0`。这不是分歧，是噪声。
+修法是**让每次降 scale 都保留小数位**（`DECIMAL(10,1)` 而不是 `(10,0)`），三列的判别力一点没少。
+**教训：DECIMAL 在 scale 0 上的渲染是两个引擎的差异来源，探针要避开 scale 0。**
+
+### Next
+
+1. **PR #26657**：技术侧**已无未知项**（整合已验证、检查全绿、评审已确认）。剩下的全在用户侧：
+   **换正文** + **请一位 committer**（首选 `jayzhan211`，他在 optimizer/sqllogictest 目录的近期合并数最多）。
+2. **正文与请人文本**：`findings/set-comparison-projection-field-name-pr-body.txt`、
+   `…-committer-request.md`。
+3. **`#22881`**：已记录（`FULL OUTER JOIN ... USING` 不合并键值），等上游修；修好后探针会报出来。
+4. **`fix/nth-value-zero-index`**：仍可随时点开。
