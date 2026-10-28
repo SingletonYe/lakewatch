@@ -586,7 +586,7 @@
       "sql": "SELECT 'intersect_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) INTERSECT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) x UNION ALL SELECT 'except_all' AS op, v FROM (SELECT v FROM (VALUES (1),(1),(1),(2)) t(v) EXCEPT ALL SELECT v FROM (VALUES (1),(1),(3)) u(v)) y ORDER BY op, v",
       "ordered": true,
       "why": "The ALL variants of INTERSECT/EXCEPT are multiset operators with standard-fixed answers: with T1={1,1,1,2} (m copies) and T2={1,1,3} (n copies), INTERSECT ALL must emit min(m,n) copies of each row -- 1,1 -- and EXCEPT ALL must emit max(m-n,0) -- 1,2. One probe covers both operators because the same input pair drives both, and the `op` column keeps the two answers distinguishable.",
-      "known_difference": "Known upstream, already open -- not a new bug. DataFusion's ALL set operators do not implement multiset semantics. Measured 2026-10-15 on 55.2.0 (1 and 4 partitions identical, so it is not a planning artifact): INTERSECT ALL returns 1,1,1 (all three LHS copies) where the standard and DuckDB give 1,1; EXCEPT ALL returns only 2 where the standard and DuckDB give 1,2, i.e. it removes every LHS copy of a row that appears at all on the RHS. Filed upstream as apache/datafusion#12955 'INTERSECT ALL returns wrong number of records from RHS' and #12956 'EXCEPT ALL returns the wrong number of records' (both open since 2024-10-15, both quoting the same SQL-92 paragraph). Recorded here so no slot re-files it as new; revisit when either issue is fixed, and flip this probe to a pinned `expect_rows` at that point."
+      "known_difference": "Known upstream, already open -- not a new bug. DataFusion's ALL set operators do not implement multiset semantics. Measured 2026-10-15 on 55.2.0 (1 and 4 partitions identical, so it is not a planning artifact): INTERSECT ALL returns 1,1,1 (all three LHS copies) where the standard and DuckDB give 1,1; EXCEPT ALL returns only 2 where the standard and DuckDB give 1,2, i.e. it removes every LHS copy of a row that appears at all on the RHS. Filed upstream as apache/datafusion#12955 'INTERSECT ALL returns wrong number of records from RHS' and #12956 'EXCEPT ALL returns the wrong number of records' (both open since 2024-10-15, both quoting the same SQL-92 paragraph). Recorded here so no slot re-files it as new; revisit when either issue is fixed, and flip this probe to a pinned `expect_rows` at that point. Re-checked 2026-10-28 with NULLs as well: INTERSECT ALL keeps two NULL copies against one on the RHS (standard: one) and EXCEPT ALL drops the NULL row entirely (standard: one). Same two root causes, so the NULL cases need no probe of their own."
     },
     {
       "id": "table_function_int_series",
@@ -1293,6 +1293,83 @@
         ]
       ],
       "why": "Reducing a DECIMAL's scale rounds half away from zero: 0.125 becomes 0.13 and 0.25 becomes 0.3. Banker's rounding (half to even), which some engines use, would answer 0.12, 0.14 and 0.2 -- all three columns differ, so the probe separates the two modes instead of just pinning values. The reductions deliberately keep a fractional scale: at scale 0 the two engines render the same value differently (DataFusion `3`, DuckDB `3.0`), which is noise, not a divergence."
+    },
+    {
+      "id": "join_multiplicity_is_the_product_of_matching_rows",
+      "category": "joins",
+      "sql": "SELECT COUNT(*) AS rows_all FROM (VALUES (1),(1),(2)) l(k) JOIN (VALUES (1),(1),(1),(3)) r(k) ON l.k = r.k",
+      "expect_rows": [
+        [
+          "6"
+        ]
+      ],
+      "why": "An equi-join emits one row per matching pair, so two left rows and three right rows with k = 1 give 2 x 3 = 6; the k = 2 and k = 3 rows match nothing. A join that deduplicates either side, or that emits one row per key rather than per pair, answers 1, 2 or 3 instead."
+    },
+    {
+      "id": "left_join_keeps_unmatched_left_row_exactly_once",
+      "category": "joins",
+      "sql": "SELECT l.k, COUNT(r.k) AS matched FROM (VALUES (1),(2)) l(k) LEFT JOIN (VALUES (1),(1)) r(k) ON l.k = r.k GROUP BY l.k ORDER BY l.k",
+      "expect_rows": [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "2",
+          "0"
+        ]
+      ],
+      "why": "A left join must emit the unmatched left row exactly once with NULLs on the right (matched = 0), while a matched row is multiplied by its matches (matched = 2). Duplicating the unmatched row and dropping it because the right side had no match are two different defects, and this one row separates them."
+    },
+    {
+      "id": "grouping_flags_identify_each_rollup_level",
+      "category": "grouping_sets",
+      "sql": "SELECT a, b, GROUPING(a) AS ga, GROUPING(b) AS gb, COUNT(*) AS n FROM (VALUES ('x',1),('x',2),('y',1)) t(a,b) GROUP BY ROLLUP(a,b) ORDER BY ga, gb, a NULLS LAST, b NULLS LAST",
+      "expect_rows": [
+        [
+          "x",
+          "1",
+          "0",
+          "0",
+          "1"
+        ],
+        [
+          "x",
+          "2",
+          "0",
+          "0",
+          "1"
+        ],
+        [
+          "y",
+          "1",
+          "0",
+          "0",
+          "1"
+        ],
+        [
+          "x",
+          "NULL",
+          "0",
+          "1",
+          "2"
+        ],
+        [
+          "y",
+          "NULL",
+          "0",
+          "1",
+          "1"
+        ],
+        [
+          "NULL",
+          "NULL",
+          "1",
+          "1",
+          "3"
+        ]
+      ],
+      "why": "GROUPING() is 1 exactly for a column the ROLLUP collapsed, so the flags read 0/0 for detail rows, 0/1 for the per-a subtotals and 1/1 for the grand total. That pattern is what tells a NULL in the data apart from a NULL the ROLLUP introduced -- the part engines most often get wrong, and the reason the flags exist."
     }
   ]
 }
