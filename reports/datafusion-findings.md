@@ -2172,3 +2172,78 @@ PR 无技术动作可做，但本轮**在本地验证了我们的修复与当前
    `…-committer-request.md`。
 3. **`#22881`**：已记录（`FULL OUTER JOIN ... USING` 不合并键值），等上游修；修好后探针会报出来。
 4. **`fix/nth-value-zero-index`**：仍可随时点开。
+
+## 2026-10-28 09:00 — 排程运行：正文已换好；侧栏请人这条路走不通，只剩 @ 提及
+
+**结论**：114 探针（+3）· **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第五天）。
+PR 的两个"我们这边能做的"都做完了；**剩下的只有一个通道问题**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **114 探针**（+3）· OK=97 · KNOWN_DIFF=15 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-27 → 10-28）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 用户侧两件事都做了，但请人的方式选错了目标
+
+核对 PR 现状：
+
+* **正文已换好** ✓ —— `gh pr view --json body` 现在以 `## Which issue does this PR close?` 开头，
+  "Post the issue first…"、"Paste from the horizontal rule down"、`Closes # —`、`Branch fix/set-comparison…`
+  **四处脚手架全部为 0**，五个模板标题齐全，SQL 围栏成对。与 `findings/…-pr-body.txt` 逐行 diff
+  **只差末尾一个空行**。
+* **跟进评论已发** ✓ —— `SingletonYe` 于 10-28T00:50:27Z 发了「Description tidied as you both asked — thanks.」
+* 状态：`mergeable: true` / `BLOCKED` / `REVIEW_REQUIRED` / **未合并**。
+
+**但 `requested_reviewers` 变成了 `["raghavyadav01", "namanjain24-sudo"]`** —— 正是**已经评审过、而且都没有写权限**的那两位。
+这解释了为什么 PR 还是卡着：请求评审给没有合并权的人，等于没有请求。
+
+**根因（这条要记住，是我上一轮建议里的漏洞）**：GitHub 的 reviewer 选择器对**外部贡献者**只列出
+**已经在本 PR 上出现过的人**，所以从未参与过本 PR 的 committer（`jayzhan211`）**根本不在候选列表里**。
+我上一轮说"在 Reviewers 搜索框里填 jayzhan211"，对成员可行，对非成员**不可行**。
+
+**所以剩下的唯一通道是评论里 @ 提及** —— 这也正是贡献指南第 2 步写的办法：
+"Please mention the members from committers list in the PR to help trigger the CI"。
+
+目标人选（2026-10-28 实测，统计上一周已合并 PR）：
+
+| 目录 | 合并数 |
+|---|---|
+| `datafusion/sqllogictest/` | **`jayzhan211` 16**（第二名 alamb 6） |
+| `datafusion/optimizer/` | **`jayzhan211` 3**（并列第一） |
+| 全部目录，近 3 天 | **`jayzhan211` 8**（仍在活跃） |
+
+**只 @ 一个人**，不要广播 —— 指南自己写着 "Review bandwidth is currently our most limited resource"。
+文本已备好：`findings/set-comparison-projection-field-name-committer-request.md`。
+
+### Phase 4 — 3 条新探针；另外从 NULL 方向重新推导了一遍已知的 set-op 缺陷
+
+补的三条（都先与 DuckDB 实测一致）：
+
+1. `join_multiplicity_is_the_product_of_matching_rows`（`joins`）—— 等值连接**每个匹配对出一行**：
+   左 2 行 × 右 3 行同键 → **6 行**。去重任一侧、或每个键只出一行的实现会给 1/2/3。
+2. `left_join_keeps_unmatched_left_row_exactly_once`（`joins`）—— 未匹配的左行**恰好出现一次**
+   （右侧全 NULL，`COUNT(r.k)`=0），匹配行则按匹配数放大（=2）。"重复它"和"因为右侧没匹配就丢掉它"
+   是两种不同的缺陷，这一行能把它们分开。
+3. `grouping_flags_identify_each_rollup_level`（`grouping_sets`）—— `ROLLUP(a,b)` 的 `GROUPING()` 旗标
+   依次是 0/0、0/1、1/1。**这才是区分"数据里真实的 NULL"与"ROLLUP 引入的 NULL"的东西**，也是引擎最容易做错的部分。
+
+**顺手做的一次去重**：我在 `set_operators`（当时只有 2 条）方向去找新覆盖时，先撞到
+`INTERSECT ALL` / `EXCEPT ALL` 的**重复行计数错误**——左 3 个 1、右 2 个 1 时 DataFusion 返回 3 行（应为 2），
+以及 `EXCEPT ALL` 会把左侧某个值的所有副本一次删光。**这看起来是新的静默错误结果**，
+但目录里那条 `set_ops_intersect_except_all_multiset` 的 `known_difference` 已经写明：
+**#12955 / #12956，2024-10-15 就报了、都还开着**，并特意写了 "Recorded here so no slot re-files it as new"。
+
+我又用 **NULL** 走了一遍同一逻辑（`INTERSECT ALL` 保留 2 个 NULL 对右侧 1 个；`EXCEPT ALL` 把 NULL 行整个删掉），
+**确认是同一批根因**，因此**不新增探针**，只把这两个 NULL 情形补进那条已有笔记里 ——
+这样下一轮不会再去查一遍。**目录的"防重复"机制这次真的挡住了我。**
+
+### Next
+
+1. **PR #26657**：技术侧与文字侧都已完成。**唯一动作**：在评论里 @ `jayzhan211` 一个人请求评审
+   （侧栏不行，见上）。文本在 `findings/…-committer-request.md`。
+2. **`#22881`**（`FULL OUTER JOIN ... USING` 不合并键值）与 **#12955/#12956**（ALL 集合运算）：
+   已记录为 `known_difference`，上游修好后对应探针会自己报出答案变了。
+3. **`fix/nth-value-zero-index`**：仍可随时点开。
