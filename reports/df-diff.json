@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 97,
+    "OK": 100,
     "KNOWN_DIFF": 15,
     "BOTH_ERROR": 2
   },
@@ -1422,6 +1422,36 @@
       "category": "grouping_sets",
       "sql": "SELECT a, b, GROUPING(a) AS ga, GROUPING(b) AS gb, COUNT(*) AS n FROM (VALUES ('x',1),('x',2),('y',1)) t(a,b) GROUP BY ROLLUP(a,b) ORDER BY ga, gb, a NULLS LAST, b NULLS LAST",
       "why": "GROUPING() is 1 exactly for a column the ROLLUP collapsed, so the flags read 0/0 for detail rows, 0/1 for the per-a subtotals and 1/1 for the grand total. That pattern is what tells a NULL in the data apart from a NULL the ROLLUP introduced -- the part engines most often get wrong, and the reason the flags exist.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "set_op_distinct_variants_deduplicate_correctly",
+      "category": "set_operators",
+      "sql": "SELECT (SELECT COUNT(*) FROM (SELECT v FROM (VALUES (1),(1),(2)) t(v) INTERSECT SELECT v FROM (VALUES (1),(1)) u(v)) a) AS intersect_distinct_rows, (SELECT COUNT(*) FROM (SELECT v FROM (VALUES (1),(1),(2)) t(v) EXCEPT SELECT v FROM (VALUES (1)) u(v)) b) AS except_distinct_rows",
+      "why": "The DISTINCT set operators are correct even though the ALL ones are not (#12955, #12956): INTERSECT collapses the duplicated 1 to one row and EXCEPT removes every 1 and keeps the 2. Pinning the boundary is the point -- it separates a future failure from those two known defects, and it fails if a fix for the ALL variants overshoots and breaks these.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "generate_series_with_interval_step",
+      "category": "table_functions",
+      "sql": "SELECT COUNT(*) AS n, CAST(MIN(d) AS DATE) AS lo, CAST(MAX(d) AS DATE) AS hi FROM generate_series(DATE '2024-01-01', DATE '2024-01-05', INTERVAL '2' DAY) AS t(d)",
+      "why": "A two-day step from Jan 1 to Jan 5 inclusive yields exactly 1, 3 and 5: the end bound is included when it lands on the step, and the series stops rather than overshooting it. An engine that treats the end as exclusive, or that emits a fourth value past it, answers 2 or 4.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "list_slice_is_one_based_and_inclusive",
+      "category": "nested_types",
+      "sql": "SELECT array_to_string(array_slice([1,2,3,4], 2, 3), ',') AS sliced, array_to_string([1,2] || [3], ',') AS concat, array_length(array_slice([1,2,3,4], 2, 3)) AS sliced_len",
+      "why": "array_slice is 1-based and its end index is inclusive, so slicing [1,2,3,4] from 2 to 3 gives exactly [2,3] -- two elements, not three. The length is asserted alongside the text so an off-by-one in the bound is visible even if the rendering is not.",
       "ordered": false,
       "session_options": [],
       "status": "OK",
