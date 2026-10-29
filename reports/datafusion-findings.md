@@ -2247,3 +2247,59 @@ PR 的两个"我们这边能做的"都做完了；**剩下的只有一个通道�
 2. **`#22881`**（`FULL OUTER JOIN ... USING` 不合并键值）与 **#12955/#12956**（ALL 集合运算）：
    已记录为 `known_difference`，上游修好后对应探针会自己报出答案变了。
 3. **`fix/nth-value-zero-index`**：仍可随时点开。
+
+## 2026-10-29 09:00 — 排程运行：@ 提及已发出，现在只能等；上游第三次动我们的文件只是改 license
+
+**结论**：117 探针（+3）· **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第六天）。
+PR 侧**没有任何我们能做的了**，而且**催促额度已经用掉**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **117 探针**（+3）· OK=100 · KNOWN_DIFF=15 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-28 → 10-29）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 该做的都做了，接下来是等
+
+核对 PR：`SingletonYe` 已于 **10-28T21:39:47Z** 发出那条 @ 提及
+（"@jayzhan211 would you take a look? Review points are in `12a42d9`…"）。**目前没有任何回应**：
+`updated_at` 仍停在那一刻，`reviews` 没有新增，`requested_reviewers` 仍是那两位无写权限的评审。
+状态 `mergeable: true` / `BLOCKED` / `REVIEW_REQUIRED`。
+
+**所以本轮 PR 侧什么都不做**，理由是技能写明的额度："approved but not merged → nudge once, politely,
+**at most once every 3 days**, then leave it alone"。我们刚刚用掉了这一次，**再催就是骚扰**。
+（顺带：指南那条"几天不回复会被标成 draft"的风险已经解除 —— 所有评审意见都答复过了。）
+
+**上游第三次动了我们那两个文件：`c1013ec`（10-28T01:18:58Z）。** 上一轮我为此花了约 5 分钟重新合并 + 重编译来验证整合。
+**这一轮先读了提交内容再决定**：`c1013ec` 是 **"chore: Use short Apache license header (#26761)"** ——
+一个全仓库的 license 头替换，**没有动任何代码逻辑**，而且只落在文件头部，与我们的改动区域不重叠
+（`mergeable: true` 也印证了）。所以**不需要重新验证，省下了那次构建**。
+
+顺手确认了一件事：**当前 main 仍然带着我们要修的那个 bug**
+（`let original_name = expr.schema_name().to_string();` 与 `if rewritten_expr.schema_name().to_string() != original_name`
+都还在），所以 **PR 依然有价值，没有因为等待而变成无用功**。
+
+**教训（写给自己）**：上游每次动我们的文件，先花 10 秒看 `gh api .../commits/<sha>` 的文件级增删和提交标题，
+再决定要不要重建。提交标题是 chore / license / 格式化这类，就不用花那 5 分钟。
+
+### Phase 4 — 3 条新探针，其中一条刻意钉住已知 bug 的**边界**
+
+挑的是目录里最薄的 `set_operators`（2 条）、`table_functions`（4 条）、`nested_types`（4 条），三条都先与 DuckDB 实测一致：
+
+1. `set_op_distinct_variants_deduplicate_correctly`（`set_operators`）—— **刻意钉住已知缺陷的边界而不是缺陷本身**：
+   `INTERSECT` / `EXCEPT`（**不带 ALL**）是正确的 —— 重复的 1 被折叠成一行、`EXCEPT` 把 1 全删掉留下 2。
+   这比再记一遍 #12955/#12956 有用：**将来若有人修 ALL 变体时改过头、把这两个也弄坏，这条会立刻报出来**；
+   同时它把"新故障"与"那两个已知缺陷"区分开。
+2. `generate_series_with_interval_step`（`table_functions`）—— `DATE` + `INTERVAL '2' DAY` 步长，
+   2024-01-01 到 2024-01-05 **闭区间**恰好给 1/3/5 三个值。把上界当开区间、或多吐一行的实现会给 2 或 4。
+3. `list_slice_is_one_based_and_inclusive`（`nested_types`）—— `array_slice([1,2,3,4], 2, 3)` 是 **1 基且上界包含**，
+   恰好两个元素；同时断言 `array_length`，这样即使渲染不同，越界一位的错误也藏不住。
+
+### Next
+
+1. **PR #26657**：**纯等**。@ 提及已发出（10-28 21:39），额度用尽，**三天内不再催**。
+   若 10-31 之后仍无人回应，可以再考虑一次提醒。
+2. **`#22881`**、**`#12955`/`#12956`**：已记录为 `known_difference`，上游修好后对应探针会自己报出答案变了。
+3. **`fix/nth-value-zero-index`**：仍可随时点开（与 main 无冲突、修复仍缺失）。
