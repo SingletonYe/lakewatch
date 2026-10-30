@@ -2303,3 +2303,74 @@ PR 侧**没有任何我们能做的了**，而且**催促额度已经用掉**。
    若 10-31 之后仍无人回应，可以再考虑一次提醒。
 2. **`#22881`**、**`#12955`/`#12956`**：已记录为 `known_difference`，上游修好后对应探针会自己报出答案变了。
 3. **`fix/nth-value-zero-index`**：仍可随时点开（与 main 无冲突、修复仍缺失）。
+
+## 2026-10-30 09:00 — 排程运行：一条在目录里"绿"了好几个星期的假通过
+
+**结论**：117 探针 · **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第七天）。
+本轮最有价值的产出不是新 bug，而是**发现我们自己的一条探针一直在骗我们**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **117 探针** · OK=**99** · KNOWN_DIFF=**16** · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-29 → 10-30）；排程 `enabled`、`0 9 * * *` ✓。
+
+（OK 从 100 掉到 99、KNOWN_DIFF 从 15 升到 16 **不是退步** —— 见下：一条假通过的探针被修好了。）
+
+### Phase 0b — 纯等，且催促额度还没到
+
+@ 提及自 10-28T21:39 起**已 40 小时无回应**。技能给的是"每 3 天最多催一次"，下一次窗口在
+10-31 21:39 之后，**所以本轮不催**。引用复核：`#22881`、`#12955`、`#12956`、`#26091`、`#13850`
+**全部仍 open**，`#24432` closed/completed（已记录），无过期笔记。
+并确认 **main 上我们要修的那个 bug 仍在**（`schema_name()` 两处都在）→ **PR 依然有价值**。
+
+### 本轮实质发现：`map_extract` 在**键不存在**时的行为，我们的探针看不见
+
+找 `nested_types` 的空白时撞到的。在 pin 的 **DataFusion 55.2.0** 上：
+
+```sql
+SELECT array_length(map_extract(MAP {'a': 1}, 'zz'));            -- DataFusion 1 | DuckDB 0
+SELECT array_length(map_extract(MAP {'a': 1}, NULL));            -- DataFusion 1 | DuckDB 0
+SELECT array_length(map_extract(MAP {'a': 1, 'b': NULL}, 'b'));  -- DataFusion 1 | DuckDB 1
+```
+
+键**不存在**时返回的是**含 NULL 的单元素列表 `[NULL]`**，不是空列表 —— 这与 DataFusion **自己的内置文档**
+直接冲突（`information_schema.routines` 写着 "or an **empty list if the key is not present**"）。
+后果不是好看不好看：**"键不存在"与"键存在但值为 NULL"都返回单元素列表，两者无法区分**，
+而函数契约说它们必须可区分。
+
+**已经是已知且已修**：`docs/source/library-user-guide/upgrading/56.0.0.md` 有专门一节
+"`map_extract` / `element_at` return an empty list for absent keys"，并引用 **apache/datafusion#24981**
+（"`map_extract` returns `[NULL]` instead of `[]` for missing keys"，**closed/completed**）。
+pin 的 55.2.0 早于该修复 → 分类 `known_upstream`，**不上报、不重复提 issue**。
+
+**真正的问题在我们的目录里**：`map_extract_present_and_missing` 这条探针**一直在报 OK**（"两边一致"）。
+它们并不一致。原因是**渲染巧合**：DataFusion 把列表内的 NULL **元素**打印成空串
+（`map_values(MAP {'a': 1, 'b': NULL})` 渲染成 `"[1, ]"`），所以**含 NULL 的单元素列表打印出来就是 `[]`**
+—— 与真正的空列表**文本完全相同**。只比对渲染文本的比较器，在这里看不到任何差异。
+
+**修法是把探针改强而不是换掉**：现在同时断言 `array_length(...)`，并写入 `known_difference`
+（引用 #24981 与 56.0.0 升级说明）。它现在报 **KNOWN_DIFF 而不是 OK，这才是真相**；
+等 pin 挪到 56.0.0 那天它会翻回 OK —— 那就是修复到位的信号。
+完整记录见 `findings/map-extract-absent-key-masked-by-rendering.md`。
+
+**给目录的教训**：**列表/数组/map 类型的输出，其渲染会掩盖 NULL 与空之间的差异。**
+凡是输出是集合的探针，都应该断言一个**结构性**属性（`array_length`、元素 `IS NULL`、计数），
+而不是相信打印出来的样子。这条探针已经"绿"了好几个星期。
+
+### 同一轮里排除掉的两个死路（记下来免得下次再试）
+
+* **这个构建没有 JSON 函数**：`json_extract` 不存在（解析器建议 `union_extract`），`::json` 报
+  "Unsupported SQL type JSON"，`information_schema.routines` 里没有任何 json 例程。
+* **`MERGE` 能解析但在这里没法做探针**：CLI 只接受单条语句
+  （"The context currently only supports a single SQL statement"），而 MERGE 是 DML ——
+  它会改写共享的 `probe_values` 表，从而改变**后续每一条探针**的答案。
+
+### Next
+
+1. **PR #26657**：纯等。@ 提及已发出（10-28 21:39），**10-31 21:39 之后**才到下一个可以提醒的窗口。
+2. **`known_difference` 待翻转**：`#22881`（USING 键值）、`#12955`/`#12956`（ALL 集合运算）、
+   `#24981`（map_extract 缺键）—— 上游修好后对应探针会自己报出答案变了。
+3. **`fix/nth-value-zero-index`**：仍可随时点开。
