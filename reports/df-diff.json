@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 100,
-    "KNOWN_DIFF": 15,
+    "OK": 99,
+    "KNOWN_DIFF": 16,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -121,6 +121,19 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "map_extract_present_and_missing",
+      "category": "nested_types",
+      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing, array_length(map_extract(MAP {'a': 1}, 'zz')) AS missing_len, array_length(map_extract(MAP {'a': 1}, NULL)) AS null_key_len, array_length(map_extract(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_value_len",
+      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] [1],[],1,1,1 vs duckdb [1 row(s)] [1],[],0,0,1"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
@@ -872,12 +885,15 @@
     {
       "id": "map_extract_present_and_missing",
       "category": "nested_types",
-      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing",
-      "why": "DataFusion documents `map_extract` as returning a list, empty when the key is absent; DuckDB has the same function, so this is oracle-comparable.",
+      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing, array_length(map_extract(MAP {'a': 1}, 'zz')) AS missing_len, array_length(map_extract(MAP {'a': 1}, NULL)) AS null_key_len, array_length(map_extract(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_value_len",
+      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL.",
       "ordered": false,
       "session_options": [],
-      "status": "OK",
-      "details": []
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] [1],[],1,1,1 vs duckdb [1 row(s)] [1],[],0,0,1"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "element_at_is_map_extract_here",

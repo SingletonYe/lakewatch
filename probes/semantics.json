@@ -398,14 +398,18 @@
     {
       "id": "map_extract_present_and_missing",
       "category": "nested_types",
-      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing",
+      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing, array_length(map_extract(MAP {'a': 1}, 'zz')) AS missing_len, array_length(map_extract(MAP {'a': 1}, NULL)) AS null_key_len, array_length(map_extract(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_value_len",
       "expect_rows": [
         [
           "[1]",
-          "[]"
+          "[]",
+          "1",
+          "1",
+          "1"
         ]
       ],
-      "why": "DataFusion documents `map_extract` as returning a list, empty when the key is absent; DuckDB has the same function, so this is oracle-comparable."
+      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL.",
+      "known_difference": "Measured 2026-10-30 on the pinned 55.2.0: a key that is ABSENT and a NULL lookup key both return a one-element list `[NULL]` (array_length 1), where DuckDB and DataFusion's own documentation -- 'an empty list if the key is not present' in information_schema.routines -- say an empty list (length 0). A key that is present with a NULL value returns `[NULL]` in both, so absent keys and NULL values are NOT distinguishable here even though they should be. Fixed upstream in 56.0.0: see the upgrade note 'map_extract / element_at return an empty list for absent keys' and apache/datafusion#24981 (closed/completed). This probe previously missed all of it: `[NULL]` renders as `[]` in DataFusion's CSV because a NULL element prints as an empty string, so a text-only comparison saw agreement. The lengths are asserted for exactly that reason -- do not drop them."
     },
     {
       "id": "element_at_is_map_extract_here",
