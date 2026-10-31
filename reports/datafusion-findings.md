@@ -2374,3 +2374,75 @@ pin 的 55.2.0 早于该修复 → 分类 `known_upstream`，**不上报、不�
 2. **`known_difference` 待翻转**：`#22881`（USING 键值）、`#12955`/`#12956`（ALL 集合运算）、
    `#24981`（map_extract 缺键）—— 上游修好后对应探针会自己报出答案变了。
 3. **`fix/nth-value-zero-index`**：仍可随时点开。
+
+## 2026-10-31 09:00 — 排程运行：committer 回话了，要求把修复搬到"制造这个名字的地方"
+
+**结论**：117 探针 · **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第八天）。
+**`jayzhan211` 提交了 `CHANGES_REQUESTED` —— 这是一个真正有写权限的 committer 第一次动手**，
+本轮按他的要求重做了修复并推 `ed26e85`。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **117 探针** · OK=98 · KNOWN_DIFF=17 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-30 → 10-31）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 评审要求：把修复从"受害者"搬到"肇事者"
+
+10-31T03:46Z，`jayzhan211` 给出 `CHANGES_REQUESTED`，附**测试过的 diff**与一条可选测试用例：
+
+> The stale name comes from `RewriteSetComparison`, so could you move the fix there? … could you fix it there
+> with `NamePreserver`, the same way `simplify_exprs` and `type_coercion` wrap `map_expressions`?
+> With this, **the change to this file isn't needed** … It also stops this rule leaving mismatched names in
+> Aggregate/Window nodes.
+
+**他是对的，而且比我原来的做法好。** 我原来在 `DecorrelatePredicateSubquery` 里"发现字段名对不上就补个别名" ——
+那是在**下游打补丁**。真正**制造**这个陈旧名字的是 `RewriteSetComparison`（它把 `x > ALL (…)` 换成
+`CASE WHEN EXISTS …`）。在源头用 `NamePreserver` 保住名字，不仅更准确，还顺带覆盖了 **Aggregate 与 Window 节点**
+—— 投影侧的打补丁根本够不到那里。
+
+已按他的建议实施：
+
+* `rewrite_set_comparison.rs` 用 `NamePreserver` 包住 `map_expressions`（与 `simplify_exprs`、`type_coercion` 同样的写法）；
+* **`decorrelate_predicate_subquery.rs` 的改动整体撤掉** —— 该文件回到 `main` 版本，**不再出现在 diff 里**；
+* 采纳他给的可选用例（带限定列 `t_qual.k` 的集合比较），作为 `subquery.slt` 的第四条。
+
+**PR 现在只动两个文件**：`rewrite_set_comparison.rs` **+12/-1**、`subquery.slt` **+39/-0**（原来是三个文件）。
+fork CI 已在新提交上自动起跑。
+
+**验证（自己跑的，不是引用他的）**：`subquery.slt`（含全部四条）、`subquery_projection.slt`、`subquery_sort.slt`、
+`merge_into.slt`、`null_aware_mark_join.slt` → **exit=0**；`cargo test -p datafusion-optimizer` →
+**951 + 29 + 5 passed, 0 failed**。
+
+### 本轮我自己犯的两个错（都发现并纠正了，值得记）
+
+1. **差点把上游的提交算进我们的 PR。** 撤掉 `decorrelate_predicate_subquery.rs` 的改动时，我第一反应是
+   `git checkout upstream/main -- <file>` —— 但那是把它同步到 **main 的最新版**，而 main 在我们上次合并之后
+   又改过该文件三次（#26551、#26677、license 头）。结果会是：**PR 的 diff 里出现约 100 行别人的工作**，
+   看起来像我们在改相关列处理。正确做法是**只撤销我们自己那几个 hunk**；已改成手工还原那一段，
+   并用 `git diff --stat 702803d -- <file>` **确认为空**（即该文件与合并基完全一致，从 diff 里彻底消失）。
+2. **撞上了技能里早就写明的 `testing/` 子模块陷阱。** 第一次跑测试时 `subquery_sort.slt` 报 11 个失败，
+   全是 `expected: DataSourceExec … actual: EmptyExec` —— 测试数据表是空的。技能的原话是
+   "without it whole `.slt` files report hundreds of false failures, and you cannot tell our breakage from the
+   environment's"。跑 `git submodule update --init --depth 1 testing` 之后 5 个文件全过。
+   **教训：`.slt` 里出现 `EmptyExec` 就先去查子模块，不要去查自己的改动。**
+
+### Phase 4 — 把昨天的教训系统性地用了一遍
+
+昨天的发现是"**列表渲染会掩盖 NULL 与空之间的差异**"。今天没有再找新方向，而是**审计全目录**：
+把所有 `expect_rows` 里含集合形态（`[`、`{`、`(`）的探针全部列出来 —— **只有 2 条**，其中
+`map_extract_present_and_missing` 昨天已修，剩下 `element_at_is_map_extract_here` **仍然是只看渲染文本**。
+
+实测确认它藏着同一个差异（`array_length(element_at(MAP {'a': 1}, 'zz'))` → DataFusion **1** / DuckDB **0**），
+于是同样改成断言长度，并引用同一个 **#24981**（56.0.0 的升级说明把 `map_extract` 与 `element_at` 写在一起）。
+它现在报 KNOWN_DIFF（**17**）而不是 OK（**98**）—— 又一次"绿转真"。
+
+至此**这类盲点在目录里清零**：不再有探针靠渲染集合来判定一致性。
+
+### Next
+
+1. **PR #26657**：等 `jayzhan211` 复核或合并。**用户需要把回复贴到 PR 上**（文本见下）。
+2. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981` —— 上游修好后对应探针会自己报出答案变了。
+3. **`fix/nth-value-zero-index`**：仍可随时点开（但注意：本条 PR 未合并前不开新 PR）。
