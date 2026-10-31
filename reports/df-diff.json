@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 99,
-    "KNOWN_DIFF": 16,
+    "OK": 98,
+    "KNOWN_DIFF": 17,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -134,6 +134,19 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] [1],[],1,1,1 vs duckdb [1 row(s)] [1],[],0,0,1"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "element_at_is_map_extract_here",
+      "category": "nested_types",
+      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS present, array_length(element_at(MAP {'a': 1}, 'zz')) AS missing_len, array_length(element_at(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_len",
+      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] [1],1,1 vs duckdb [1 row(s)] [1],0,1"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
@@ -898,12 +911,15 @@
     {
       "id": "element_at_is_map_extract_here",
       "category": "nested_types",
-      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS r",
-      "why": "Pins the documented alias so a change in either direction is visible.",
+      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS present, array_length(element_at(MAP {'a': 1}, 'zz')) AS missing_len, array_length(element_at(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_len",
+      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference.",
       "ordered": false,
       "session_options": [],
-      "status": "OK",
-      "details": []
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] [1],1,1 vs duckdb [1 row(s)] [1],0,1"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "decimal_mul_add_scale",

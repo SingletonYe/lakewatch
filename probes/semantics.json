@@ -414,14 +414,16 @@
     {
       "id": "element_at_is_map_extract_here",
       "category": "nested_types",
-      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS r",
+      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS present, array_length(element_at(MAP {'a': 1}, 'zz')) AS missing_len, array_length(element_at(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_len",
       "expect_rows": [
         [
-          "[1]"
+          "[1]",
+          "1",
+          "1"
         ]
       ],
-      "known_difference": "In DataFusion `element_at` is documented as an alias of `map_extract` (see information_schema.routines), while DuckDB's `element_at` is array access. Pinned so the divergence is not re-triaged as a bug; note that `element_at(<list>, i)` in DataFusion fails with a user-hostile error, recorded separately.",
-      "why": "Pins the documented alias so a change in either direction is visible."
+      "known_difference": "In DataFusion `element_at` is documented as an alias of `map_extract` (see information_schema.routines), while DuckDB's `element_at` is array access. Pinned so the divergence is not re-triaged as a bug; note that `element_at(<list>, i)` in DataFusion fails with a user-hostile error, recorded separately. The absent-key case is the same defect as `map_extract` (the 56.0.0 upgrade note covers `map_extract` / `element_at` together, apache/datafusion#24981): on the pinned 55.2.0 a missing key gives a one-element `[NULL]` (length 1) where an empty list (length 0) is documented. The length is asserted because `[NULL]` renders as `[]`, so a text-only comparison cannot see it -- the same trap that hid this for weeks in `map_extract_present_and_missing`.",
+      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference."
     },
     {
       "id": "decimal_mul_add_scale",
