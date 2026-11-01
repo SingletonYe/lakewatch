@@ -2446,3 +2446,67 @@ fork CI 已在新提交上自动起跑。
 1. **PR #26657**：等 `jayzhan211` 复核或合并。**用户需要把回复贴到 PR 上**（文本见下）。
 2. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981` —— 上游修好后对应探针会自己报出答案变了。
 3. **`fix/nth-value-zero-index`**：仍可随时点开（但注意：本条 PR 未合并前不开新 PR）。
+
+## 2026-11-01 09:00 — **#26657 合并了**；PR 位空出来，下一个修复已备好并验证
+
+**结论**：117 探针 · **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第九天）。
+**本工作流的第一个 PR 被上游合并了** —— 而且 PR 位一空出来，就把等了两周的下一个修复验证好、推上去了。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **117 探针** · OK=98 · KNOWN_DIFF=17 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（10-31 → 11-01）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — **PR #26657 已合并**
+
+`jayzhan211` 于 **11-01T04:40Z** 给出 `APPROVED`，**04:57Z 合并**为 squash 提交 **`123747e7`**，
+并留言 "Thanks @SingletonYe @namanjain24-sudo and @raghavyadav01 !"。用户 10-31T19:03Z 的回复也在合并前贴上了。
+
+**核对落地的内容**：`main` 的 `rewrite_set_comparison.rs` 现在有 `NamePreserver`（第 9 行 import、
+第 47 行使用）—— 也就是我们按评审意见搬到"源头"的那个修复，确实进了主线。
+`gh pr list --author SingletonYe --state open` 现在返回空。
+
+**这是这条工作流第一次真正把修复送进 apache/datafusion。** 回顾关键节点：
+10-23 开 PR → 三次合并 main 解冲突 → 10-31 请求 committer → 评审要求把修复从下游搬到上游规则 →
+11-01 合并。**中间真正起作用的两次判断是：把我们的用例放在上游块之前（让后续 main 前进不再撞车），
+以及接受评审说的"去修制造问题的规则，而不是打补丁"。**
+
+### Phase 0b 续 —— PR 位空出来，把 `nth-value-zero-index` 备好了
+
+按技能"同时只允许一个 PR、且上一个还开着时不开新的"，现在条件满足。已做：
+
+1. **同步**：把当前 main（`6a9a1298`，含 arrow 60.1.0 升级）合进分支。`nth_value.rs` 自动合并；
+   `aggregate.slt` **又是文件末尾双方追加**冲突 —— 用同一手法解决（我们的用例在前、上游的在后，
+   中间留空行），这样上游以后继续追加不会再撞。
+2. **验证**（自己跑的）：`aggregate.slt` + `window.slt` → **exit=0**；
+   `cargo test -p datafusion-functions-aggregate` → **267 + 1 + 2 passed, 0 failed**；`cargo fmt` 干净。
+3. **确认仍然需要**：`main` 的 `nth_value.rs` 里两个 `assert_or_internal_err!` 都还在（第 204、335 行），
+   所以 `nth_value(a, 0)` 依然让用户"去提 bug report"。
+4. 推 `5943a34`；分支对比 main **只有 2 个文件、+22/−13**。
+5. **PR 正文重写**：把上次让我吃亏的那个坑堵掉 —— 可粘贴区域用 `BEGIN/END PASTABLE BODY` 显式标记包住，
+   区域外才是写给我自己的说明；`Closes #<number>` 占位符改成诚实的"No issue was filed"。
+
+**只剩一次点击**：`https://github.com/apache/datafusion/compare/main...SingletonYe:fix/nth-value-zero-index?expand=1`
+
+### 本轮的坑：磁盘 100% 满，伪装成"编译失败"
+
+第一次 `cargo test --no-run` 直接 `EXIT=101`，报的是 **`datafusion-expr` 编译失败** —— 看起来像代码问题，
+其实日志里只有一句 `could not compile`，真正的根因在 `df -h`：**`/dev/vdb 24G 23G 1.9M 100%`**。
+编译器写不出产物，于是以 101 退出。
+
+根因是 `target/debug/deps` 里有 **20G** 产物 —— 而且是**三代依赖并存**（`libarrow` 同时有
+`604402444b676717` / `b0224d94abb7ae8a` / `ea04b21c0203a685` 三份，来自不同日期的不同依赖图）。
+cargo 不会自动清理这些跨分支状态的旧产物。**`cargo clean` 后重编，target 从 20G 降到 7.5G**，问题消失。
+
+**教训**：`EXIT=101` 且日志里没有具体的 `error[E…]`、只有几十行的 rustc 命令行，**先看磁盘**。
+另外：跨分支反复构建会把 `deps` 撑成几代并存的垃圾场，**每次换分支做验证后、或 `deps` 超过 ~15G 时，
+主动 `cargo clean` 比事后救火便宜。**
+
+### Next
+
+1. **新 PR（`nth-value-zero-index`）**：等用户点 compare 链接。开出来后的第一件事是看 fork CI 是否绿。
+2. **`#26657`** 已合并，无需再管；它的教训（可粘贴区域要显式标记）已写进那份 PR 正文文件。
+3. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`。
