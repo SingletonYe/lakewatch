@@ -1414,6 +1414,21 @@
         ]
       ],
       "why": "array_slice is 1-based and its end index is inclusive, so slicing [1,2,3,4] from 2 to 3 gives exactly [2,3] -- two elements, not three. The length is asserted alongside the text so an off-by-one in the bound is visible even if the rendering is not."
+    },
+    {
+      "id": "qualify_filters_on_unprojected_window",
+      "category": "sql_surface",
+      "sql": "SELECT v FROM (VALUES (10),(20),(30)) t(v) QUALIFY ROW_NUMBER() OVER (ORDER BY v DESC) <= 2 ORDER BY v",
+      "expect_rows": [
+        [
+          "20"
+        ],
+        [
+          "30"
+        ]
+      ],
+      "ordered": true,
+      "why": "QUALIFY filters on a window function that the query does not project: the descending row numbers are 1 for 30 and 2 for 20, so exactly those two rows survive. An engine that requires the window column in the SELECT list, or that applies QUALIFY after ordering/limit, answers 30 or 10,20,30 here."
     }
   ]
 }
