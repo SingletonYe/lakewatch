@@ -2510,3 +2510,71 @@ cargo 不会自动清理这些跨分支状态的旧产物。**`cargo clean` 后�
 1. **新 PR（`nth-value-zero-index`）**：等用户点 compare 链接。开出来后的第一件事是看 fork CI 是否绿。
 2. **`#26657`** 已合并，无需再管；它的教训（可粘贴区域要显式标记）已写进那份 PR 正文文件。
 3. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`。
+
+## 2026-11-02 09:00 — 排程运行：等一次点击；目录开始"没地方可加"
+
+**结论**：118 探针（+1）· **0 个待研判候选** · Tier-A 391/20 与基线**逐字节相同**（第十天）。
+PR 位空着，`nth-value-zero-index` 仍等用户点那一下 compare 链接。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a Tier-A | 391 findings / **20 root causes**，与已提交版本**零 diff** |
+| Phase 1b 语义 | **118 探针**（+1）· OK=99 · KNOWN_DIFF=17 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-01 → 11-02）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR，备好的分支仍然有效
+
+`gh pr list --author SingletonYe --state open` 为空 —— **`nth-value-zero-index` 还没开成 PR**，
+compare 链接仍等着那一次点击。本轮核对了两件事，确认**不需要重新同步**：
+
+* 分支对比 main：`ahead 3 / behind 6`，但 `files` 只有我们那 2 个文件 → **合并没有冲突**；
+* 逐个查上游历史：`nth_value.rs` 最后一次改动是 **10-28**（license 头），`aggregate.slt` 最后一次是
+  **11-01T12:51**（正是我们合并的那个点）—— **两个文件在我们合并之后都没被动过**。
+
+所以没有可做的事，也没有必要为了"看起来新"再合一次 main：每次同步都要重编 + 重新验证，
+而合并队列本来就会在合并结果上跑全量。**这属于"什么都没发生"的正常一天。**
+
+### Phase 4 — 三个候选里两个已被覆盖，说明目录开始变密
+
+按薄弱方向挑了三个候选，先逐个实测两个引擎，结果有两处**已经被覆盖**：
+
+* **NULL 排序**（`ORDER BY x DESC NULLS FIRST`）→ 目录里已有 `nulls_first`、`nulls_last_desc`、
+  `default_null_order_asc` 三条，其中两条带 `ordered: true`；
+* **`lpad`/`rpad` 截断**（目标长度小于原串时不填充而截断）→ 已有 `lpad_rpad_truncation`。
+
+这不是白做：**它说明目录在这些方向已经足够密**，也说明我"先查再写"的顺序是对的
+——否则会加两条重复探针进目录。
+
+真正的新增只有一条：`qualify_filters_on_unprojected_window`（`sql_surface`）——
+`QUALIFY` 用**没有出现在 SELECT 列表里**的窗口函数过滤（降序 row_number ≤ 2 → 只留 20、30）。
+引擎如果要求窗口列必须被投影、或把 QUALIFY 放到排序/limit 之后应用，答案就会不同。
+
+### 一个真实的缺口，但根不在 DataFusion：窗口帧 `EXCLUDE`
+
+SQL:2011 的 `ROWS BETWEEN … EXCLUDE CURRENT ROW` / `EXCLUDE GROUP`：
+
+```sql
+SELECT v, SUM(v) OVER (ORDER BY v ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                       EXCLUDE CURRENT ROW) AS s FROM (VALUES (1),(2),(3)) t(v);
+```
+
+DataFusion **在解析阶段就拒绝**（`ParserError("Expected: ), found: EXCLUDE")`），DuckDB 给出标准答案
+`(1,5),(2,4),(3,3)`；`EXCLUDE GROUP` 同样被拒绝，DuckDB 给 `(1,2),(2,4),(3,2)`。
+
+**但这不是 DataFusion 的 bug**：错误来自 **sqlparser**，而 sqlparser 0.62.0 **根本没有帧排除的模型** ——
+`grep -rn "Exclusion" src/` 一无所获，`WindowFrame` 结构体里也没有对应字段。
+（sqlparser 里确实有 `EXCLUDE` 关键字，但那是 Snowflake 的 `* EXCLUDE (col, …)` 通配语法，与本条无关。）
+所以要支持它必须先在 apache/datafusion-sqlparser-rs 落地。
+
+**因此没有提 issue，也没有做成探针**：探针的 `expect_rows` 钉的是**结果**，无法表达"这条必须解析失败"；
+硬做成 `known_difference` 只会让目录里多一条"标着分歧、但探针根本检查不到"的条目。完整推理与
+将来支持后应钉的两个期望值，都写进了 `findings/window-frame-exclude-unsupported.md`。
+
+### Next
+
+1. **`nth-value-zero-index`**：**等用户点 compare 链接**（`findings/nth-value-zero-index-pr-body.md`
+   里有可直接粘贴的正文）。开出来之后第一件事看 fork CI。
+2. **`#26657`** 已合并（11-01），无需再管。
+3. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`。
