@@ -1429,6 +1429,19 @@
       ],
       "ordered": true,
       "why": "QUALIFY filters on a window function that the query does not project: the descending row numbers are 1 for 30 and 2 for 20, so exactly those two rows survive. An engine that requires the window column in the SELECT list, or that applies QUALIFY after ordering/limit, answers 30 or 10,20,30 here."
+    },
+    {
+      "id": "avg_over_decimal_truncates_at_scale_six",
+      "category": "aggregates",
+      "sql": "SELECT CAST(AVG(x) AS VARCHAR) AS avg_repeating, CAST(AVG(y) AS VARCHAR) AS avg_exact FROM (VALUES (CAST(0.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2))), (CAST(1.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2))), (CAST(1.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2)))) t(x, y)",
+      "expect_rows": [
+        [
+          "0.666666",
+          "1.500000"
+        ]
+      ],
+      "known_difference": "DataFusion's AVG over a DECIMAL returns a DECIMAL with a fixed scale of 6 -- arrow_typeof reports Decimal128(14, 6) for a DECIMAL(10,2) input -- and truncates rather than rounds the digits past it: averaging 0, 1, 1 gives 0.666666, where rounding half away from zero would give 0.666667. DuckDB returns a double instead, so it renders 0.6666666666666666. Note the inconsistency with the rest of DataFusion: reducing a DECIMAL's scale with an explicit CAST does round half away from zero (see decimal_cast_scale_reduction_rounds_half_up in this catalogue). Recorded rather than filed -- the result type is a design choice and whether the truncation is intended is a maintainer question. No upstream issue found on 2026-11-03; if the scale changes or the rounding is fixed, this probe reports a changed answer.",
+      "why": "Pins the type and the truncation together: the second column shows the fixed output scale, the first shows that a repeating digit is cut rather than rounded, and both would move if the average ever started returning a wider or rounded type."
     }
   ]
 }

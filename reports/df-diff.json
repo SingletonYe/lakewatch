@@ -3,7 +3,7 @@
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
     "OK": 99,
-    "KNOWN_DIFF": 17,
+    "KNOWN_DIFF": 18,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -253,6 +253,19 @@
       "status": "KNOWN_DIFF",
       "details": [
         "documented divergence: datafusion [1 row(s)] true,false,true vs duckdb [1 row(s)] false,true,true"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "avg_over_decimal_truncates_at_scale_six",
+      "category": "aggregates",
+      "sql": "SELECT CAST(AVG(x) AS VARCHAR) AS avg_repeating, CAST(AVG(y) AS VARCHAR) AS avg_exact FROM (VALUES (CAST(0.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2))), (CAST(1.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2))), (CAST(1.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2)))) t(x, y)",
+      "why": "Pins the type and the truncation together: the second column shows the fixed output scale, the first shows that a repeating digit is cut rather than rounded, and both would move if the average ever started returning a wider or rounded type.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 0.666666,1.5 vs duckdb [1 row(s)] 0.6666666667,1.5"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
@@ -1498,6 +1511,19 @@
       "session_options": [],
       "status": "OK",
       "details": []
+    },
+    {
+      "id": "avg_over_decimal_truncates_at_scale_six",
+      "category": "aggregates",
+      "sql": "SELECT CAST(AVG(x) AS VARCHAR) AS avg_repeating, CAST(AVG(y) AS VARCHAR) AS avg_exact FROM (VALUES (CAST(0.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2))), (CAST(1.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2))), (CAST(1.00 AS DECIMAL(10,2)), CAST(1.50 AS DECIMAL(10,2)))) t(x, y)",
+      "why": "Pins the type and the truncation together: the second column shows the fixed output scale, the first shows that a repeating digit is cut rather than rounded, and both would move if the average ever started returning a wider or rounded type.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [1 row(s)] 0.666666,1.5 vs duckdb [1 row(s)] 0.6666666667,1.5"
+      ],
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     }
   ]
 }
