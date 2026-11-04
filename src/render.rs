@@ -1,5 +1,6 @@
 //! Formatting `RecordBatch`es for humans, files and other programs.
 
+use std::collections::HashSet;
 use std::io::Write;
 use std::path::Path;
 use std::str::FromStr;
@@ -85,26 +86,22 @@ pub fn write_batches(
         OutputFormat::Csv => {
             let mut buf = String::new();
             if let Some(batch) = batches.first() {
-                let header: Vec<String> = batch
-                    .schema()
-                    .fields()
-                    .iter()
-                    .map(|f| csv_field(f.name()))
-                    .collect();
+                let header: Vec<String> =
+                    unique_names(batch).iter().map(|n| csv_field(n)).collect();
                 buf.push_str(&header.join(","));
                 buf.push('\n');
             }
             for batch in batches {
-                for row in rows_of(batch) {
-                    let cells: Vec<String> = row
-                        .values()
+                for cells in cells_of(batch) {
+                    let rendered: Vec<String> = cells
+                        .iter()
                         .map(|v| match v {
                             Value::Null => String::new(),
                             Value::String(s) => csv_field(s),
                             other => other.to_string(),
                         })
                         .collect();
-                    buf.push_str(&cells.join(","));
+                    buf.push_str(&rendered.join(","));
                     buf.push('\n');
                 }
             }
@@ -147,19 +144,64 @@ fn csv_field(raw: &str) -> String {
 }
 
 /// Every row of a batch as a JSON object.
+///
+/// JSON objects cannot hold two keys with the same name, but a query can legitimately return two
+/// columns with the same name (`SELECT a.s, b.s FROM a JOIN b \u2026`). Rather than dropping one of
+/// them, the second and later occurrences are renamed by [`unique_names`].
 pub fn rows_of(batch: &RecordBatch) -> Vec<Map<String, Value>> {
+    let names = unique_names(batch);
     let mut rows = Vec::with_capacity(batch.num_rows());
     for row in 0..batch.num_rows() {
         let mut object = Map::new();
-        for (col, field) in batch.schema().fields().iter().enumerate() {
+        for (col, name) in names.iter().enumerate() {
             let value = ScalarValue::try_from_array(batch.column(col), row)
                 .map(|sv| scalar_to_json(&sv))
                 .unwrap_or(Value::Null);
-            object.insert(field.name().clone(), value);
+            object.insert(name.clone(), value);
         }
         rows.push(object);
     }
     rows
+}
+
+/// Every row of a batch, with the cells in column order.
+///
+/// The CSV writer takes its header from the schema and its rows from here, so the two have to
+/// agree cell for cell. Counting by name instead of by position is what let a three-column result
+/// print a three-name header above two-value rows.
+pub fn cells_of(batch: &RecordBatch) -> Vec<Vec<Value>> {
+    let mut rows = Vec::with_capacity(batch.num_rows());
+    for row in 0..batch.num_rows() {
+        let mut cells = Vec::with_capacity(batch.num_columns());
+        for col in 0..batch.num_columns() {
+            let value = ScalarValue::try_from_array(batch.column(col), row)
+                .map(|sv| scalar_to_json(&sv))
+                .unwrap_or(Value::Null);
+            cells.push(value);
+        }
+        rows.push(cells);
+    }
+    rows
+}
+
+/// The field names of `batch`, with duplicates made unique.
+///
+/// The second and later occurrence of a name gets a `_2`, `_3`, \u2026 suffix, chosen so the result
+/// is unique even when the batch already contains a column with the suffixed name.
+fn unique_names(batch: &RecordBatch) -> Vec<String> {
+    let mut used: HashSet<String> = HashSet::new();
+    let mut names = Vec::with_capacity(batch.num_columns());
+    for field in batch.schema().fields() {
+        let base = field.name().as_str();
+        let mut candidate = base.to_string();
+        let mut n = 2;
+        while !used.insert(candidate.clone()) {
+            candidate = format!("{base}_{n}");
+            n += 1;
+        }
+        names.push(candidate);
+    }
+    names
 }
 
 /// Convert one Arrow scalar into JSON without losing the common types.
@@ -332,6 +374,68 @@ mod tests {
         assert_eq!(
             rendered(ScalarValue::Float64(Some(f64::NAN))),
             serde_json::Value::Null
+        );
+    }
+
+    fn duplicate_name_batch() -> RecordBatch {
+        use datafusion::arrow::array::{ArrayRef, Int64Array};
+        use datafusion::arrow::datatypes::{Field, Schema};
+        use std::sync::Arc;
+
+        let schema = Arc::new(Schema::new(vec![
+            Field::new("s", DataType::Int64, true),
+            Field::new("s", DataType::Int64, true),
+        ]));
+        RecordBatch::try_new(
+            schema,
+            vec![
+                Arc::new(Int64Array::from(vec![1])) as ArrayRef,
+                Arc::new(Int64Array::from(vec![2])) as ArrayRef,
+            ],
+        )
+        .unwrap()
+    }
+
+    /// A query can return two columns with the same name (`SELECT a.s, b.s FROM a JOIN b …`).
+    /// `rows_of` used to key its object by column name, so the second `s` overwrote the first and
+    /// the CSV row came out one cell narrower than its own header.
+    #[test]
+    fn keeps_columns_that_share_a_name() {
+        let batch = duplicate_name_batch();
+
+        let cells = cells_of(&batch);
+        assert_eq!(cells.len(), 1);
+        assert_eq!(cells[0].len(), 2, "both cells survive, counted by position");
+        assert_eq!(cells[0][0], serde_json::json!(1));
+        assert_eq!(cells[0][1], serde_json::json!(2));
+
+        let rows = rows_of(&batch);
+        assert_eq!(rows[0].len(), 2, "no key is dropped");
+        assert_eq!(rows[0].get("s"), Some(&serde_json::json!(1)));
+        assert_eq!(rows[0].get("s_2"), Some(&serde_json::json!(2)));
+
+        assert_eq!(
+            unique_names(&batch),
+            vec!["s".to_string(), "s_2".to_string()]
+        );
+    }
+
+    /// The header comes from the schema and the rows from `cells_of`, so the two must always be
+    /// the same width — which is exactly what the duplicate-name bug broke.
+    #[test]
+    fn csv_header_matches_row_width_with_duplicate_names() {
+        let dir = std::env::temp_dir().join("lakewatch-duplicate-column-names.csv");
+        write_batches(&[duplicate_name_batch()], OutputFormat::Csv, Some(&dir)).unwrap();
+        let text = std::fs::read_to_string(&dir).unwrap();
+        let _ = std::fs::remove_file(&dir);
+
+        let lines: Vec<&str> = text.trim_end().split('\n').collect();
+        assert_eq!(lines[0], "s,s_2");
+        assert_eq!(lines[1], "1,2");
+        assert_eq!(
+            lines[0].split(',').count(),
+            lines[1].split(',').count(),
+            "header and rows must be the same width"
         );
     }
 }
