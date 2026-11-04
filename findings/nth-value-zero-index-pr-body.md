@@ -1,3 +1,13 @@
+> **ABANDONED 2026-11-03 — do not use this file, and do not re-open the branch.**
+>
+> The user decided this PR has no value: it only improves the error *message* for an invalid index
+> (`nth_value(x, 0)`, where 0 is genuinely not a valid index), whereas a merged PR has to make a valid
+> query work. The branch `fix/nth-value-zero-index` stays on the fork but is no longer advanced,
+> synced, verified or offered. The body below is kept only as a record of the reasoning.
+>
+> The valid, current `Next` list is in `reports/datafusion-findings.md`, section
+> "2026-11-03 用户决定".
+
 # PR body for `fix/nth-value-zero-index` (not yet opened as an apache/datafusion PR)
 
 **Everything between the BEGIN and END markers is the PR description, ready to paste as-is. Nothing
