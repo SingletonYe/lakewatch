@@ -2776,3 +2776,77 @@ k,s,s
    形状扫描里那 8 条"已知旧版本"已解释，不要再报一次。
 3. **`AVG(DECIMAL)` 截断**：已记录，是否提 issue 等用户决定。
 4. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`。
+
+## 2026-11-05 09:00 — 形状扫描第二轮：42 条形状全部对得上，另修好一个标准语法缺口
+
+**结论**：119 探针 · **0 个待研判候选** · 标量 391/20、聚合 191/13 均**逐字节相同**。
+形状扫描跑了 **42 条**（昨天 20 + 今天新 22）：**41 条与 DuckDB 完全一致**，剩下 1 条是已记录的
+`AVG(DECIMAL)`。**同时发现并修好了一个标准语法缺口：`GROUP BY ()`。**
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 | 391 findings / **20 root causes**，零 diff |
+| Phase 1a 聚合 | 191 findings / **13 root causes**，零 diff |
+| Phase 1b 语义 | **119 探针** · OK=99 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-04 → 11-05）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR
+
+`gh pr list --state open` 为空，`nth-value-zero-index` 按 11-03 决定已废弃。PR 位空闲。
+
+### 形状扫描第二轮：一个干净的"全对"
+
+昨天 20 条形状里有 8 条命中"pin 的 55.2.0 缺 #24972"这一已知家族。今天**刻意避开集合比较**，
+另写 **22 条**专压优化器与语义边界：过滤条件下推穿 join、聚合下推 + HAVING、join 上 LIMIT、
+GROUP BY 里 `count(DISTINCT)`、`DISTINCT`+`ORDER BY`、半连接/反连接的过滤、**空输入上的聚合**、
+GROUP BY 表达式、表达式上的聚合、**join 之上的窗口函数**、`UNION` 类型、自连接重复、
+派生表带 NULL、`FILTER`+`DISTINCT`、**带 ORDER BY 的 `string_agg`**、DECIMAL 聚合、
+LEFT JOIN + `count(col)`、派生表之上的外层聚合、GROUP BY 里的 CAST、ORDER BY 平局。
+
+**22 条里 21 条与 DuckDB 逐值一致**，1 条是已记录的 `AVG(DECIMAL)` scale-6 截断（`3.30, 1.650000` vs `3.30, 1.65`）。
+**这是一个干净的负结果**：钉住的 55.2.0 在这些形状上是正确的 —— 值得记下来，因为它说明
+"上次那 8 条失败"确实是集合比较那一族的旧版本表现，而不是更广的优化器问题。
+
+### 顺带确认了 harness 自己的一个依赖
+
+看 `df_diff.py` 的读取路径发现：它用 **`-f json`** 取结果，然后 `[list(row.values()) for row in rows]` ——
+**按 JSON 对象的键顺序取列值**。这依赖两点：`serde_json` 开了 `preserve_order`（10-14 修的那个 bug），
+以及**列名唯一**。也就是说**昨天修的重名列丢值，同时也修好了 harness 自己的比较路径** ——
+否则任何返回重名列的探针都会拿少一个值的行去比对。这条依赖值得写下来。
+
+### 找到并修好：`GROUP BY ()`（空分组集）
+
+标准 SQL 的 `GROUP BY ()` 是**空分组集**，用来写总计。钉住的 55.2.0 直接失败：
+
+```sql
+SELECT count(*) FROM t GROUP BY ();   -- Error during planning: This feature is not implemented: Empty tuple not supported yet
+```
+
+DuckDB：两行表返回 `2`。空元组被送进**表达式规划器**，那里没有它的语义。
+
+**修法**（`7a9ee5f`，`fix/group-by-empty-grouping-set`，2 个文件 +32/−1）：在 `select.rs` 里把空元组
+**从分组列表里滤掉**，并记住"分组子句里有过一个空元组"—— 于是查询仍然被当作聚合处理，折叠真的发生：
+`GROUP BY ()` 不按任何列分组，`GROUP BY (), k` 等价于 `GROUP BY k`（正是把 `()` 与 `(k)` 做叉积的结果）。
+
+**刻意不覆盖的一种情况**：`SELECT 1 FROM t GROUP BY ()`（空分组集但**没有任何聚合函数**）仍然失败 ——
+现在报的是 DataFusion 既有的 *"Aggregate requires at least one grouping or aggregate expression"*。
+要支持它，需要一个"既无分组也无聚合表达式"的计划节点，DataFusion 没有；另一个选择是**静默地每行返回一行**
+（错误答案）。PR 正文里写明了这个取舍，并问维护者是否宁可保留旧的 "Empty tuple" 错误、或规划成一行 `VALUES`。
+
+**验证（自己跑的）**：`group_by.slt` 新增三条（总计 / 空集与真实分组并列 / 空输入上的总计）；
+`group_by.slt` + `grouping.slt` + `aggregate.slt` + `group.slt` → **exit=0**；
+`cargo test -p datafusion-sql` → **99 + 607 + 12 passed, 1 ignored**；`cargo fmt` 干净。
+**只影响当前会失败的查询** —— 改动前后没有任何已有结果会变。fork CI 已自动起跑。
+
+**这次闸门又帮了忙**：`cargo fmt` 对我在 `select.rs` 里那行 `if` 的换行有意见，我跑了一遍 fmt 才过；
+改完还重新编了一次、重跑了那 4 个 slt 文件确认。
+
+### Next
+
+1. **`GROUP BY ()` 的 PR：一次点击** —— `findings/group-by-empty-grouping-set-pr-body.md` 里有可粘贴正文。
+2. **形状扫描已连续两天产出**（第一天：lakewatch 丢列；第二天：`GROUP BY ()` 缺口）。
+   **建议固化成 `scripts/df_shapes.py` 并纳入日常** —— 仍是流程变更，等用户点头。
+3. **聚合族是否纳入日常**：证据已在 11-03 给出，等用户决定。
+4. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`。
