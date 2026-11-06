@@ -1442,6 +1442,46 @@
       ],
       "known_difference": "DataFusion's AVG over a DECIMAL returns a DECIMAL with a fixed scale of 6 -- arrow_typeof reports Decimal128(14, 6) for a DECIMAL(10,2) input -- and truncates rather than rounds the digits past it: averaging 0, 1, 1 gives 0.666666, where rounding half away from zero would give 0.666667. DuckDB returns a double instead, so it renders 0.6666666666666666. Note the inconsistency with the rest of DataFusion: reducing a DECIMAL's scale with an explicit CAST does round half away from zero (see decimal_cast_scale_reduction_rounds_half_up in this catalogue). Recorded rather than filed -- the result type is a design choice and whether the truncation is intended is a maintainer question. No upstream issue found on 2026-11-03; if the scale changes or the rounding is fixed, this probe reports a changed answer.",
       "why": "Pins the type and the truncation together: the second column shows the fixed output scale, the first shows that a repeating digit is cut rather than rounded, and both would move if the average ever started returning a wider or rounded type."
+    },
+    {
+      "id": "non_equi_join_matches_by_predicate",
+      "category": "joins",
+      "sql": "SELECT a.k AS left_k, b.k AS right_k FROM (VALUES (1),(2)) a(k) JOIN (VALUES (2),(3)) b(k) ON a.k < b.k ORDER BY a.k, b.k",
+      "expect_rows": [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "1",
+          "3"
+        ],
+        [
+          "2",
+          "3"
+        ]
+      ],
+      "ordered": true,
+      "why": "A join on `<` rather than `=` matches every pair that satisfies the predicate: 1 matches both 2 and 3, and 2 matches 3, so a 2x2 cross product yields three rows. An engine that routes a non-equi join through the hash-join path, or that quietly treats the predicate as equality, loses rows here."
+    },
+    {
+      "id": "window_ordered_by_aggregate",
+      "category": "window",
+      "sql": "SELECT k, sum(v) AS s, row_number() OVER (ORDER BY sum(v)) AS rn FROM (VALUES (1,1),(1,2),(2,5)) t(k,v) GROUP BY k ORDER BY k",
+      "expect_rows": [
+        [
+          "1",
+          "3",
+          "1"
+        ],
+        [
+          "2",
+          "5",
+          "2"
+        ]
+      ],
+      "ordered": true,
+      "why": "The window's ORDER BY is the aggregate `sum(v)`, not a column, so the window runs after grouping and sees one row per k: group totals 3 and 5 rank 1 and 2. An engine that plans the window below the aggregate, or that cannot order by an aggregate, answers differently or rejects the query."
     }
   ]
 }

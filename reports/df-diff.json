@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 99,
+    "OK": 101,
     "KNOWN_DIFF": 18,
     "BOTH_ERROR": 2
   },
@@ -1524,6 +1524,26 @@
         "documented divergence: datafusion [1 row(s)] 0.666666,1.5 vs duckdb [1 row(s)] 0.6666666667,1.5"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "non_equi_join_matches_by_predicate",
+      "category": "joins",
+      "sql": "SELECT a.k AS left_k, b.k AS right_k FROM (VALUES (1),(2)) a(k) JOIN (VALUES (2),(3)) b(k) ON a.k < b.k ORDER BY a.k, b.k",
+      "why": "A join on `<` rather than `=` matches every pair that satisfies the predicate: 1 matches both 2 and 3, and 2 matches 3, so a 2x2 cross product yields three rows. An engine that routes a non-equi join through the hash-join path, or that quietly treats the predicate as equality, loses rows here.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "window_ordered_by_aggregate",
+      "category": "window",
+      "sql": "SELECT k, sum(v) AS s, row_number() OVER (ORDER BY sum(v)) AS rn FROM (VALUES (1,1),(1,2),(2,5)) t(k,v) GROUP BY k ORDER BY k",
+      "why": "The window's ORDER BY is the aggregate `sum(v)`, not a column, so the window runs after grouping and sees one row per k: group totals 3 and 5 rank 1 and 2. An engine that plans the window below the aggregate, or that cannot order by an aggregate, answers differently or rejects the query.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
     }
   ]
 }
