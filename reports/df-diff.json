@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 101,
+    "OK": 102,
     "KNOWN_DIFF": 18,
     "BOTH_ERROR": 2
   },
@@ -1541,6 +1541,16 @@
       "sql": "SELECT k, sum(v) AS s, row_number() OVER (ORDER BY sum(v)) AS rn FROM (VALUES (1,1),(1,2),(2,5)) t(k,v) GROUP BY k ORDER BY k",
       "why": "The window's ORDER BY is the aggregate `sum(v)`, not a column, so the window runs after grouping and sees one row per k: group totals 3 and 5 rank 1 and 2. An engine that plans the window below the aggregate, or that cannot order by an aggregate, answers differently or rejects the query.",
       "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "generate_series_mismatched_step_is_empty",
+      "category": "table_functions",
+      "sql": "SELECT (SELECT count(*) FROM generate_series(5, 1, 1)) AS descending_with_positive_step, (SELECT count(*) FROM generate_series(1, 5, -1)) AS ascending_with_negative_step, (SELECT count(*) FROM generate_series(1, NULL)) AS null_bound",
+      "why": "A step whose sign disagrees with the bounds yields an EMPTY series rather than an error or an auto-reversed one, and a NULL bound yields none either. Only a zero step is an error. An engine that infers the direction from the bounds answers 4 in the first column and 5 in the second, and one that propagates NULL answers NULL in the third.",
+      "ordered": false,
       "session_options": [],
       "status": "OK",
       "details": []
