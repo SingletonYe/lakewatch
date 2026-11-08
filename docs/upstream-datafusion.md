@@ -45,6 +45,7 @@ them before reporting anything.
 | Bare `1.005` rounds differently | **literal typing** | DuckDB reads it as DECIMAL, DataFusion as DOUBLE. Cast explicitly in the probe. |
 | `UPPER('ß')` differs | **defensible either way** | Unicode full folding (`SS`) versus simple mapping (`ẞ`). |
 | Datetime text differs (`T…Z` vs `…`) | **formatting** | The harness normalises this; if it still fires, it is a real type difference. |
+| A subquery inside an aggregate — a `GROUP BY` key, an aggregate argument, or a window `ORDER BY` — fails with `Physical plan does not support logical expression` | **known upstream** | apache/datafusion#26704 (open, labelled `bug`). The same subquery in `SELECT` or `WHERE` has worked since #24972 + #26657. Verified on main `57.0.0-dev` on 2026-11-08 with `sum(CASE WHEN v > ALL (…) THEN 1 ELSE 0 END)`, `GROUP BY v > ALL (…)` and `row_number() OVER (ORDER BY v > ALL (…))`; all three still fail, so do not re-report them as new. |
 
 Everything else is a candidate until proven otherwise. Also check whether the
 behaviour is simply *undocumented but intended*: search the issue tracker, the PRs,
