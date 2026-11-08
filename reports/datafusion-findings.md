@@ -3018,3 +3018,87 @@ cargo search datafusion  ->  datafusion = "55.2.0"
 1. **`GROUP BY ()` 的 PR：一次点击**（CI 全绿、无冲突）。正文 `findings/group-by-empty-grouping-set-pr-body.md`。
 2. **三个待决工具变更**：① 形状扫描→脚本；② 聚合族→日常；③ **随机 fuzz**（唯一还能挖出新东西的方向）。
 3. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981` —— **等 56.0.0 发版**才会翻。
+
+## 2026-11-08 09:00 — 换靶子：不打 pin，改测 **main**；结果是一半已修、一半还活着
+
+**结论**：122 探针 · **0 个待研判候选** · 标量 391/20、聚合 191/13、窗口 0 全部**逐字节相同**。
+猎捕侧第五天没有新缺陷，但这轮**换了靶子**，并因此发现一个**结构性盲点**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20、191/13、0 —— 三者**零 diff** |
+| Phase 1b 语义 | 122 探针 · OK=102 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-07 → 11-08）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR，备好的分支仍有效
+
+`gh pr list --state open` 为空；`GROUP BY ()` 的 PR 仍未开（等了三天的点击）。
+分支对比 main 是 `ahead 1 / behind 31`，但**我们那两个文件上游都没动过**、`files` 仍只有 2 个、**无冲突**。
+
+### 换靶子：为什么去测 main
+
+harness pin 的是**已发布**的 55.2.0（昨天审过：crates.io 最新发布就是它）。但这带来一个盲点：
+**pin 上的一切失败长得都一样** —— 分不清"main 已修"和"至今仍坏"。而只有后者值得写 PR。
+
+所以我改用 **main** 当靶子：`cargo build -p datafusion-cli`（**19m13s**，与技能里"20 分钟、平时不值得"的记载吻合），
+然后在 main（**`57.0.0-dev`**）上跑 33 条形状，与 DuckDB 逐值比对。
+
+**结果是一半一半，而且切分线很干净：**
+
+**① 已修（main 上正确）**：集合比较在**投影位置**的 5 条全部与 DuckDB 一致 ——
+`2 > ALL (…)` 单独投影、套在聚合旁、包在子查询里、带 NULL 的 ALL/ANY。
+**这就是 #24972 + #26657 在 main 上生效的证据。**
+
+**② 仍坏（main 上依然失败）**：子查询出现在**聚合内部**的三个位置，全部报
+`Physical plan does not support logical expression Exists(…)`，而 DuckDB 三个都能算：
+
+```sql
+SELECT sum(CASE WHEN v > ALL (SELECT w FROM (VALUES (0)) s(w)) THEN 1 ELSE 0 END) FROM (VALUES (1),(2)) t(v);  -- 聚合参数
+SELECT v > ALL (…) AS flag, count(*) FROM … GROUP BY v > ALL (…);                                              -- GROUP BY 键
+SELECT row_number() OVER (ORDER BY v > ALL (…)) FROM (VALUES (1),(2)) t(v);                                    -- 窗口 ORDER BY
+```
+
+这已经是 **apache/datafusion#26704**（open、labelled `bug`、2026-10-24），标题就是
+"Subqueries in an aggregate (GROUP BY key, aggregate argument or FILTER) fail with …"。
+所以分类是 **`known_upstream`，不提新 issue**。窗口 `ORDER BY` 那一处 #26704 标题没点名，
+但失败方式相同，因此**并入同一条**记录而不单开。
+
+（`GROUP BY ()` 在 main 上仍然失败 —— **预期之内**，修复在 11-05 那个尚未合并的分支上。）
+
+### 结构性发现（这轮真正的收获）
+
+**一条 `known_difference` 里引用的 issue，可能"一半过期、一半还活着"。**
+这里同一个 #24972 曾被用来解释**投影和聚合两处**的失败：投影那一半几个月前就修好了，
+聚合那一半是 **#26704**。**只看 pin 的话，这两半会永远挂在同一条错误笔记下**，
+既让过期的部分阻碍我们发现"已修"，也让真正还活着的部分被当成"已知"而不再追究。
+
+**教训**：当 pin 上的失败引用某个上游 issue 时，**要按"位置"逐一对 main 验证**，不能整条信任。
+
+已把 #26704 补进 `docs/upstream-datafusion.md` 的"什么不算 bug"表，写明三个位置与验证日期，
+避免以后重报。完整推理在 `findings/set-comparison-positions-on-main.md`。
+
+### 工具事实（值得留档）
+
+* **`datafusion-cli` 把查询错误打在 stdout、退出码 1**；`lakewatch` 打在 stderr、退出码 2。
+  把 stdout 当 CSV 解析的比对脚本**必须先看退出码** —— 我的脚本有 4 条就是这样先读成了"空结果"，
+  靠退出码检查才纠正过来。
+* `datafusion-cli` 在这台机器上编 **19m13s** —— 只值得为"系统性打 main"付这个代价，单条查询绝不值得。
+* main 现在是 **57.0.0-dev**，而 crates.io 仍只发布 **55.2.0**：catalogue 里那些"56.0.0 已修"的笔记
+  **已经落后 main 两个版本**，会继续漂移直到下一次发版。
+
+### 本轮没有加探针，原因
+
+Phase 4 要求每轮加 1–3 条。今天**刻意不加**：能钉住的新行为要么在 pin 上**本来就是错的**（加了会失败），
+要么是"必须报错"这种 `expect_rows` 表达不了的东西。硬凑一条只会让目录多一个噪音条目。
+**记录代替探针，是这里的诚实选择。**
+
+### Next
+
+1. **`GROUP BY ()` 的 PR：一次点击**（CI 全绿、无冲突）—— `findings/group-by-empty-grouping-set-pr-body.md`。
+2. **三个待决工具变更**（一个都没变）：① 形状扫描→脚本；② 聚合族→日常；③ **随机 fuzz**。
+   **今天的结果给第③条加了新论据**：手工形状已经能覆盖"位置 × 算子"组合，但**发现不了"哪个位置还坏"**这种系统性缺口 ——
+   那正是 fuzz + 位置枚举擅长的。
+3. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`（等 56+ 发版）；
+   **#26704 另需在 pin 升级后按位置复查**（见上）。
