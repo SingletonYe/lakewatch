@@ -1495,6 +1495,17 @@
         ]
       ],
       "why": "A step whose sign disagrees with the bounds yields an EMPTY series rather than an error or an auto-reversed one, and a NULL bound yields none either. Only a zero step is an error. An engine that infers the direction from the bounds answers 4 in the first column and 5 in the second, and one that propagates NULL answers NULL in the third."
+    },
+    {
+      "id": "correlated_exists_in_where",
+      "category": "joins",
+      "sql": "SELECT count(*) AS n FROM (VALUES (1),(2)) t(v) WHERE EXISTS (SELECT 1 FROM (VALUES (1),(3)) s(w) WHERE s.w = t.v)",
+      "expect_rows": [
+        [
+          "1"
+        ]
+      ],
+      "why": "A correlated EXISTS in WHERE behaves as a semi-join: only v = 1 has a matching w, so one row survives out of two, regardless of how many rows the subquery matched. This is the working half of the position boundary measured on 2026-11-09 -- the same predicate in a JOIN ON still fails (see findings/subquery-position-matrix-on-main.md), so a change here would mean the decorrelation path moved."
     }
   ]
 }
