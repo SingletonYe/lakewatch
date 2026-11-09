@@ -3102,3 +3102,92 @@ Phase 4 要求每轮加 1–3 条。今天**刻意不加**：能钉住的新行�
    那正是 fuzz + 位置枚举擅长的。
 3. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`（等 56+ 发版）；
    **#26704 另需在 pin 升级后按位置复查**（见上）。
+
+## 2026-11-09 09:00 — 位置矩阵：子查询"能写在哪"，一次问清；顺带抓到一处未上报的缺口
+
+**结论**：**123 探针**（+1）· **0 个待研判候选** · 标量 391/20、聚合 191/13、窗口 0 全部**逐字节相同**。
+本轮把昨天的洞察做成系统化实验：**5 种构造 × 10 个位置 = 50 个组合**，直接打 main。
+结果是**一张清晰的"能写在哪"地图**，以及**一处未上报的缺口**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20、191/13、0 —— 三者**零 diff** |
+| Phase 1b 语义 | **123 探针**（+1）· OK=103 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-08 → 11-09）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR
+
+`GROUP BY ()` 的 PR 仍未开（等了四天）。分支对比 main 是 `ahead 1 / behind 38`，`files` 仍就是那 2 个、无冲突。
+
+### 位置矩阵：50 个组合，24 对 / 25 错 / 0 个值错误
+
+在 main（`3d7262d87`）上，把 5 种构造（`> ALL`、`EXISTS`、`IN`、标量子查询、**相关** `EXISTS`）
+分别放进 10 个位置，与 DuckDB 逐值/逐错比对：
+
+| 位置 | 结果 |
+|---|---|
+| `SELECT` / `WHERE` / `HAVING` | ✓ 全部一致 |
+| `JOIN … ON`（**不相关**） | ✓ 一致 |
+| `GROUP BY` 键 / 聚合参数 / 聚合 `FILTER` | ✗ `Physical plan does not support logical expression` |
+| 窗口 `ORDER BY` / 窗口 `PARTITION BY` | ✗ 同上 |
+| `ORDER BY` | ✗ **另一条**：Analyzer 明确拒绝 |
+| `JOIN … ON`（**相关**） | ✗ **又一条**：`Schema error: No field named …` |
+
+**25 个失败分三组**：
+
+1. **#26704（已知、open、labelled bug）** —— `GROUP BY` 键、聚合参数、聚合 `FILTER`。
+   标题只点名这三处，但**窗口 `ORDER BY` 与 `PARTITION BY` 的失败方式完全相同**，所以我并入同一条记录、不单开。
+   已在上周写进 `docs/upstream-datafusion.md` 的 triage 表。
+2. **`ORDER BY`**：`Invalid (non-executable) plan after Analyzer … can only be used in Projection, Filter,
+   TableScan, Window functions, Aggregate and Join plan nodes, but was used in [Sort: …]`。
+   **这条消息本身就把允许的位置列全了**，读起来是**刻意的范围决定**而不是缺陷。记下来即可。
+3. **相关子查询放进 `JOIN … ON` —— 未上报，且有个"自相矛盾"的把柄**（见下）。
+
+### 本轮实质产出：`JOIN … ON` 里的相关子查询
+
+同一个谓词，在 `WHERE` 里能跑，在 `ON` 里就不行：
+
+```sql
+-- 能跑，返回 1
+SELECT count(*) FROM (VALUES (1),(2)) t(v) WHERE EXISTS (SELECT 1 FROM (VALUES (1)) s(w) WHERE s.w = t.v);
+
+-- 失败：Schema error: No field named t.v.  Valid fields are __correlated_sq_1.column1.
+SELECT count(*) FROM (VALUES (1),(2)) t(v) JOIN (VALUES (1),(2)) u(k)
+    ON EXISTS (SELECT 1 FROM (VALUES (1)) s(w) WHERE s.w = t.v);
+```
+
+DuckDB 给 `1`。**不相关**的同一形状在 `ON` 里是好的 → 所以问题精确地落在"**连接条件里的相关性**"上。
+引用左侧（`No field named t.v`）和引用右侧（`No field named u.k`）都失败，加一个普通合取项也救不回来。
+
+**把柄是"不一致"**：**标量**版本被拒绝时给的是**清楚**的消息 ——
+*"Correlated scalar subquery can only be used in Projection, Filter, Aggregate and MERGE DML plan nodes"*；
+而 `EXISTS`/`IN` 版本直接摔出一个 `No field named t.v`，读起来像用户把列名拼错了。
+**要么这个位置应该能跑（Analyzer 自己的允许列表里就有 Join 节点，而 #24972 已经把投影/WHERE 做掉了），
+要么它应该和标量版一样给出清楚的"不支持"** —— 现在两头都不占。
+
+**已搜上游（open + closed）**：按"连接条件里的相关子查询"和这条错误文本都**没有对应 issue**。
+草稿已写好：`findings/correlated-subquery-in-join-condition-issue.md`（5 个可复现片段 + 标量版的对照）。
+
+完整矩阵与推理在 `findings/subquery-position-matrix-on-main.md`。
+
+### Phase 4 — 1 条新探针：钉住这条边界的"能用"那一半
+
+`correlated_exists_in_where`（`joins`）—— 相关 `EXISTS` 在 `WHERE` 里等价于半连接：
+`v = 1` 才有匹配，两行只留一行，且**不管子查询命中几行都只留一行**。
+这是今天那张矩阵里"能用"的那一半；**如果哪天装饰路径改动了、连这一半也坏掉，这条会立刻报**。
+
+### 诚实评估
+
+矩阵的价值不在"发现 bug"（25 条里 22 条是 #26704 或刻意的限制），
+而在**它把"哪些位置能用"变成了可复核的事实**，并且**证明 #24972 覆盖的是"投影里的子查询"而不是"子查询"**。
+第 3 组是唯一的真新东西 —— 而且它的价值主要在于**错误信息把用户引向错误方向**。
+
+### Next
+
+1. **`GROUP BY ()` 的 PR：一次点击**（CI 全绿、无冲突）—— `findings/group-by-empty-grouping-set-pr-body.md`。
+2. **新 issue 草稿：`JOIN … ON` 里的相关子查询** —— `findings/correlated-subquery-in-join-condition-issue.md`，
+   要提就由用户提（我无法在 apache/* 建 issue）。
+3. **三个待决工具变更**（未变）：① 形状扫描→脚本；② 聚合族→日常；③ 随机 fuzz。
+   **今天这张矩阵给第③条又添一证**：位置枚举必须手工列，fuzz 才能自动铺开。
