@@ -68,3 +68,26 @@ The catalogue can only pin *results*; it cannot express "this position must fail
 work". A position matrix like this one is the only way to see the shape of the gaps — which is why
 `#24972` was believed to cover "set comparisons" when it actually covered "set comparisons **in
 projections**". Re-run it against main whenever the pin looks stale.
+
+## Second round (2026-11-10): four more constructs, same positions
+
+Re-ran with `NOT EXISTS`, `NOT IN (subquery)`, `= ANY (subquery)` and a correlated `IN` added, 45 more
+combinations, again against main with DuckDB as the oracle.
+
+**The gaps are a property of the position, not of the construct.** Every one of the nine constructs
+fails in exactly the same six places — `GROUP BY` key, aggregate argument, aggregate `FILTER`, window
+`ORDER BY`, window `PARTITION BY` (all `#26704`) and `ORDER BY` (the Analyzer restriction) — and works in
+`SELECT`, `WHERE`, `HAVING` and `JOIN … ON`.
+
+Two refinements:
+
+* **`JOIN … ON` fails for correlated subqueries of every construct**, and the error message is not even
+  stable: `EXISTS` gives `Schema error: No field named t.v`, a correlated `IN` gives
+  `Schema error: Ambiguous reference to unqualified field column1`. Two different field-resolution
+  failures for the same underlying position strengthens the case that this path is broken rather than
+  deliberately restricted (see `correlated-subquery-in-join-condition-issue.md`).
+* **`QUALIFY` with a subquery predicate** is refused with *"QUALIFY clause requires window functions in
+  the SELECT list or QUALIFY"* — misleading, because the SELECT list does contain one. The canonical
+  idiom `QUALIFY rn = 1` works, and so does repeating the window function inside `QUALIFY`, so this is
+  specific to a non-window predicate there. Low value on its own (QUALIFY is not standard SQL), recorded
+  only so it is not re-investigated.

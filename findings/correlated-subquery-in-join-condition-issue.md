@@ -62,3 +62,19 @@ column reference is wrong, when the same reference is accepted one clause earlie
   covers.
 * Verified on `main` (`3d7262d87`) on 2026-11-09. Searched upstream, open and closed, for correlated
   subqueries in join conditions and for this error text before filing.
+
+### Follow-up, 2026-11-10: the message is not even stable
+
+With a correlated `IN` instead of a correlated `EXISTS`, the same position fails with a **different**
+error:
+
+```sql
+SELECT count(*) FROM (VALUES (1),(2)) t(v) JOIN (VALUES (1)) u(k)
+    ON t.v IN (SELECT w FROM (VALUES (1),(2)) s(w) WHERE s.w = t.v);
+-- Schema error: Ambiguous reference to unqualified field column1
+```
+
+So the correlated-subquery-in-a-join-condition path fails in at least two distinct ways
+(`No field named t.v` and `Ambiguous reference to unqualified field column1`), which is more consistent
+with a broken decorrelation path than with a deliberate restriction — a deliberate restriction would
+have one message, like the scalar case does.
