@@ -3191,3 +3191,80 @@ DuckDB 给 `1`。**不相关**的同一形状在 `ON` 里是好的 → 所以问
    要提就由用户提（我无法在 apache/* 建 issue）。
 3. **三个待决工具变更**（未变）：① 形状扫描→脚本；② 聚合族→日常；③ 随机 fuzz。
    **今天这张矩阵给第③条又添一证**：位置枚举必须手工列，fuzz 才能自动铺开。
+
+## 2026-11-10 09:00 — 矩阵第二轮：缺口是**位置**的属性，不是构造的属性
+
+**结论**：**124 探针**（+1）· **0 个待研判候选** · 标量 391/20、聚合 191/13、窗口 0 全部**逐字节相同**。
+昨天那张矩阵只用了 5 种构造；今天补到 **9 种**，答案是：**同一批位置，全部照样失败**。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20、191/13、0 —— 三者**零 diff** |
+| Phase 1b 语义 | **124 探针**（+1）· OK=104 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-09 → 11-10）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR
+
+`GROUP BY ()` 的 PR 仍未开（第五天）。分支 `ahead 1 / behind 42`，`files` 仍就是那 2 个、无冲突。
+
+### 矩阵第二轮：换成"位置 vs 构造"的另一半
+
+新增 `NOT EXISTS`、`NOT IN (子查询)`、`= ANY (子查询)`、相关 `IN` 四种构造 × 10 个位置，
+再加 `QUALIFY`（9 种构造各一条），共 45 个组合。结论干净得可以直接写进规则：
+
+> **失败是"位置"的属性，不是"构造"的属性。**
+> 九种构造**全部**在同样六个位置失败 —— `GROUP BY` 键、聚合参数、聚合 `FILTER`、窗口 `ORDER BY`、
+> 窗口 `PARTITION BY`（这五个是 **#26704**），以及 `ORDER BY`（Analyzer 的显式限制）。
+> 九种构造**全部**在 `SELECT` / `WHERE` / `HAVING` / `JOIN … ON`（不相关）里正常工作。
+
+两个补充：
+
+**① `JOIN … ON` 里的错误消息本身都不稳定** —— 这是把昨天那条从"猜测"变成"证据"的关键：
+
+| 构造 | 错误 |
+|---|---|
+| 相关 `EXISTS` | `Schema error: No field named t.v` |
+| 相关 `IN` | `Schema error: Ambiguous reference to unqualified field column1` |
+
+**同一个位置、两种不同的字段解析失败**。刻意限制会有**一条**消息（标量版就是一条），
+两种不同的崩溃更像**装饰路径本身坏了**。这条已补进 issue 草稿，作为主论据。
+
+**② `QUALIFY` + 子查询** 被拒绝时的消息是 *"QUALIFY clause requires window functions in the SELECT list
+or QUALIFY"* —— **而 SELECT 列表里明明有窗口函数**，消息误导。经典写法 `QUALIFY rn = 1` 和
+"把窗口函数重复写进 QUALIFY" 都能跑，所以这只对"QUALIFY 里放非窗口谓词"成立。
+QUALIFY 本身不是标准 SQL，价值低，**只记录不深究**。
+
+### 顺带：查清了这条路修起来有多大
+
+去读了源码：`DecorrelatePredicateSubquery::rewrite` **只匹配 `LogicalPlan::Filter`**（第 94 行），
+**根本不处理 Join 节点的 filter**。所以"连接条件里的子查询"从来就没被装饰过 ——
+这解释了为什么错误是字段解析失败而不是明确的"不支持"。
+
+**结论：这不是一个小修**（要让该规则也能处理 Join，或把 ON 里的子查询改写成 join 之上的 filter），
+风险与收益不匹配。**所以本轮不试补丁**，把 issue 草稿作为交付物（技能里的原则正是：修不动就 revert、
+提 issue、继续走）。顺便：`No field named` 那条错误是**通用**的 `FieldNotFound` 渲染后缀
+（`datafusion/common/src/error.rs:305`），不是某个专门的"不支持"分支 —— 进一步说明这是**意外**而非设计。
+
+### Phase 4 — 1 条新探针：`NOT EXISTS` vs `NOT IN` 的经典不对称
+
+`not_exists_is_not_not_in_with_nulls`（`null_semantics`）——
+同一批数据上，`NOT EXISTS` 留 **1** 行、`NOT IN` 留 **0** 行：
+
+```sql
+-- 子查询是 (1, NULL)，外表是 (1),(2)
+WHERE NOT EXISTS (SELECT 1 FROM s(w) WHERE s.w = t.v)  -- 1 行（v=2 活下来）
+WHERE v NOT IN (SELECT w FROM s)                        -- 0 行（NULL 让每行都是 UNKNOWN）
+```
+
+这两条是**同一个陷阱的两半**：目录里已有 `not_in_with_null` 钉住 `NOT IN` 那半，
+今天这条把**这一对**钉在一起 —— 若哪次改动让两者收敛（例如把 `NOT IN` "修"成 `NOT EXISTS` 语义），
+这条会立刻报。
+
+### Next
+
+1. **`GROUP BY ()` 的 PR：一次点击**（CI 全绿、无冲突）—— `findings/group-by-empty-grouping-set-pr-body.md`。
+2. **新 issue 草稿已加强**（两种错误消息作论据）：`findings/correlated-subquery-in-join-condition-issue.md`。
+3. **三个待决工具变更**（未变）：形状扫描→脚本；聚合族→日常；随机 fuzz。
+   **两轮矩阵把"位置枚举"做完了**，这恰好说明：这项工作手工做一次就够了，**长期该由 fuzz 自动铺开**。
