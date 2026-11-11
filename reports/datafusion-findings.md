@@ -3268,3 +3268,74 @@ WHERE v NOT IN (SELECT w FROM s)                        -- 0 行（NULL 让每�
 2. **新 issue 草稿已加强**（两种错误消息作论据）：`findings/correlated-subquery-in-join-condition-issue.md`。
 3. **三个待决工具变更**（未变）：形状扫描→脚本；聚合族→日常；随机 fuzz。
    **两轮矩阵把"位置枚举"做完了**，这恰好说明：这项工作手工做一次就够了，**长期该由 fuzz 自动铺开**。
+
+## 2026-11-11 09:00 — 换到第三个面：**DML**；发现一个"表没变却退出 0"的陷阱
+
+**结论**：**125 探针**（+1）· **0 个待研判候选** · 标量 391/20、聚合 191/13、窗口 0 全部**逐字节相同**。
+探针只会发单条 `SELECT`，所以 **DML 从来没被覆盖过**。今天把这块补上，结论是"限制是刻意的、但消息不一致"。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 / 聚合 / 窗口 | 391/20、191/13、0 —— 三者**零 diff** |
+| Phase 1b 语义 | **125 探针**（+1）· OK=105 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-10 → 11-11）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR
+
+`GROUP BY ()` 的 PR 仍未开（第六天）。分支 `ahead 1 / behind 55`，`files` 仍就是那 2 个、无冲突。
+
+### DML 面：子查询在 `DELETE`/`UPDATE` 的 `WHERE` 里一律不支持
+
+用 `datafusion-cli -f` 跑「建表 → 插入 → DML → 查最终表」，把同一串语句在 DuckDB 里重放对比：
+
+| DML 形式 | 带子查询 | 结果 |
+|---|---|---|
+| `INSERT … SELECT … WHERE <子查询>` | 是 | **能跑** |
+| `CREATE TABLE u AS SELECT … WHERE <子查询>` | 是 | **能跑** |
+| `DELETE` / `UPDATE … WHERE <子查询>` | `IN`/`EXISTS`/`= ANY` | **拒绝，但有解释** |
+| `DELETE` / `UPDATE … WHERE <子查询>` | 标量 `= (SELECT …)` | **拒绝，但只给通用消息** |
+| `DELETE … WHERE v IN (1, 2)` | 字面量列表 | **能跑** |
+
+那条解释写得很好，**把原因都说了**：
+
+> … not supported: **the optimizer rewrites the subquery into a LeftSemi join, and the condition does not
+> reach the table provider**
+
+`= ANY` 同一句、只是 `LeftMark join`。**这是带理由的刻意限制**，所以写进 `docs/upstream-datafusion.md`
+的 triage 表，**不提 issue**（上游搜过报错文本与相关说法，无对应 issue）。
+
+**唯一值得指出的是不一致**：四种形式里三种给了**可操作**的消息，
+而**标量**形式只丢下一句 `Physical plan does not support logical expression ScalarSubquery(<subquery>)`
+—— 不提 DML、不提 provider、不提为什么。用户接着会去试 `v IN (SELECT …)`，**然后被另一条消息挡住**。
+价值不高，**记录不提交**。
+
+### 本轮真正的坑：`-f` 模式下**出错也退 0**
+
+第一次跑这个矩阵时，**17 个用例全部报"结果不同"** —— 表在失败的 `DELETE`/`UPDATE` 之后**根本没变**。
+原因：
+
+> **`datafusion-cli -f` 把错误打到 stdout、继续执行下一条语句、然后退出码 0。**
+
+输出是 `count 2`（插入）、然后是错误文本、然后是没变的表。**只看退出码的脚本会认为一切成功。**
+而同一个二进制用 `-c "SELECT 1/0"` 时**退出码是 1** —— 也就是说 `-c` 和 `-f` 行为不同，
+而"脚本里失败的 DML"恰好是最容易漏的那种。
+
+`lakewatch` 没有这个问题（错误进 stderr、退出码 2），所以探针从没被它骗过。
+**但任何将来驱动 `datafusion-cli` 的脚本必须扫 stdout 找 `Error:` / `not implemented`，不能信退出码。**
+正是昨天记下的"错误打在 stdout"那条事实，今天以"退出码 0"的形式又咬了一次。
+
+### Phase 4 — 1 条新探针：位置边界里"能用"的那一半
+
+`set_comparison_in_where_filters_rows`（`sql_surface`）——
+`WHERE v > ALL (子查询)` 是集合比较**在过滤位置**的用法：子查询为 `(0)` 时两行全过（=2），为 `(1)` 时只有 v=2 过（=1）。
+它钉的是 11-09/11-10 那张位置矩阵里**能用**的那一格；同一构造在 `GROUP BY`/聚合参数/聚合 `FILTER`/窗口/`ORDER BY`
+都会失败，所以这一格若变了，说明过滤那条路被改动了。
+
+### Next
+
+1. **`GROUP BY ()` 的 PR：一次点击**（CI 全绿、无冲突）—— `findings/group-by-empty-grouping-set-pr-body.md`。
+2. **新 issue 草稿**：`JOIN … ON` 里的相关子查询（两种错误消息作论据）—— `findings/correlated-subquery-in-join-condition-issue.md`。
+3. **三个待决工具变更**（未变）：形状扫描→脚本；聚合族→日常；随机 fuzz。
+   **今天又添一条证据**：DML 面是探针结构上够不到的地方，只有靠外部脚本；而这正需要 fuzz/位置枚举那套东西。
