@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 104,
+    "OK": 105,
     "KNOWN_DIFF": 18,
     "BOTH_ERROR": 2
   },
@@ -1570,6 +1570,16 @@
       "category": "null_semantics",
       "sql": "SELECT (SELECT count(*) FROM (VALUES (1),(2)) t(v) WHERE NOT EXISTS (SELECT 1 FROM (VALUES (1),(NULL)) s(w) WHERE s.w = t.v)) AS not_exists_rows, (SELECT count(*) FROM (VALUES (1),(2)) t(v) WHERE v NOT IN (SELECT w FROM (VALUES (1),(NULL)) s(w))) AS not_in_rows",
       "why": "The two anti-joins diverge exactly at the NULL: `v NOT IN (1, NULL)` is UNKNOWN for every row, so it removes both, while `NOT EXISTS` removes only the rows that actually match and a NULL never equals anything, so v = 2 survives. `not_in_with_null` pins the NOT IN half; this pins the pair together, so a change that makes them converge is visible.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "set_comparison_in_where_filters_rows",
+      "category": "sql_surface",
+      "sql": "SELECT (SELECT count(*) FROM (VALUES (1),(2)) t(v) WHERE v > ALL (SELECT w FROM (VALUES (0)) s(w))) AS all_pass, (SELECT count(*) FROM (VALUES (1),(2)) t(v) WHERE v > ALL (SELECT w FROM (VALUES (1)) s(w))) AS only_second",
+      "why": "A set comparison used as a filter: against a subquery of (0) both rows pass, against (1) only v = 2 does. This is the working half of the position boundary measured on 2026-11-09/10 -- the same construct fails in GROUP BY, aggregate arguments, aggregate FILTER, window frames and ORDER BY -- so a change here would mean the filter path moved.",
       "ordered": false,
       "session_options": [],
       "status": "OK",
