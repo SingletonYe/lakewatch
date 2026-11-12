@@ -1,3 +1,16 @@
+> **PARKED 2026-11-12 — do not open this PR, and do not file an issue for it either.**
+>
+> The user's decision ("放着"). The branch `fix/group-by-empty-grouping-set` stays on the fork as a
+> record, but it is no longer advanced, synced, verified or offered. No issue is to be filed: the
+> "file an issue instead" route suggested on 2026-11-12 is cancelled too. Stop advertising the compare
+> link in reports and emails.
+>
+> Why it was dropped, for the record: `GROUP BY ()` is valid standard SQL and the refusal is incidental
+> rather than deliberate (no test pins it; the parser says "not supported yet"), but the equivalent
+> `GROUPING SETS (())` and `ROLLUP()` already work, so the practical impact is limited to queries ported
+> from PostgreSQL or DuckDB -- not worth a scarce review slot. The valid, current `Next` list lives in
+> `reports/datafusion-findings.md`, section "2026-11-12 用户决定".
+
 # PR body for `fix/group-by-empty-grouping-set` (not yet opened as an apache/datafusion PR)
 
 **Everything between the BEGIN and END markers is the PR description, ready to paste as-is. Nothing
