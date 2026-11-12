@@ -3339,3 +3339,75 @@ WHERE v NOT IN (SELECT w FROM s)                        -- 0 行（NULL 让每�
 2. **新 issue 草稿**：`JOIN … ON` 里的相关子查询（两种错误消息作论据）—— `findings/correlated-subquery-in-join-condition-issue.md`。
 3. **三个待决工具变更**（未变）：形状扫描→脚本；聚合族→日常；随机 fuzz。
    **今天又添一条证据**：DML 面是探针结构上够不到的地方，只有靠外部脚本；而这正需要 fuzz/位置枚举那套东西。
+
+## 2026-11-12 09:00 — 把自家文档里点名的最后一个未覆盖算子（`MERGE`）查清：**harness 覆盖不了它**
+
+**结论**：**127 探针**（+2）· **0 个待研判候选** · 标量 391/20 逐字节相同。
+`MERGE` 与 `UNPIVOT` 都查到底了 —— 前者是"harness 结构上够不到"，后者是已知缺口（issue 还开着、PR 被 stale bot 关掉）。
+真正的收获是两条**从未被覆盖**的特性进了目录：`DISTINCT ON` 与 `LATERAL`。
+
+| 阶段 | 结果 |
+|---|---|
+| Phase 0 健康闸门 | **7/7 PASS** |
+| Phase 1a 标量 | 391 findings / **20 root causes**，零 diff |
+| Phase 1b 语义 | **127 探针**（+2）· OK=107 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选** |
+
+自检：连续性无断档（11-11 → 11-12）；排程 `enabled`、`0 9 * * *` ✓。
+
+### Phase 0b — 没有开着的 PR
+
+`GROUP BY ()` 的 PR 仍未开（第七天）。分支 `ahead 1 / behind 73`，`files` 仍就是那 2 个、无冲突、fork CI 早前全绿。
+
+### `MERGE`：不是"我们没覆盖"，是"**够不到**"
+
+`docs/upstream-datafusion.md` 的"Growing the catalogue"一节把 **`MERGE`** 列为 lakewatch 尚未使用的算子之一。
+今天去查，结论要改写：
+
+```sql
+MERGE INTO t USING s ON t.id = s.id
+WHEN MATCHED THEN UPDATE SET v = s.v
+WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v);
+```
+
+main 上（`57.0.0-dev`）报 **`This feature is not implemented: MERGE INTO not supported for Base table`**，
+而 DuckDB 正常执行（`(1,10) (2,200) (3,300)`）。
+
+`MERGE` **能解析**，但**没有任何 harness 能建出来的 provider 接受它**。所以那一行应读作
+**"DataFusion 在内存表上不支持 MERGE"**，而不是"我们还没试"。已写进 triage 表，避免以后每轮都去试一次。
+
+### `UNPIVOT`：已知缺口，且它的 issue 还开着、PR 已被 stale bot 关掉
+
+```
+SELECT * FROM (VALUES (1,2),(3,4)) t(a,b) UNPIVOT (val FOR col IN (a, b))
+-- This feature is not implemented: Unsupported ast node Unpivot { …整棵 AST 全量打印… }
+```
+
+DuckDB 给 `(a,1) (a,3) (b,2) (b,4)`。查上游：**#12907**（open）就是要 PIVOT/UNPIVOT 的那个 issue，
+而实现它的 PR **#17946 在 2026-03-14 被 stale bot 关闭**（60 天无活动），有人在 2026-09 留言问要不要复活。
+
+所以分类是 **`known_upstream`（#12907）**，**不提重复 issue**。两个附带事实写进 triage 表：
+
+* 这条拒绝消息会把**整棵解析后的 AST 打进错误文本** —— 读失败日志前得先知道这件事；
+* #12907 本来就在我们的 14 条引用名单里（每轮复核的那批），**这次只是把"UNPIVOT 这条具体表现"补进去**。
+
+### 本轮真正的产出：两条从未被覆盖的特性
+
+`DISTINCT ON` 和 `LATERAL` 在两轮位置矩阵、三轮形状扫描、以及目录全部 127 条探针里**都是空白**。实测两条都与 DuckDB 一致：
+
+1. **`distinct_on_keeps_the_first_row_per_key`**（`sql_surface`）——
+   `DISTINCT ON (g) … ORDER BY g, v DESC` 每个 key 保留**排序下的第一行**，所以每组留**最大的 v**。
+   引擎若保留任意一行、或留最小值，这里会给出 `1,10`。
+2. **`lateral_subquery_drops_unmatched_left_rows`**（`joins`）——
+   `LATERAL` 可以引用左侧的列，而用逗号连接就是**内连接**：`g = 3` 产生不出 lateral 行，**被丢掉而不是补 NULL**。
+   把它当 LEFT JOIN 的引擎会给 `1,100 / 2,200 / 3,NULL`。
+
+### 诚实评估
+
+又一个"地图日"：没找到新 bug，但**目录长了 2 条**，并且**两个死路被永久标注**（MERGE 够不到、UNPIVOT 已知且 issue 开着）。
+三天下来的净产出是：位置矩阵（可复核的事实）、一个未上报的 issue 草稿（`JOIN … ON`）、DML 边界、以及今天这四条。
+
+### Next
+
+1. **`GROUP BY ()` 的 PR：一次点击**（CI 全绿、无冲突）—— `findings/group-by-empty-grouping-set-pr-body.md`。
+2. **新 issue 草稿**：`JOIN … ON` 里的相关子查询 —— `findings/correlated-subquery-in-join-condition-issue.md`。
+3. **三个待决工具变更**（未变）：形状扫描→脚本；聚合族→日常；随机 fuzz。
