@@ -1530,6 +1530,40 @@
         ]
       ],
       "why": "A set comparison used as a filter: against a subquery of (0) both rows pass, against (1) only v = 2 does. This is the working half of the position boundary measured on 2026-11-09/10 -- the same construct fails in GROUP BY, aggregate arguments, aggregate FILTER, window frames and ORDER BY -- so a change here would mean the filter path moved."
+    },
+    {
+      "id": "distinct_on_keeps_the_first_row_per_key",
+      "category": "sql_surface",
+      "sql": "SELECT DISTINCT ON (g) g, v FROM (VALUES (1,10),(1,20),(2,30)) t(g,v) ORDER BY g, v DESC",
+      "expect_rows": [
+        [
+          "1",
+          "20"
+        ],
+        [
+          "2",
+          "30"
+        ]
+      ],
+      "ordered": true,
+      "why": "DISTINCT ON keeps one row per key -- the first under the query's ORDER BY -- so with `ORDER BY g, v DESC` each group keeps its LARGEST v. An engine that keeps an arbitrary row, or the smallest, answers 1,10 here. The ORDER BY is what makes it deterministic, and it has to lead with the DISTINCT ON expressions."
+    },
+    {
+      "id": "lateral_subquery_drops_unmatched_left_rows",
+      "category": "joins",
+      "sql": "SELECT t.g, x.v FROM (VALUES (1),(2),(3)) t(g), LATERAL (SELECT v FROM (VALUES (1,100),(2,200)) s(g2,v) WHERE s.g2 = t.g) x ORDER BY t.g",
+      "expect_rows": [
+        [
+          "1",
+          "100"
+        ],
+        [
+          "2",
+          "200"
+        ]
+      ],
+      "ordered": true,
+      "why": "A LATERAL subquery may reference the columns to its left, and joining it with a comma makes that an inner join: g = 3 produces no lateral row and is DROPPED, not NULL-extended. An engine that treats the comma as a LEFT JOIN answers 1,100 / 2,200 / 3,NULL, and one that cannot resolve the outer reference fails outright."
     }
   ]
 }
