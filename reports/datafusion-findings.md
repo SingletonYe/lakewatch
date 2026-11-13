@@ -3458,3 +3458,48 @@ DuckDB 给 `(a,1) (a,3) (b,2) (b,4)`。查上游：**#12907**（open）就是要
    （`findings/correlated-subquery-in-join-condition-issue.md`）。**不催、不重复提**；用户问起再给。
 3. **三个战略选项待用户决定**：投 fuzz / 降级看守 / 维持现状。
 4. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`（等发版）；`#26704` 需按位置复查。
+
+## 2026-11-13 09:00 — 闸门先红后绿：**磁盘又满了**（不是代码问题）· 128 探针 · 0 候选
+
+### 闸门：FAIL → PASS（ENOSPC）
+
+第一遍 `daily_check.sh` **7/7 里挂了 3 个**（build 245s、lints、tests）。查因：
+
+```
+error: failed to write to `…/build/datafusion-functions-aggregate/…/full.rmeta`:
+       No space left on device (os error 28)
+```
+
+`df -h`：**`/dev/vdb 24G / 23G / 272K / 100%`**。**和 2026-11-01 那次同一个根因**：
+`df-fork/target/debug/deps` 涨到 **16G**，整个 `df-fork` 到 **19G** —— 那是 datafusion-cli 与
+sqllogictests 两套构建、横跨几个分支状态的产物。
+
+**两条预备分支都已被用户判为放弃（`nth-dom` 11-03、`GROUP BY ()` 11-12），也没有开着的 PR**，
+所以这些产物**没有任何用途**。`cargo clean` 释放 **20.3 GiB**（24G→4.2G，占用 100%→19%），
+重跑闸门 **7/7 全绿**（build 119s、lints 116s）。
+
+**规则（第二次踩，写成硬规则）**：`df-fork` 只用于"验证某个分支"或"系统性打 main"。
+**一旦没有开着的 PR、也没有正在验证的分支，就该 `cargo clean`** ——
+否则它会在 1–2 天内把 24G 盘吃满，然后**闸门以"编译失败"的形式报警**，掩盖真正的原因。
+判断技巧：`EXIT=101` + 日志里没有 `error[E…]` + 报错文本含 `os error 28` / `No space left` → **先看磁盘**。
+
+### 本轮其余（安静的一天）
+
+* Phase 1a 标量：391 findings / **20 root causes**，与已提交版本**逐字节相同**。
+* Phase 1b 语义：**128 探针**（+1）· OK=108 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选**。
+* 引用复核：`#26704`、`#22881`、`#12955`、`#12956`、`#12907` **仍 open**；`#24981` closed（与记录一致）。无过期项。
+* **按 11-12 的决定：没有开 PR、没有备新 PR、没有催任何事。**
+
+新增 1 条探针 `qualify_references_select_alias`（`sql_surface`）——
+`QUALIFY rn <= 2` **引用 SELECT 里的别名**，这是 QUALIFY 最常见的写法；
+已有的那条 `qualify_filters_on_unprojected_window` 是"把窗口函数重复写进 QUALIFY"的形式。
+两者都与 DuckDB 一致（`(20,2) (30,1)`）。
+
+### Next（本节是唯一有效的版本）
+
+1. **没有开着的 PR、没有待开的分支** —— PR 位空闲，**不主动备新 PR**，除非用户明确要。
+2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`。
+   **不催、不重复提**，用户问起再给。
+3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状。
+4. **`known_difference` 待翻转**：`#22881`、`#12955`/`#12956`、`#24981`（等发版）；`#26704` 需按位置复查。
+5. **磁盘**：`df-fork` 已清空（4.2G 占用），下次要打 main 需重新构建（约 19 分钟）。

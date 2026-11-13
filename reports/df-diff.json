@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 107,
+    "OK": 108,
     "KNOWN_DIFF": 18,
     "BOTH_ERROR": 2
   },
@@ -1600,6 +1600,16 @@
       "category": "joins",
       "sql": "SELECT t.g, x.v FROM (VALUES (1),(2),(3)) t(g), LATERAL (SELECT v FROM (VALUES (1,100),(2,200)) s(g2,v) WHERE s.g2 = t.g) x ORDER BY t.g",
       "why": "A LATERAL subquery may reference the columns to its left, and joining it with a comma makes that an inner join: g = 3 produces no lateral row and is DROPPED, not NULL-extended. An engine that treats the comma as a LEFT JOIN answers 1,100 / 2,200 / 3,NULL, and one that cannot resolve the outer reference fails outright.",
+      "ordered": true,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "qualify_references_select_alias",
+      "category": "sql_surface",
+      "sql": "SELECT v, row_number() OVER (ORDER BY v DESC) AS rn FROM (VALUES (10),(20),(30)) t(v) QUALIFY rn <= 2 ORDER BY v",
+      "why": "QUALIFY may reference a window function by the alias the SELECT list gave it, which is how the clause is normally written: rn is 1 for 30 and 2 for 20, so both pass `rn <= 2` while the smallest row is dropped. The other QUALIFY probe repeats the window function inside QUALIFY, so this pins the more common form -- and an engine that resolves QUALIFY before the SELECT aliases rejects it.",
       "ordered": true,
       "session_options": [],
       "status": "OK",
