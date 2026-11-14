@@ -1581,6 +1581,20 @@
       ],
       "ordered": true,
       "why": "QUALIFY may reference a window function by the alias the SELECT list gave it, which is how the clause is normally written: rn is 1 for 30 and 2 for 20, so both pass `rn <= 2` while the smallest row is dropped. The other QUALIFY probe repeats the window function inside QUALIFY, so this pins the more common form -- and an engine that resolves QUALIFY before the SELECT aliases rejects it."
+    },
+    {
+      "id": "boolean_orders_false_below_true",
+      "category": "sql_surface",
+      "sql": "SELECT (SELECT count(*) FROM (VALUES (true),(false)) t(b) WHERE b) AS true_rows, CAST((SELECT min(b) FROM (VALUES (true),(false)) u(b)) AS VARCHAR) AS min_b, CAST((SELECT max(b) FROM (VALUES (true),(false)) v(b)) AS VARCHAR) AS max_b, (SELECT count(b) FROM (VALUES (true),(false),(NULL)) w(b)) AS counted",
+      "expect_rows": [
+        [
+          "1",
+          "false",
+          "true",
+          "2"
+        ]
+      ],
+      "why": "Booleans order FALSE < TRUE, so MIN of the pair is false and MAX is true, and `WHERE b` keeps only the true row. The last column is COUNT(b), which ignores the NULL where COUNT(*) would count it. An engine that orders booleans the other way swaps min and max."
     }
   ]
 }
