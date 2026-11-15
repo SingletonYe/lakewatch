@@ -1595,6 +1595,19 @@
         ]
       ],
       "why": "Booleans order FALSE < TRUE, so MIN of the pair is false and MAX is true, and `WHERE b` keeps only the true row. The last column is COUNT(b), which ignores the NULL where COUNT(*) would count it. An engine that orders booleans the other way swaps min and max."
+    },
+    {
+      "id": "array_append_keeps_null_and_cardinality_spans_maps",
+      "category": "nested_types",
+      "sql": "SELECT array_length(array_append([1,2], NULL)) AS appended_null_len, cardinality(MAP {'a':1,'b':2}) AS map_cardinality, cardinality([1,2,3]) AS list_cardinality",
+      "expect_rows": [
+        [
+          "3",
+          "2",
+          "3"
+        ]
+      ],
+      "why": "`array_append` appends the NULL rather than skipping it, so the list grows to length 3 -- asserted by LENGTH because a NULL element renders as an empty string and a text comparison would not see it. `cardinality` then counts entries for both kinds of nested value: 2 keys in the map, 3 elements in the list. An engine that drops the appended NULL answers 2, and one where cardinality means only list length fails on the map."
     }
   ]
 }
