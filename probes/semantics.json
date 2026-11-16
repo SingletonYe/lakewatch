@@ -1608,6 +1608,35 @@
         ]
       ],
       "why": "`array_append` appends the NULL rather than skipping it, so the list grows to length 3 -- asserted by LENGTH because a NULL element renders as an empty string and a text comparison would not see it. `cardinality` then counts entries for both kinds of nested value: 2 keys in the map, 3 elements in the list. An engine that drops the appended NULL answers 2, and one where cardinality means only list length fails on the map."
+    },
+    {
+      "id": "set_op_order_by_applies_to_the_whole_result",
+      "category": "set_operators",
+      "sql": "SELECT v FROM (VALUES (2),(1)) t(v) UNION ALL SELECT v FROM (VALUES (3)) u(v) ORDER BY v",
+      "expect_rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "ordered": true,
+      "why": "ORDER BY after a set operation sorts the COMBINED result, not the last branch: the first branch's own order is (2,1), so an engine that sorted only that branch, or that kept branch order, would answer 2,1,3. Three rows in ascending order is the whole assertion."
+    },
+    {
+      "id": "table_function_filter_is_applied",
+      "category": "table_functions",
+      "sql": "SELECT count(*) AS n FROM generate_series(1, 1000000) g(value) WHERE value % 2 = 0",
+      "expect_rows": [
+        [
+          "500000"
+        ]
+      ],
+      "why": "A predicate over a table function has to be applied to its output: exactly half of a million consecutive values are even. The count also proves the series is generated and consumable at that size, so a filter pushed wrongly into the generator, or a truncated series, shows up as a different number."
     }
   ]
 }
