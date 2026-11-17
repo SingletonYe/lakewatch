@@ -1637,6 +1637,19 @@
         ]
       ],
       "why": "A predicate over a table function has to be applied to its output: exactly half of a million consecutive values are even. The count also proves the series is generated and consumable at that size, so a filter pushed wrongly into the generator, or a truncated series, shows up as a different number."
+    },
+    {
+      "id": "unnest_empty_list_versus_list_of_null",
+      "category": "table_functions",
+      "sql": "SELECT (SELECT count(*) FROM UNNEST(CAST([] AS BIGINT[])) AS t(v)) AS empty_rows, (SELECT count(*) FROM UNNEST(CAST([NULL] AS BIGINT[])) AS u(v)) AS single_null_rows, (SELECT count(v) FROM UNNEST(CAST([NULL] AS BIGINT[])) AS w(v)) AS single_null_count",
+      "expect_rows": [
+        [
+          "0",
+          "1",
+          "0"
+        ]
+      ],
+      "why": "An empty list unnests to NO rows, while a list holding one NULL unnests to ONE row -- so the first two columns have to differ, 0 versus 1. The third is COUNT(v) over that single NULL row, which is 0, and that is what separates 'a row exists' from 'the row carries a value'. An engine that treats an empty list as one NULL row answers 1,1,0."
     }
   ]
 }
