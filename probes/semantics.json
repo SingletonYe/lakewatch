@@ -1650,6 +1650,17 @@
         ]
       ],
       "why": "An empty list unnests to NO rows, while a list holding one NULL unnests to ONE row -- so the first two columns have to differ, 0 versus 1. The third is COUNT(v) over that single NULL row, which is 0, and that is what separates 'a row exists' from 'the row carries a value'. An engine that treats an empty list as one NULL row answers 1,1,0."
+    },
+    {
+      "id": "distinct_merges_positive_and_negative_zero",
+      "category": "float_semantics",
+      "sql": "SELECT count(*) AS n FROM (SELECT DISTINCT v FROM (VALUES (CAST(0.0 AS DOUBLE)), (CAST(-0.0 AS DOUBLE))) t(v)) s",
+      "expect_rows": [
+        [
+          "1"
+        ]
+      ],
+      "why": "IEEE 754 says 0.0 and -0.0 compare equal, so DISTINCT has to collapse them into ONE group. An engine that deduplicated on the raw bit pattern would answer 2, and that difference would also corrupt GROUP BY counts and join matching for signed zero."
     }
   ]
 }

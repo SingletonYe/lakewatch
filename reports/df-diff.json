@@ -2,7 +2,7 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 113,
+    "OK": 114,
     "KNOWN_DIFF": 18,
     "BOTH_ERROR": 2
   },
@@ -1660,6 +1660,16 @@
       "category": "table_functions",
       "sql": "SELECT (SELECT count(*) FROM UNNEST(CAST([] AS BIGINT[])) AS t(v)) AS empty_rows, (SELECT count(*) FROM UNNEST(CAST([NULL] AS BIGINT[])) AS u(v)) AS single_null_rows, (SELECT count(v) FROM UNNEST(CAST([NULL] AS BIGINT[])) AS w(v)) AS single_null_count",
       "why": "An empty list unnests to NO rows, while a list holding one NULL unnests to ONE row -- so the first two columns have to differ, 0 versus 1. The third is COUNT(v) over that single NULL row, which is 0, and that is what separates 'a row exists' from 'the row carries a value'. An engine that treats an empty list as one NULL row answers 1,1,0.",
+      "ordered": false,
+      "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "distinct_merges_positive_and_negative_zero",
+      "category": "float_semantics",
+      "sql": "SELECT count(*) AS n FROM (SELECT DISTINCT v FROM (VALUES (CAST(0.0 AS DOUBLE)), (CAST(-0.0 AS DOUBLE))) t(v)) s",
+      "why": "IEEE 754 says 0.0 and -0.0 compare equal, so DISTINCT has to collapse them into ONE group. An engine that deduplicated on the raw bit pattern would answer 2, and that difference would also corrupt GROUP BY counts and join matching for signed zero.",
       "ordered": false,
       "session_options": [],
       "status": "OK",
