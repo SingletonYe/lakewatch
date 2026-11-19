@@ -1661,6 +1661,19 @@
         ]
       ],
       "why": "IEEE 754 says 0.0 and -0.0 compare equal, so DISTINCT has to collapse them into ONE group. An engine that deduplicated on the raw bit pattern would answer 2, and that difference would also corrupt GROUP BY counts and join matching for signed zero."
+    },
+    {
+      "id": "modulo_truncates_toward_zero_for_negative_operands",
+      "category": "arithmetic",
+      "sql": "SELECT (-7) % 3 AS a, 7 % (-3) AS b, (-7) % (-3) AS c",
+      "expect_rows": [
+        [
+          "-1",
+          "1",
+          "-1"
+        ]
+      ],
+      "why": "SQL's % truncates toward zero, so the sign follows the DIVIDEND: -7 % 3 = -1 (not 2), 7 % -3 = 1, -7 % -3 = -1. Engines that floor instead (Python, some dialects) answer 2, -2, -1, which silently changes every parity test and hash bucket built on it."
     }
   ]
 }

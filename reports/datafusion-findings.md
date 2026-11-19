@@ -3616,3 +3616,75 @@ main 是 `57.0.0-dev`，所以那几条"56.0.0 已修"的 `known_difference`（`
 2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`，**不催、不重复提**。
 3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 5 天按现状执行）。
 4. **`known_difference` 待翻转**：**看 issue 状态，不看版本号** —— `#22881`、`#12955`/`#12956`、`#24981` 任一关闭/合入时才重建复核；`#26704` 需按位置复查。
+
+## 2026-11-19 09:00 — 135 探针 · 0 候选 · **更正昨日报告；把 55.3.0 真正查清楚了；追了一条 55.3.0 里的活 bug（未复现）**
+
+标量 391/20 **逐字节相同**；语义 **135 探针**（+1）· OK=115 · KNOWN_DIFF=18 · BOTH_ERROR=2 · **0 候选**。
+闸门 **7/7**；磁盘 5.0G/24G。**无 PR 动作**（按 11-12 决定）。
+
+### ① 更正：昨天的报告里有一条**没核实就写成"已核实"**的断言
+
+昨天我写"`#22881`、`#12955`/`#12956`、`#24981` 今天逐条复查仍是 open"。**实际上我的核查命令只查了
+`26704 22881 12955 12956 12907` —— `#24981` 不在其中，我是把它从上文抄下来的。**
+
+事实：**`#24981`（`map_extract` 缺键返回 `[NULL]` 而非 `[]`）已于 2026-09-08 关闭**（`state_reason=completed`），
+由 PR **#24999**（"fix, perf: Use Arrow comparator for key comparison in `map_extract`"）合入关闭 —— 已关了**两个多月**。
+
+**今天的实际核查**（这次是真跑了）：pin 上
+`array_length(map_extract(MAP {'a': 1}, 'zz'))` = **1**，DuckDB = **0**；NULL 键同样 1 vs 0。
+即**pin 仍是旧行为**，两条探针（`map_extract_present_and_missing`、`element_at_is_map_extract_here`）
+**继续留在 KNOWN_DIFF 是正确的**，但**理由要改成**："issue 已关、修复已合入 main，但**不在我们 pin 的版本里**"。
+
+> **教训（已写进流程）**：`for n in ...` 这种清单式核查，**清单本身也要对着报告逐条核对**；
+> 少写一个号码，就会把"没查"报成"查了且没变"。**凡是写进报告的"逐条复查"，必须来自本次运行的输出。**
+
+### ② 把 `55.3.0` 真正查清楚（取代昨天的推测）
+
+昨天我拒绝升 pin 的理由是"issue 都还开着所以里面没有"——**那个理由建立在上面那条错误断言上**。
+今天用**发布内容本身**来判定：`compare/55.2.0...55.3.0` 显示 55.3.0 只有 **13 个 backport**：
+
+```
+IPC spill framing (#26435) · OrderedPartialAggregateStream (#25843) · grouped byte MIN/MAX capacity (#26767)
+integer interval propagation (#26869) · reverse cast constraint propagation (#26870)
+smj float keys across batches (#27353) · smj NULL-padded rows in filter (#27354)
+deferred-filtered outer join output order (#27358) · LEAD/LAG IGNORE NULLS + limit pushdown (#27320)
+scalar async UDF batch expansion (#27373) · Hive null partition placeholder (#27392) · cargo audit · version/changelog
+```
+
+**没有任何一条碰到我们那 18 条 `known_difference`**（尤其没有 `#24999`/`map_extract`）。→ **不升 pin，结论不变，但现在是证据支撑的。**
+
+### ③ 追了一条"就在 55.3.0 里被修、因此按定义还在我们 pin 上"的活 bug —— 未复现
+
+`#27320` 即 PR **#25472**（合入 2026-09-24，close **#25471**）：
+> "LEAD and negative-offset LAG with IGNORE NULLS can return NULL or a default value even when the requested non-null row exists."
+> 触发条件：**跨 batch 的 lookahead cache 未补满**；以及 **window LIMIT 下推在目标行之前截断了输入**。
+
+**这是"定义上应该在我们 pin 上"的真 bug**，值得一试。测法（DuckDB 不能当裁判）：
+
+* **DuckDB 根本不支持** `LEAD/LAG ... IGNORE NULLS`（`Parser Error: syntax error at or near "IGNORE"`）
+  → 这个构造**在差分框架射程之外**，只能靠**内部一致性**判对错。
+* **内部一致性判据（新技巧）**：`LEAD(v,1) IGNORE NULLS` 作用于全表，**必须等于** plain `LEAD(v,1)`
+  作用于"先滤掉 NULL"的子集。这条不需要外部 oracle。
+* 测例：20 000 行、每 1000 行一个非空（**必然跨 batch**），三种形态：
+  `A` 全量、`B` 加 `LIMIT 5`、`C` 等价改写。
+
+**结果：A、B、C 三者完全一致**，且答案正确（1000→2000 … 19000→20000，20000→NULL；`LIMIT 5` 给出 1000→2000 … 5000→6000，**没有被下推截断**）。
+→ **pin 在这几个形态上是对的，#25471 未复现**。这也说明那条 backport 修的是更窄的条件。
+
+**记录两条**：`LEAD/LAG ... IGNORE NULLS` 与 `MERGE`、`UNPIVOT` 一样**属于差分框架射程外**（无可用 oracle）；
+但它是**有内部一致性判据的**射程外，值得保留这条技巧。
+
+### ④ 新增探针
+
+`modulo_truncates_toward_zero_for_negative_operands` —— `-1, 1, -1`：SQL 的 `%` **向零截断**，符号跟**被除数**走
+（`-7 % 3 = -1` 不是 `2`）。取 floor 的引擎（Python、部分方言）会给 `2, -2, -1`，静默改掉所有奇偶判断和分桶。
+（顺带确认：`(-7) / 2` 在 pin 上是整数除法 `-3`、DuckDB 是 `-3.5` —— 这条**已由既有的 `int_division` known_difference 覆盖**，不是新 bug。）
+
+### Next（本节是唯一有效的版本）
+
+1. **没有开着的 PR、没有待开的分支** —— PR 位空闲，**不主动备新 PR**，除非用户明确要。
+2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`，**不催、不重复提**。
+3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 6 天按现状执行）。
+4. **翻转判据更新**：不要只看 issue 是否 open（**已关 ≠ 已在 pin 里**，见 `#24981`）；
+   正确判据是**"修复是否进了我们 pin 的版本"**。当前待翻转：`#22881`、`#12955`/`#12956`、`#24981`（修复在 main，需升到含它的版本）；
+   `#26704` 需按位置复查。**升 pin 前先看 `compare/<pin>...<新版本>` 的提交清单里有没有对应修复。**
