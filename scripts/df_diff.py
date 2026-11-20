@@ -357,11 +357,25 @@ def main() -> int:
         if oracle == "duckdb":
             duck_rows, duck_error = runner.duckdb(sql)
             documented = probe.get("known_difference")
+            # DataFusion failing a query the oracle ANSWERED is a divergence no
+            # matter how many of our own parallelism modes failed. Without this
+            # branch such a case inherits BOTH_ERROR from the self-consistency
+            # check, and BOTH_ERROR is also where queries both engines rightly
+            # reject live -- so a genuine internal error on a valid query would
+            # be summarised as "0 candidates" and go unseen.
+            df_failed_alone = actual_for_expectation is None and not duck_error
             if documented and (duck_error or actual_for_expectation is None):
-                record["status"] = "KNOWN_DIFF" if record["status"] == "OK" else record["status"]
+                if record["status"] in ("OK", "BOTH_ERROR"):
+                    record["status"] = "KNOWN_DIFF"
                 record["details"].append(
                     "documented divergence: "
                     + (f"duckdb errored ({duck_error})" if duck_error else f"datafusion errored ({single_error or multi_error})")
+                )
+            elif df_failed_alone:
+                record["status"] = "ERROR_DIVERGENCE"
+                record["details"].append(
+                    f"datafusion errored but duckdb answered {describe(duck_rows)}: "
+                    f"{single_error or multi_error}"
                 )
             elif duck_error and actual_for_expectation is None:
                 record["details"].append(f"both engines errored (duckdb: {duck_error})")

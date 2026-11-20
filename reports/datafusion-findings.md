@@ -3688,3 +3688,63 @@ scalar async UDF batch expansion (#27373) · Hive null partition placeholder (#2
 4. **翻转判据更新**：不要只看 issue 是否 open（**已关 ≠ 已在 pin 里**，见 `#24981`）；
    正确判据是**"修复是否进了我们 pin 的版本"**。当前待翻转：`#22881`、`#12955`/`#12956`、`#24981`（修复在 main，需升到含它的版本）；
    `#26704` 需按位置复查。**升 pin 前先看 `compare/<pin>...<新版本>` 的提交清单里有没有对应修复。**
+
+## 2026-11-20 09:00 — 137 探针 · **找到 pin 上真缺陷 1 条** · **修掉自己 harness 的一个盲区**
+
+标量 391/20 **逐字节相同**；语义 **137 探针**（+2）· OK=116 · KNOWN_DIFF=19 · BOTH_ERROR=2 · **0 候选**。
+闸门 **7/7**；磁盘 5.0G/24G。**无 PR 动作**（按 11-12 决定）。
+核查输出来自本次运行：`#26704`=open `#22881`=open `#12955`=open `#12956`=open `#12907`=open `#24981`=closed `#25471`=closed。
+
+### ① 换了打法：**采集上游刚合入的 fix PR，把它的复现打到我们 pin 上**
+
+连续十天 0 候选，光靠自建目录扫已经到顶。今天改用**上游修复清单**当猎场：
+拉近 10 天 `is:merged` 的 fix PR ——它们都在我们 pin（55.2.0）**之后**合入，所以**按定义其 bug 还在我们 pin 上**。
+这条路径**当天就出货了**，而且顺带查出我自己的一个测量盲区。
+
+### ② 找到 pin 上真缺陷：`array_slice` 巨大 stride → 内部错误
+
+`array_slice([1,2,3,4,5], 1, 5, 9223372036854775807)`：
+
+* **pin**：`Internal error: array_slice got invalid stride: 9223372036854775807. This issue was likely caused by a bug in DataFusion's code.`
+* **DuckDB**：`[1]` ✓（这也是修复后的上游行为：stride 越过末尾时只保留第一个元素）
+
+**这是最高一档的失败类型**（合法查询跑不了）。但**不重复上报**：上游 issue **#27503**、修复 PR **#27504**（合入 2026-11-19，晚于我们的 pin），
+所以归类为 `known_difference` 并写明引用与"为何不再报"。探针 `array_slice_huge_stride_returns_slice` 作为**翻转金丝雀**留着。
+同批还测了 `array_slice` 的 start>end、stride 0、负 stride、负索引、`array_repeat`、`list_position`、`array_element` —— **其余全部一致**，只有这一处不同。
+
+### ③ **我自己的 harness 有盲区，今天补掉了**
+
+`df_diff.py` 里 `BOTH_ERROR` 的原意是"datafusion 在 p1 与 p4 两种并行度下都报错"，
+但它同时也是**两个引擎都合法拒绝**（如 `cast_invalid_string`）的去处。而我新加的探针（**DataFusion 报错、DuckDB 给出答案**）
+也落进了这个桶 —— 结果汇总仍然显示 **"0 候选"**。
+
+**也就是说：一个"合法查询报内部错误"的真 bug，此前是可以被静默吞掉的。** 这是今天最有价值的发现，不是那条 `array_slice`。
+
+修复（`scripts/df_diff.py`）：当 **DataFusion 报错而 DuckDB 给出结果** 时，
+* 有 `known_difference` → 归 `KNOWN_DIFF`（允许从 `BOTH_ERROR` 降级）；
+* 无 → 归 **`ERROR_DIVERGENCE`**，**计数为待研判候选**。
+
+**A/B 验证**（同一段 SQL，只摘掉 `known_difference` 字段）：
+`KNOWN_DIFF=1 / 候选 0` ——→ 摘掉后 `ERROR_DIVERGENCE=1 / 候选 1` ✓。
+修完后 `BOTH_ERROR` 只剩 `cast_invalid_string`、`cast_invalid_date` 两条**本来就该是两个引擎都拒绝**的探针。
+
+### ④ 顺手排掉一条：`#27416`（`WITH ... AS MATERIALIZED` + `ORDER BY ... LIMIT` 返回错行）**不影响我们的 pin**
+
+上游 #27219 / 修复 #27416（合入 11-14）：`MATERIALIZED` CTE 体内的 `GROUP BY` 会被上层 `ORDER BY ... LIMIT` 塞进 `lim=[3]`，
+导致**一行都不返回**。在 pin 上**重现不了** —— 返回 `101,102,103`，与 DuckDB 和期望值一致（说明这是 56/57-dev 上的回归，55.2.0 没有）。
+已作为**形状金丝雀**加进目录（`materialized_cte_not_limited_by_outer_order_by_limit`，需要 `session_options` 里开 PostgreSQL 方言才能解析 `MATERIALIZED`）。
+
+### ⑤ 结论与提议
+
+* **"采集上游 fix PR → 打到自己 pin 上"应成为每日例行**（今天证明它比自建目录扫更出活，且能验证 pin 是否受影响）。
+  它不改交付方式、不产生任何外部动作，只是**多看一处**。**除非你叫停，明天起我按这个跑。**
+* `BOTH_ERROR` 盲区已修，但**这提醒一件事**：过去十天报的"0 候选"，在"合法查询报错"这一类上**可信度低于我之前的口径**。
+  自 `array_slice` 这条之后，这一类现在会如实计为候选。
+
+### Next（本节是唯一有效的版本）
+
+1. **没有开着的 PR、没有待开的分支** —— PR 位空闲，**不主动备新 PR**，除非用户明确要。
+2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`，**不催、不重复提**。
+3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 7 天按现状执行）。
+4. **每日新增一步**：采集上游近 10 天 fix PR，逐个把复现打到 pin 上（见 ⑤）。
+5. **翻转判据**：看"修复是否进了 pin 的版本"，不看 issue 是否 open；升 pin 前看 `compare/<pin>...<新版本>` 的提交清单。

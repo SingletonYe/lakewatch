@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 115,
-    "KNOWN_DIFF": 18,
+    "OK": 116,
+    "KNOWN_DIFF": 19,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -268,6 +268,20 @@
         "documented divergence: datafusion [1 row(s)] 0.666666,1.5 vs duckdb [1 row(s)] 0.6666666667,1.5"
       ],
       "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+    },
+    {
+      "id": "array_slice_huge_stride_returns_slice",
+      "category": "nested_types",
+      "sql": "SELECT array_slice([1,2,3,4,5], 1, 5, 9223372036854775807) AS s",
+      "why": "A stride past the end of the list is a valid argument: stepping once takes the first element and there is no second step to overflow. The correct answer is [1]. On our pin this is an internal error, which is the top-tier failure type (a valid query that cannot run), so it stays in the catalogue as a flip canary.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "datafusion errored both ways: This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues",
+        "documented divergence: datafusion errored (This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues)"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
     }
   ],
   "results": [
@@ -1682,6 +1696,32 @@
       "why": "SQL's % truncates toward zero, so the sign follows the DIVIDEND: -7 % 3 = -1 (not 2), 7 % -3 = 1, -7 % -3 = -1. Engines that floor instead (Python, some dialects) answer 2, -2, -1, which silently changes every parity test and hash bucket built on it.",
       "ordered": false,
       "session_options": [],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "array_slice_huge_stride_returns_slice",
+      "category": "nested_types",
+      "sql": "SELECT array_slice([1,2,3,4,5], 1, 5, 9223372036854775807) AS s",
+      "why": "A stride past the end of the list is a valid argument: stepping once takes the first element and there is no second step to overflow. The correct answer is [1]. On our pin this is an internal error, which is the top-tier failure type (a valid query that cannot run), so it stays in the catalogue as a flip canary.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "datafusion errored both ways: This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues",
+        "documented divergence: datafusion errored (This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues)"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "materialized_cte_not_limited_by_outer_order_by_limit",
+      "category": "cte",
+      "sql": "SELECT * FROM (WITH c AS MATERIALIZED (SELECT i AS x FROM generate_series(1, 200) g(i) GROUP BY i) SELECT x FROM c WHERE x > 100) s ORDER BY x LIMIT 3",
+      "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- upstream #27219 saw ZERO rows returned from exactly this shape, and #27416 fixed it on main. Three ascending rows is the assertion. MATERIALIZED needs the PostgreSQL dialect to parse.",
+      "ordered": true,
+      "session_options": [
+        "datafusion.sql_parser.dialect=PostgreSQL"
+      ],
       "status": "OK",
       "details": []
     }
