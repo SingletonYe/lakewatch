@@ -3748,3 +3748,68 @@ scalar async UDF batch expansion (#27373) · Hive null partition placeholder (#2
 3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 7 天按现状执行）。
 4. **每日新增一步**：采集上游近 10 天 fix PR，逐个把复现打到 pin 上（见 ⑤）。
 5. **翻转判据**：看"修复是否进了 pin 的版本"，不看 issue 是否 open；升 pin 前看 `compare/<pin>...<新版本>` 的提交清单。
+
+## 2026-11-21 09:00 — 139 探针 · **找到 pin 上第一例"静默错行"** · 采集上游 fix PR 第二天继续出货
+
+标量 391/20 **逐字节相同**；语义 **139 探针**（+2）· OK=117 · KNOWN_DIFF=20 · BOTH_ERROR=2 · **0 候选**。
+闸门 **7/7**；磁盘 5.0G/24G。**无 PR 动作**（按 11-12 决定）。
+本次核查输出：`#26704`=open `#22881`=open `#12955`=open `#12956`=open `#12907`=open `#24981`=closed `#27503`=closed；发布版仍 `55.3.0`。
+
+### ① 找到了：pin 上**静默返回零行**的真 bug（第一例错行类）
+
+采集上游昨天合入的 **#27529**（close **#27221**），把它的复现打到 pin 上 —— **原样复现**：
+
+```sql
+-- session_options: datafusion.optimizer.hash_join_single_partition_threshold{,_rows}=0
+SELECT g.a1, g.a2, t3.v
+FROM (SELECT t1.a AS a1, t2.a AS a2
+      FROM (VALUES (1),(2),(3)) t1(a) CROSS JOIN (VALUES (10),(20),(30)) t2(a)
+      GROUP BY t1.a, t2.a) g
+JOIN (VALUES (1,20,'x'),(2,30,'y'),(3,10,'z')) t3(k1,k2,v)
+  ON g.a2 = t3.k2 AND g.a1 = t3.k1
+ORDER BY t3.v;
+```
+
+| 形态 | pin 55.2.0 | DuckDB / 正确值 |
+|---|---|---|
+| **p=4**（分区） | **0 行** ❌ | 3 行 |
+| p=1 | 3 行 ✓ | 3 行 |
+
+**这是"静默错行"——最坏的一类：查询成功、不报错、结果错。** 机理：`EnsureRequirements` 为对齐 join 会**重排聚合的 group key**，
+再用一个投影把列序还原，而那个投影**按名字查列**；两个 group 列都叫 `a`，于是两列都读到第一个 `a`。
+把 join 的两个键换个书写顺序（`a1=k1 AND a2=k2`）就**正常** —— 所以这不是"查询写错了"。
+
+**不重复上报**：上游 #27221（closed）、修复 **#27529**（合入 2026-11-20T22:34Z，晚于我们的 pin）。
+归类 `known_difference` 并写明引用；探针 `duplicate_named_group_keys_survive_join_key_reorder` 作为翻转金丝雀。
+**同时补了一条对照探针**（`..._in_matching_join_order`）：同一个查询、键序正常时**即使 buggy 版本也应该对** ——
+否则将来"修好 A 弄坏 B"会看不见。
+
+### ② 覆盖缺口（这才是重点）
+
+137 条探针里**没有任何一条**是"**重名的 group key**"（`GROUP BY t1.a, t2.a`）。补上后这一类才有守卫。
+另外这条再次证明 **p1 vs p4 自一致性检查是值得的**：该 bug **只在 p4 出现**，任何单分区跑法都看不见。
+
+### ③ harness 再修一处：**已归档的自一致性分歧不该每天算新候选**
+
+昨天的改动只覆盖了"引擎报错/oracle 有答案"。今天这一类是 `PLAN_DIVERGENCE`（p1 与 p4 不一致），
+若不处理，这条探针会**每天刷出 1 个候选**，而它其实是**已知上游、无需处理**的。
+
+改法（`scripts/df_diff.py`）：`known_difference` 存在时，`PLAN_DIVERGENCE` → **`KNOWN_DIFF`**，
+并在 details 里**保留完整的 p1/p4 差异**（`partitions=1 [3 rows] ... vs partitions=4 [0 rows]`），只是不计入候选。
+**`EXPECTATION_FAILED` 故意不降级** —— 那说明我们目录里钉的期望值是错的，属于我们自己的 bug，必须硬报。
+
+**无副作用验证**：全量跑下来只有**新加的那一条**被降级（`KNOWN_DIFF` 19→20，`OK` 116→117，`BOTH_ERROR` 仍 2），没有别的探针被顺带吞掉。
+
+### ④ 结论
+
+**"采集上游 fix PR → 打到自己 pin"连续第二天出货**（11-20 的 `array_slice` 内部错误；11-21 的静默错行）。
+这条通道的价值不在"发现新 bug"，而在**用别人已经定位好的形状去照我们自己的 pin** —— 命中率远高于盲目扫自建目录。
+**明天继续。**
+
+### Next（本节是唯一有效的版本）
+
+1. **没有开着的 PR、没有待开的分支** —— PR 位空闲，**不主动备新 PR**，除非用户明确要。
+2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`，**不催、不重复提**。
+3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 8 天按现状执行）。
+4. **每日固定两步**：①自建目录扫 + 闸门；②采集上游近 10 天 fix PR，逐个把复现打到 pin 上。
+5. **翻转判据**：看"修复是否进了 pin 的版本"，不看 issue 是否 open；升 pin 前看 `compare/<pin>...<新版本>` 提交清单。

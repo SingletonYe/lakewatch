@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 116,
-    "KNOWN_DIFF": 19,
+    "OK": 117,
+    "KNOWN_DIFF": 20,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -280,6 +280,23 @@
       "details": [
         "datafusion errored both ways: This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues",
         "documented divergence: datafusion errored (This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues)"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "duplicate_named_group_keys_survive_join_key_reorder",
+      "category": "joins",
+      "sql": "SELECT g.a1, g.a2, t3.v FROM (SELECT t1.a AS a1, t2.a AS a2 FROM (VALUES (1),(2),(3)) t1(a) CROSS JOIN (VALUES (10),(20),(30)) t2(a) GROUP BY t1.a, t2.a) g JOIN (VALUES (1,20,'x'),(2,30,'y'),(3,10,'z')) t3(k1,k2,v) ON g.a2 = t3.k2 AND g.a1 = t3.k1 ORDER BY t3.v",
+      "why": "Two group columns share the name `a` and the inner-most two values coincide with the join values, so a mis-mapped key cannot be distinguished by value -- only by which order the join happens to list its keys in, and by row count. This is a silent wrong result (zero rows), which is the worst failure type: the query succeeds.",
+      "ordered": true,
+      "session_options": [
+        "datafusion.optimizer.hash_join_single_partition_threshold=0",
+        "datafusion.optimizer.hash_join_single_partition_threshold_rows=0"
+      ],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "partitions=1 [3 row(s)] 1,20,x | 2,30,y | 3,10,z vs partitions=4 [0 row(s)] ",
+        "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
       ],
       "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
     }
@@ -1721,6 +1738,36 @@
       "ordered": true,
       "session_options": [
         "datafusion.sql_parser.dialect=PostgreSQL"
+      ],
+      "status": "OK",
+      "details": []
+    },
+    {
+      "id": "duplicate_named_group_keys_survive_join_key_reorder",
+      "category": "joins",
+      "sql": "SELECT g.a1, g.a2, t3.v FROM (SELECT t1.a AS a1, t2.a AS a2 FROM (VALUES (1),(2),(3)) t1(a) CROSS JOIN (VALUES (10),(20),(30)) t2(a) GROUP BY t1.a, t2.a) g JOIN (VALUES (1,20,'x'),(2,30,'y'),(3,10,'z')) t3(k1,k2,v) ON g.a2 = t3.k2 AND g.a1 = t3.k1 ORDER BY t3.v",
+      "why": "Two group columns share the name `a` and the inner-most two values coincide with the join values, so a mis-mapped key cannot be distinguished by value -- only by which order the join happens to list its keys in, and by row count. This is a silent wrong result (zero rows), which is the worst failure type: the query succeeds.",
+      "ordered": true,
+      "session_options": [
+        "datafusion.optimizer.hash_join_single_partition_threshold=0",
+        "datafusion.optimizer.hash_join_single_partition_threshold_rows=0"
+      ],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "partitions=1 [3 row(s)] 1,20,x | 2,30,y | 3,10,z vs partitions=4 [0 row(s)] ",
+        "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "duplicate_named_group_keys_in_matching_join_order",
+      "category": "joins",
+      "sql": "SELECT g.a1, g.a2, t3.v FROM (SELECT t1.a AS a1, t2.a AS a2 FROM (VALUES (1),(2),(3)) t1(a) CROSS JOIN (VALUES (10),(20),(30)) t2(a) GROUP BY t1.a, t2.a) g JOIN (VALUES (1,20,'x'),(2,30,'y'),(3,10,'z')) t3(k1,k2,v) ON g.a1 = t3.k1 AND g.a2 = t3.k2 ORDER BY t3.v",
+      "why": "The companion of the probe above: the SAME query with the join keys in their natural order returns the right rows even on the buggy build. Both are needed, because a fix that breaks the working order would otherwise pass unnoticed.",
+      "ordered": true,
+      "session_options": [
+        "datafusion.optimizer.hash_join_single_partition_threshold=0",
+        "datafusion.optimizer.hash_join_single_partition_threshold_rows=0"
       ],
       "status": "OK",
       "details": []

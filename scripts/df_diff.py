@@ -400,6 +400,16 @@ def main() -> int:
         elif single is not None and not single_error:
             record["details"].append(f"result {describe(single)}")
 
+        # 4. a divergence we have already filed/documented is not a triage
+        # candidate. Expectation failures stay hard on purpose: those mean the
+        # pinned expect_rows in this catalogue is wrong, which is our bug.
+        if probe.get("known_difference") and record["status"] == "PLAN_DIVERGENCE":
+            record["details"].append(
+                "documented divergence: the engine disagrees with itself across "
+                "partitioning, and known_difference explains why it is not re-filed"
+            )
+            record["status"] = "KNOWN_DIFF"
+
         if record["status"] != "OK" and runner.last_stderr:
             record["stderr"] = runner.last_stderr
 

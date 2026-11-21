@@ -1707,6 +1707,63 @@
       ],
       "ordered": true,
       "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- upstream #27219 saw ZERO rows returned from exactly this shape, and #27416 fixed it on main. Three ascending rows is the assertion. MATERIALIZED needs the PostgreSQL dialect to parse."
+    },
+    {
+      "id": "duplicate_named_group_keys_survive_join_key_reorder",
+      "category": "joins",
+      "sql": "SELECT g.a1, g.a2, t3.v FROM (SELECT t1.a AS a1, t2.a AS a2 FROM (VALUES (1),(2),(3)) t1(a) CROSS JOIN (VALUES (10),(20),(30)) t2(a) GROUP BY t1.a, t2.a) g JOIN (VALUES (1,20,'x'),(2,30,'y'),(3,10,'z')) t3(k1,k2,v) ON g.a2 = t3.k2 AND g.a1 = t3.k1 ORDER BY t3.v",
+      "session_options": [
+        "datafusion.optimizer.hash_join_single_partition_threshold=0",
+        "datafusion.optimizer.hash_join_single_partition_threshold_rows=0"
+      ],
+      "expect_rows": [
+        [
+          "1",
+          "20",
+          "x"
+        ],
+        [
+          "2",
+          "30",
+          "y"
+        ],
+        [
+          "3",
+          "10",
+          "z"
+        ]
+      ],
+      "ordered": true,
+      "known_difference": "DataFusion 55.2.0 returns ZERO rows when the join above the aggregate lists its duplicate-named group keys in the other order: the restoring projection after key reordering looked both columns up by name, so both read the first `a`. Upstream #27221, fixed by #27529 (merged 2026-11-20, after our pin), so already known and NOT re-filed. Flips to OK on the next pin past that commit.",
+      "why": "Two group columns share the name `a` and the inner-most two values coincide with the join values, so a mis-mapped key cannot be distinguished by value -- only by which order the join happens to list its keys in, and by row count. This is a silent wrong result (zero rows), which is the worst failure type: the query succeeds."
+    },
+    {
+      "id": "duplicate_named_group_keys_in_matching_join_order",
+      "category": "joins",
+      "sql": "SELECT g.a1, g.a2, t3.v FROM (SELECT t1.a AS a1, t2.a AS a2 FROM (VALUES (1),(2),(3)) t1(a) CROSS JOIN (VALUES (10),(20),(30)) t2(a) GROUP BY t1.a, t2.a) g JOIN (VALUES (1,20,'x'),(2,30,'y'),(3,10,'z')) t3(k1,k2,v) ON g.a1 = t3.k1 AND g.a2 = t3.k2 ORDER BY t3.v",
+      "session_options": [
+        "datafusion.optimizer.hash_join_single_partition_threshold=0",
+        "datafusion.optimizer.hash_join_single_partition_threshold_rows=0"
+      ],
+      "expect_rows": [
+        [
+          "1",
+          "20",
+          "x"
+        ],
+        [
+          "2",
+          "30",
+          "y"
+        ],
+        [
+          "3",
+          "10",
+          "z"
+        ]
+      ],
+      "ordered": true,
+      "why": "The companion of the probe above: the SAME query with the join keys in their natural order returns the right rows even on the buggy build. Both are needed, because a fix that breaks the working order would otherwise pass unnoticed."
     }
   ]
 }
