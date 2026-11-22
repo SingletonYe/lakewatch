@@ -3,7 +3,7 @@
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
     "OK": 117,
-    "KNOWN_DIFF": 20,
+    "KNOWN_DIFF": 22,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -297,6 +297,32 @@
       "details": [
         "partitions=1 [3 row(s)] 1,20,x | 2,30,y | 3,10,z vs partitions=4 [0 row(s)] ",
         "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "correlated_scalar_subquery_having_sum_is_null",
+      "category": "subqueries",
+      "sql": "SELECT x.a, (SELECT sum(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING sum(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
+      "why": "A correlated scalar subquery whose HAVING is TRUE on empty input must not inherit the outer row: for a=1 the group is non-empty, so HAVING is false and v must be NULL. Returning 10 is a silent wrong result, the worst class. No expect_rows on purpose -- the upstream fix makes this query error, so pinning the correct rows would turn the probe red for a documented reason.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [2 row(s)] 1,10 | 2,NULL vs duckdb [2 row(s)] 1,NULL | 2,NULL"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "correlated_scalar_subquery_having_max_is_null",
+      "category": "subqueries",
+      "sql": "SELECT x.a, (SELECT max(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING max(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
+      "why": "The sibling aggregate of the probe above: the same defect must be fixed for every aggregate that is NULL on empty input (sum, max, min), not just for sum. Kept separate so a partial fix is visible.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [2 row(s)] 1,10 | 2,NULL vs duckdb [2 row(s)] 1,NULL | 2,NULL"
       ],
       "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
     }
@@ -1771,6 +1797,32 @@
       ],
       "status": "OK",
       "details": []
+    },
+    {
+      "id": "correlated_scalar_subquery_having_sum_is_null",
+      "category": "subqueries",
+      "sql": "SELECT x.a, (SELECT sum(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING sum(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
+      "why": "A correlated scalar subquery whose HAVING is TRUE on empty input must not inherit the outer row: for a=1 the group is non-empty, so HAVING is false and v must be NULL. Returning 10 is a silent wrong result, the worst class. No expect_rows on purpose -- the upstream fix makes this query error, so pinning the correct rows would turn the probe red for a documented reason.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [2 row(s)] 1,10 | 2,NULL vs duckdb [2 row(s)] 1,NULL | 2,NULL"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "correlated_scalar_subquery_having_max_is_null",
+      "category": "subqueries",
+      "sql": "SELECT x.a, (SELECT max(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING max(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
+      "why": "The sibling aggregate of the probe above: the same defect must be fixed for every aggregate that is NULL on empty input (sum, max, min), not just for sum. Kept separate so a partial fix is visible.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [2 row(s)] 1,10 | 2,NULL vs duckdb [2 row(s)] 1,NULL | 2,NULL"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
     }
   ]
 }

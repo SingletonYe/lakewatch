@@ -3813,3 +3813,76 @@ ORDER BY t3.v;
 3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 8 天按现状执行）。
 4. **每日固定两步**：①自建目录扫 + 闸门；②采集上游近 10 天 fix PR，逐个把复现打到 pin 上。
 5. **翻转判据**：看"修复是否进了 pin 的版本"，不看 issue 是否 open；升 pin 前看 `compare/<pin>...<新版本>` 提交清单。
+
+## 2026-11-22 09:00 — 141 探针 · **第二例静默错行（这次有两个 oracle 印证）**
+
+标量 391/20 **逐字节相同**；语义 **141 探针**（+2）· OK=117 · KNOWN_DIFF=22 · BOTH_ERROR=2 · **0 候选**。
+闸门 **7/7**；磁盘 5.0G/24G。**无 PR 动作**（按 11-12 决定）。
+本次核查输出：`#26704`=open `#22881`=open `#12955`=open `#12956`=open `#12907`=open `#27221`=closed `#27503`=closed；发布版仍 `55.3.0`。
+
+### ① 找到：相关标量子查询里的 `HAVING` 被丢掉 → 静默错行
+
+采集上游**今天**合入的 #26942（close **#26505**），复现打到 pin 上 —— **原样复现**：
+
+```sql
+SELECT x.a,
+       (SELECT sum(y.b) FROM (VALUES (1, 10)) AS y(a, b)
+        WHERE y.a = x.a HAVING sum(y.b) IS NULL) AS v
+FROM (VALUES (1), (2)) AS x(a);
+```
+
+| | a=1 | a=2 |
+|---|---|---|
+| **pin 55.2.0**（p1 与 p4 都一样） | **10** ❌ | NULL |
+| **DuckDB** | NULL | NULL |
+| **PostgreSQL**（issue 里给出） | NULL | NULL |
+
+**这是最坏的一档：查询成功、不报错、值错了。** `a=1` 的组非空 → `HAVING sum(...) IS NULL` 为假 → 该行必须被滤掉，
+但引擎把 `HAVING` 丢掉了，于是直接返回 `10`。
+机理：`PullUpCorrelatedExpr` 把 `HAVING` 拉出子查询，而 `ScalarSubqueryToJoin` 只通过**count bug 补偿用的 `CASE`** 再施加一次，
+那个 `CASE` 并**不是为"空输入时为 NULL 的聚合"**（`sum`/`max`/`min`）构造的。
+
+**不重复上报**：上游 #26505（closed）、修复 **#26942**（合入 2026-11-22T01:56Z，晚于我们的 pin）。
+注意：上游选择的修复是**让这个查询报错**（`Physical plan does not support logical expression ScalarSubquery`），
+而不是算出正确的行 —— 所以这两条探针要盯的翻转是「**静默错行 → 明确报错**」，不是「→ 正确行」。
+**因此故意不给 `expect_rows`**（否则会变成我们目录钉错值的 `EXPECTATION_FAILED`），只靠 oracle 差分 + `known_difference` 归档。
+
+### ② 把这一类扫清楚了（7 个形状）
+
+| 形状 | pin | DuckDB |
+|---|---|---|
+| `HAVING sum IS NULL` | **10** ❌ | NULL |
+| `HAVING max IS NULL` | **10** ❌ | NULL |
+| `HAVING sum IS NOT NULL` | 10 | 10 ✓ |
+| `HAVING count(*) = 0` | NULL / 0 | NULL / 0 ✓ |
+| 裸 `count(*)`（count bug） | 1 / 0 | 1 / 0 ✓ |
+| 裸 `sum`（空组） | 10 / NULL | 10 / NULL ✓ |
+| `HAVING sum = 10` | 10 / NULL | 10 / NULL ✓ |
+
+即：**缺陷只落在"`HAVING` + 空输入时为 NULL 的聚合"**（`sum`/`max`/`min`）这一格；`count` 系、裸聚合、`IS NOT NULL` 全部正常。
+两条探针（sum 与 max 各一）已入目录，防止"只修了 sum"。
+
+### ③ 覆盖缺口的性质：**窄，但真实**
+
+目录里本来就有 `having_aggregate_not_in_select`、`having_on_unprojected_grouping_column` 两条 HAVING 探针，**都是 OK**。
+缺的不是"HAVING"这个面，而是「**相关标量子查询 × HAVING × 空输入为 NULL 的聚合**」这个交叉格。
+这类缺口**靠随机扫很难撞上**，靠"读别人的修复"一眼就能看到 —— 这解释了三天的产出差异。
+
+### ④ 三天连续出货，说明打法该调了
+
+| 日期 | 来源 | 产出 |
+|---|---|---|
+| 11-20 | 采集 #27504 | 合法查询 → **内部错误**（array_slice 巨大 stride） |
+| 11-21 | 采集 #27529 | 分区下 **0 行**（重名 group key 重排） |
+| 11-22 | 采集 #26942 | **静默错行**（HAVING 被丢） |
+
+**自建目录连扫十天 0 产出；采集上游修复连扫三天三中。** 这不是偶然：目录是"我已经想到的形状"，采集是"别人已经踩到并定位好的形状"。
+**建议**：把每日重心正式挪到采集侧（自建目录退化为**回归防线**而不是**发现引擎**），这也是三个战略选项里"维持现状"的具体形态。
+
+### Next（本节是唯一有效的版本）
+
+1. **没有开着的 PR、没有待开的分支** —— PR 位空闲，**不主动备新 PR**，除非用户明确要。
+2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`，**不催、不重复提**。
+3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 9 天按现状执行）；④ 给出"维持现状"的具体形态建议。
+4. **每日固定两步**：①闸门 + 目录回归（防线）；②采集上游近 10 天 fix PR，逐个把复现打到 pin 上（发现）。
+5. **翻转判据**：看"修复是否进了 pin 的版本"；升 pin 前看 `compare/<pin>...<新版本>` 提交清单。

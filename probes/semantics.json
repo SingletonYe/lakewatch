@@ -1764,6 +1764,20 @@
       ],
       "ordered": true,
       "why": "The companion of the probe above: the SAME query with the join keys in their natural order returns the right rows even on the buggy build. Both are needed, because a fix that breaks the working order would otherwise pass unnoticed."
+    },
+    {
+      "id": "correlated_scalar_subquery_having_sum_is_null",
+      "category": "subqueries",
+      "sql": "SELECT x.a, (SELECT sum(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING sum(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
+      "known_difference": "DataFusion 55.2.0 DROPS the HAVING of a correlated scalar subquery and returns (1, 10) for row a=1; DuckDB and PostgreSQL both return (1, NULL), (2, NULL) -- the group for a=2 is empty so sum is NULL, and HAVING sum(...) IS NULL is true there, while a=1 must be filtered out. Root cause: PullUpCorrelatedExpr pulls the HAVING up and ScalarSubqueryToJoin only re-applies it through the count-bug compensation CASE, which is not built for aggregates that are NULL on empty input. Upstream #26505 fixed by #26942 (merged 2026-11-22, after our pin), which deliberately makes the query ERROR rather than return the right rows, so the flip this probe watches is 'silent wrong rows -> explicit error', not '-> right rows'. Already known upstream, NOT re-filed.",
+      "why": "A correlated scalar subquery whose HAVING is TRUE on empty input must not inherit the outer row: for a=1 the group is non-empty, so HAVING is false and v must be NULL. Returning 10 is a silent wrong result, the worst class. No expect_rows on purpose -- the upstream fix makes this query error, so pinning the correct rows would turn the probe red for a documented reason."
+    },
+    {
+      "id": "correlated_scalar_subquery_having_max_is_null",
+      "category": "subqueries",
+      "sql": "SELECT x.a, (SELECT max(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING max(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
+      "known_difference": "DataFusion 55.2.0 DROPS the HAVING of a correlated scalar subquery and returns (1, 10) for row a=1; DuckDB and PostgreSQL both return (1, NULL), (2, NULL) -- the group for a=2 is empty so sum is NULL, and HAVING sum(...) IS NULL is true there, while a=1 must be filtered out. Root cause: PullUpCorrelatedExpr pulls the HAVING up and ScalarSubqueryToJoin only re-applies it through the count-bug compensation CASE, which is not built for aggregates that are NULL on empty input. Upstream #26505 fixed by #26942 (merged 2026-11-22, after our pin), which deliberately makes the query ERROR rather than return the right rows, so the flip this probe watches is 'silent wrong rows -> explicit error', not '-> right rows'. Already known upstream, NOT re-filed.",
+      "why": "The sibling aggregate of the probe above: the same defect must be fixed for every aggregate that is NULL on empty input (sum, max, min), not just for sum. Kept separate so a partial fix is visible."
     }
   ]
 }
