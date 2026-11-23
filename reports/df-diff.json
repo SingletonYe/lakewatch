@@ -3,7 +3,7 @@
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
     "OK": 117,
-    "KNOWN_DIFF": 22,
+    "KNOWN_DIFF": 25,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -325,6 +325,47 @@
         "documented divergence: datafusion [2 row(s)] 1,10 | 2,NULL vs duckdb [2 row(s)] 1,NULL | 2,NULL"
       ],
       "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "order_by_limit_reuses_computed_name_returns_wrong_rows",
+      "category": "aggregates",
+      "sql": "SELECT -k AS k FROM (SELECT DISTINCT k FROM (VALUES (1),(2),(3),(4)) t(k)) s ORDER BY k DESC LIMIT 2",
+      "why": "The group key k and the computed -k share the name k, so a lookup by name cannot tell them apart; the probe is valuable exactly because the two candidates differ only by name. No expect_rows on purpose: BOTH p1 and p4 are wrong, so a pinned expectation would report EXPECTATION_FAILED every day for a documented reason.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [2 row(s)] -3 | -4 vs duckdb [2 row(s)] -1 | -2"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "or_does_not_short_circuit_an_error_raising_right_side",
+      "category": "boolean_logic",
+      "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x = 0 OR 1 / x > 1",
+      "why": "`x = 0 OR 1 / x > 1` is the standard safe-division idiom: the row the left side accepts must never evaluate the right side. Rows=2,5,10 and 20 all fail, so the defect is not a small-batch edge on this pin.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "datafusion errored both ways: lakewatch: Arrow error: Divide by zero error",
+        "documented divergence: datafusion errored (lakewatch: Arrow error: Divide by zero error)"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
+    },
+    {
+      "id": "and_does_not_short_circuit_an_error_raising_right_side",
+      "category": "boolean_logic",
+      "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x <> 0 AND 1 / x > 1",
+      "why": "`x <> 0 AND 1 / x > 1` is the guard idiom for AND. This one is NOT fixed upstream yet -- the PR that fixes it is open -- so it is both a live defect in our pin and a canary for the next pin bump.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "datafusion errored both ways: lakewatch: Arrow error: Divide by zero error",
+        "documented divergence: datafusion errored (lakewatch: Arrow error: Divide by zero error)"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
     }
   ],
   "results": [
@@ -1823,6 +1864,47 @@
         "documented divergence: datafusion [2 row(s)] 1,10 | 2,NULL vs duckdb [2 row(s)] 1,NULL | 2,NULL"
       ],
       "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "order_by_limit_reuses_computed_name_returns_wrong_rows",
+      "category": "aggregates",
+      "sql": "SELECT -k AS k FROM (SELECT DISTINCT k FROM (VALUES (1),(2),(3),(4)) t(k)) s ORDER BY k DESC LIMIT 2",
+      "why": "The group key k and the computed -k share the name k, so a lookup by name cannot tell them apart; the probe is valuable exactly because the two candidates differ only by name. No expect_rows on purpose: BOTH p1 and p4 are wrong, so a pinned expectation would report EXPECTATION_FAILED every day for a documented reason.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [2 row(s)] -3 | -4 vs duckdb [2 row(s)] -1 | -2"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "or_does_not_short_circuit_an_error_raising_right_side",
+      "category": "boolean_logic",
+      "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x = 0 OR 1 / x > 1",
+      "why": "`x = 0 OR 1 / x > 1` is the standard safe-division idiom: the row the left side accepts must never evaluate the right side. Rows=2,5,10 and 20 all fail, so the defect is not a small-batch edge on this pin.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "datafusion errored both ways: lakewatch: Arrow error: Divide by zero error",
+        "documented divergence: datafusion errored (lakewatch: Arrow error: Divide by zero error)"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
+    },
+    {
+      "id": "and_does_not_short_circuit_an_error_raising_right_side",
+      "category": "boolean_logic",
+      "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x <> 0 AND 1 / x > 1",
+      "why": "`x <> 0 AND 1 / x > 1` is the guard idiom for AND. This one is NOT fixed upstream yet -- the PR that fixes it is open -- so it is both a live defect in our pin and a canary for the next pin bump.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "datafusion errored both ways: lakewatch: Arrow error: Divide by zero error",
+        "documented divergence: datafusion errored (lakewatch: Arrow error: Divide by zero error)"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
     }
   ]
 }

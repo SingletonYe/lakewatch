@@ -1778,6 +1778,27 @@
       "sql": "SELECT x.a, (SELECT max(y.b) FROM (VALUES (1, 10)) AS y(a, b) WHERE y.a = x.a HAVING max(y.b) IS NULL) AS v FROM (VALUES (1), (2)) AS x(a)",
       "known_difference": "DataFusion 55.2.0 DROPS the HAVING of a correlated scalar subquery and returns (1, 10) for row a=1; DuckDB and PostgreSQL both return (1, NULL), (2, NULL) -- the group for a=2 is empty so sum is NULL, and HAVING sum(...) IS NULL is true there, while a=1 must be filtered out. Root cause: PullUpCorrelatedExpr pulls the HAVING up and ScalarSubqueryToJoin only re-applies it through the count-bug compensation CASE, which is not built for aggregates that are NULL on empty input. Upstream #26505 fixed by #26942 (merged 2026-11-22, after our pin), which deliberately makes the query ERROR rather than return the right rows, so the flip this probe watches is 'silent wrong rows -> explicit error', not '-> right rows'. Already known upstream, NOT re-filed.",
       "why": "The sibling aggregate of the probe above: the same defect must be fixed for every aggregate that is NULL on empty input (sum, max, min), not just for sum. Kept separate so a partial fix is visible."
+    },
+    {
+      "id": "order_by_limit_reuses_computed_name_returns_wrong_rows",
+      "category": "aggregates",
+      "sql": "SELECT -k AS k FROM (SELECT DISTINCT k FROM (VALUES (1),(2),(3),(4)) t(k)) s ORDER BY k DESC LIMIT 2",
+      "known_difference": "DataFusion 55.2.0 returns -3, -4 where the right rows are -1, -2: a GROUP BY with an ORDER BY ... LIMIT above it whose sort column name is reused by a computed projection. TopKAggregation followed the sort key through the projection BY NAME, so it matched the computed -k instead of the group key k. Upstream #27195 fixed by #27430 (merged 2026-11-23, after our pin), so already known and NOT re-filed. Silent wrong rows, no error.",
+      "why": "The group key k and the computed -k share the name k, so a lookup by name cannot tell them apart; the probe is valuable exactly because the two candidates differ only by name. No expect_rows on purpose: BOTH p1 and p4 are wrong, so a pinned expectation would report EXPECTATION_FAILED every day for a documented reason."
+    },
+    {
+      "id": "or_does_not_short_circuit_an_error_raising_right_side",
+      "category": "boolean_logic",
+      "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x = 0 OR 1 / x > 1",
+      "known_difference": "DataFusion 55.2.0 raises 'Arrow error: Divide by zero error' for a query that is valid: OR only skips the right side for rows the left side already decided when FEW ROWS ARE LEFT, otherwise the right side runs on the whole batch. DuckDB answers 0. Upstream #8927, fixed by #27471 (merged 2026-11-23, after our pin): already known, NOT re-filed.",
+      "why": "`x = 0 OR 1 / x > 1` is the standard safe-division idiom: the row the left side accepts must never evaluate the right side. Rows=2,5,10 and 20 all fail, so the defect is not a small-batch edge on this pin."
+    },
+    {
+      "id": "and_does_not_short_circuit_an_error_raising_right_side",
+      "category": "boolean_logic",
+      "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x <> 0 AND 1 / x > 1",
+      "known_difference": "DataFusion 55.2.0 raises 'Arrow error: Divide by zero error' for a query that is valid, and upstream main STILL does: the AND counterpart of the OR fix above is only in OPEN PR #27302, related to #8927. So the flip this probe watches is 'pin moves past #27302'. Nothing to report -- the fix is already written and in review upstream.",
+      "why": "`x <> 0 AND 1 / x > 1` is the guard idiom for AND. This one is NOT fixed upstream yet -- the PR that fixes it is open -- so it is both a live defect in our pin and a canary for the next pin bump."
     }
   ]
 }
