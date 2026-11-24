@@ -403,13 +403,12 @@
         [
           "[1]",
           "[]",
-          "1",
-          "1",
+          "0",
+          "0",
           "1"
         ]
       ],
-      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL.",
-      "known_difference": "Measured 2026-10-30 on the pinned 55.2.0: a key that is ABSENT and a NULL lookup key both return a one-element list `[NULL]` (array_length 1), where DuckDB and DataFusion's own documentation -- 'an empty list if the key is not present' in information_schema.routines -- say an empty list (length 0). A key that is present with a NULL value returns `[NULL]` in both, so absent keys and NULL values are NOT distinguishable here even though they should be. Fixed upstream in 56.0.0: see the upgrade note 'map_extract / element_at return an empty list for absent keys' and apache/datafusion#24981 (closed/completed). This probe previously missed all of it: `[NULL]` renders as `[]` in DataFusion's CSV because a NULL element prints as an empty string, so a text-only comparison saw agreement. The lengths are asserted for exactly that reason -- do not drop them."
+      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL. FLIPPED 2026-11-24 on the 56.0.0 pin: an absent key and a NULL lookup key now both give array_length 0, matching DuckDB, so the upstream #24981 fix (#24999) is in that release and the documented divergence is gone."
     },
     {
       "id": "element_at_is_map_extract_here",
@@ -418,12 +417,11 @@
       "expect_rows": [
         [
           "[1]",
-          "1",
+          "0",
           "1"
         ]
       ],
-      "known_difference": "In DataFusion `element_at` is documented as an alias of `map_extract` (see information_schema.routines), while DuckDB's `element_at` is array access. Pinned so the divergence is not re-triaged as a bug; note that `element_at(<list>, i)` in DataFusion fails with a user-hostile error, recorded separately. The absent-key case is the same defect as `map_extract` (the 56.0.0 upgrade note covers `map_extract` / `element_at` together, apache/datafusion#24981): on the pinned 55.2.0 a missing key gives a one-element `[NULL]` (length 1) where an empty list (length 0) is documented. The length is asserted because `[NULL]` renders as `[]`, so a text-only comparison cannot see it -- the same trap that hid this for weeks in `map_extract_present_and_missing`.",
-      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference."
+      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference. FLIPPED 2026-11-24 on the 56.0.0 pin: the absent-key length is now 0, matching DuckDB, so the #24981 fix is in the release. The alias-vs-array-access point still stands."
     },
     {
       "id": "decimal_mul_add_scale",
@@ -1694,19 +1692,9 @@
       "session_options": [
         "datafusion.sql_parser.dialect=PostgreSQL"
       ],
-      "expect_rows": [
-        [
-          "101"
-        ],
-        [
-          "102"
-        ],
-        [
-          "103"
-        ]
-      ],
       "ordered": true,
-      "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- upstream #27219 saw ZERO rows returned from exactly this shape, and #27416 fixed it on main. Three ascending rows is the assertion. MATERIALIZED needs the PostgreSQL dialect to parse."
+      "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- see known_difference: this DOES reproduce on the 56.0.0 pin although it did not on 55.2.0. An ORDER BY ... LIMIT above the CTE must not push a row limit into the CTE body.",
+      "known_difference": "REGRESSED in the 56.0.0 release: that release returns ZERO rows for this shape, while the previous 55.2.0 pin returned 101,102,103 and DuckDB still does. Upstream #27219 -- fixed on main by #27416 (merged 2026-11-14), but that fix is NOT in the 56.0.0 release cut, so the version we pin still ships the bug. Nothing to file: it is already known upstream and only a later release can fix our pin. No expect_rows on purpose -- the pinned engine cannot produce the right rows."
     },
     {
       "id": "duplicate_named_group_keys_survive_join_key_reorder",

@@ -21,7 +21,7 @@ path = "src/main.rs"
 anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 clap = { version = "4", features = ["derive"] }
-datafusion = { version = "55", default-features = false, features = [
+datafusion = { version = "56", default-features = false, features = [
     "parquet",
     "nested_expressions",
     "datetime_expressions",

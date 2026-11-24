@@ -2,8 +2,8 @@
   "oracle": "duckdb",
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
-    "OK": 117,
-    "KNOWN_DIFF": 25,
+    "OK": 118,
+    "KNOWN_DIFF": 24,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -43,7 +43,7 @@
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type",
         "both engines errored (duckdb: Conversion Error: Could not convert string 'abc' to INT32)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Cast error: Cannot cast string 'abc' to value of Int32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Int32\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Failed to cast field 'lit' from Utf8 to Int32\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Cast error: Cannot cast string 'abc' to value of Int32 type"
     },
     {
       "id": "cast_invalid_date",
@@ -57,7 +57,7 @@
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type",
         "both engines errored (duckdb: Conversion Error: date field value out of range: \"2024-02-30\")"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "round_half",
@@ -70,7 +70,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 3.0,-3.0,2.57,1.0 vs duckdb [1 row(s)] 3.0,-3.0,2.57,1.01"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "integer_overflow",
@@ -83,7 +83,7 @@
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "upper_sharp_s",
@@ -96,7 +96,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] SS vs duckdb [1 row(s)] \u1e9e"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "date_add_year_leap",
@@ -109,7 +109,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 2025-02-28 vs duckdb [1 row(s)] 2025-02-28 00:00:00"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "signed_zero_ordering",
@@ -122,33 +122,7 @@
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
-    },
-    {
-      "id": "map_extract_present_and_missing",
-      "category": "nested_types",
-      "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing, array_length(map_extract(MAP {'a': 1}, 'zz')) AS missing_len, array_length(map_extract(MAP {'a': 1}, NULL)) AS null_key_len, array_length(map_extract(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_value_len",
-      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL.",
-      "ordered": false,
-      "session_options": [],
-      "status": "KNOWN_DIFF",
-      "details": [
-        "documented divergence: datafusion [1 row(s)] [1],[],1,1,1 vs duckdb [1 row(s)] [1],[],0,0,1"
-      ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
-    },
-    {
-      "id": "element_at_is_map_extract_here",
-      "category": "nested_types",
-      "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS present, array_length(element_at(MAP {'a': 1}, 'zz')) AS missing_len, array_length(element_at(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_len",
-      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference.",
-      "ordered": false,
-      "session_options": [],
-      "status": "KNOWN_DIFF",
-      "details": [
-        "documented divergence: datafusion [1 row(s)] [1],1,1 vs duckdb [1 row(s)] [1],0,1"
-      ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "decimal_division_scale",
@@ -161,7 +135,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 0.333333 vs duckdb [1 row(s)] 0.3333333333"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "integer_overflow_ansi",
@@ -176,7 +150,7 @@
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "set_ops_intersect_except_all_multiset",
@@ -189,7 +163,7 @@
       "details": [
         "documented divergence: datafusion [4 row(s)] except_all,2 | intersect_all,1 | intersect_all,1 | intersect_all,1 vs duckdb [4 row(s)] except_all,1 | except_all,2 | intersect_all,1 | intersect_all,1"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "window_partition_signed_zero",
@@ -202,7 +176,7 @@
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0,1 | 0.0,1 | 1.0,1 vs duckdb [3 row(s)] 1.0,1 | 0.0,2 | 0.0,2"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "date_bin_epoch_anchored_bins",
@@ -215,7 +189,7 @@
       "details": [
         "documented divergence: duckdb errored (Catalog Error: Scalar Function with name date_bin does not exist!)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "negative_nan_ordering_is_sign_sensitive",
@@ -228,7 +202,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] false,false,true vs duckdb [1 row(s)] true,true,false"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "full_outer_join_using_key_not_coalesced",
@@ -241,7 +215,7 @@
       "details": [
         "documented divergence: datafusion [3 row(s)] false,l1,NULL | false,l2,r2 | true,NULL,r3 vs duckdb [3 row(s)] false,l1,NULL | false,l2,r2 | false,NULL,r3"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "interval_comparison_is_component_wise",
@@ -254,7 +228,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] true,false,true vs duckdb [1 row(s)] false,true,true"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "avg_over_decimal_truncates_at_scale_six",
@@ -267,7 +241,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 0.666666,1.5 vs duckdb [1 row(s)] 0.6666666667,1.5"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "array_slice_huge_stride_returns_slice",
@@ -280,6 +254,21 @@
       "details": [
         "datafusion errored both ways: This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues",
         "documented divergence: datafusion errored (This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues)"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
+    },
+    {
+      "id": "materialized_cte_not_limited_by_outer_order_by_limit",
+      "category": "cte",
+      "sql": "SELECT * FROM (WITH c AS MATERIALIZED (SELECT i AS x FROM generate_series(1, 200) g(i) GROUP BY i) SELECT x FROM c WHERE x > 100) s ORDER BY x LIMIT 3",
+      "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- see known_difference: this DOES reproduce on the 56.0.0 pin although it did not on 55.2.0. An ORDER BY ... LIMIT above the CTE must not push a row limit into the CTE body.",
+      "ordered": true,
+      "session_options": [
+        "datafusion.sql_parser.dialect=PostgreSQL"
+      ],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [0 row(s)]  vs duckdb [3 row(s)] 101 | 102 | 103"
       ],
       "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
     },
@@ -565,7 +554,7 @@
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type",
         "both engines errored (duckdb: Conversion Error: Could not convert string 'abc' to INT32)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Cast error: Cannot cast string 'abc' to value of Int32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Int32\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Failed to cast field 'lit' from Utf8 to Int32\ncaused by\nArrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Arrow error: Cast error: Cannot cast string 'abc' to value of Int32 type: Cast error: Cannot cast string 'abc' to value of Int32 type"
     },
     {
       "id": "cast_scientific_string",
@@ -589,7 +578,7 @@
         "datafusion errored both ways: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type",
         "both engines errored (duckdb: Conversion Error: date field value out of range: \"2024-02-30\")"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "cast_null_to_int",
@@ -612,7 +601,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 3.0,-3.0,2.57,1.0 vs duckdb [1 row(s)] 3.0,-3.0,2.57,1.01"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "floor_ceil_negative",
@@ -635,7 +624,7 @@
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "avg_of_integers",
@@ -828,7 +817,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] SS vs duckdb [1 row(s)] \u1e9e"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "like_case_sensitivity",
@@ -901,7 +890,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 2025-02-28 vs duckdb [1 row(s)] 2025-02-28 00:00:00"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "date_diff",
@@ -994,7 +983,7 @@
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0 | 0.0 | 1.0 vs duckdb [3 row(s)] 0.0 | 0.0 | 1.0"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "signed_zero_equality_vs_sort",
@@ -1010,27 +999,21 @@
       "id": "map_extract_present_and_missing",
       "category": "nested_types",
       "sql": "SELECT map_extract(MAP {'a': 1, 'b': 2}, 'a') AS present, map_extract(MAP {'a': 1}, 'zz') AS missing, array_length(map_extract(MAP {'a': 1}, 'zz')) AS missing_len, array_length(map_extract(MAP {'a': 1}, NULL)) AS null_key_len, array_length(map_extract(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_value_len",
-      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL.",
+      "why": "Pins the three map-lookup outcomes apart: present key, absent key, and present key holding NULL. The three lengths are the assertion that matters, because the list rendering hides the difference between an empty list and a one-element list holding NULL. FLIPPED 2026-11-24 on the 56.0.0 pin: an absent key and a NULL lookup key now both give array_length 0, matching DuckDB, so the upstream #24981 fix (#24999) is in that release and the documented divergence is gone.",
       "ordered": false,
       "session_options": [],
-      "status": "KNOWN_DIFF",
-      "details": [
-        "documented divergence: datafusion [1 row(s)] [1],[],1,1,1 vs duckdb [1 row(s)] [1],[],0,0,1"
-      ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "status": "OK",
+      "details": []
     },
     {
       "id": "element_at_is_map_extract_here",
       "category": "nested_types",
       "sql": "SELECT element_at(MAP {'a': 1}, 'a') AS present, array_length(element_at(MAP {'a': 1}, 'zz')) AS missing_len, array_length(element_at(MAP {'a': 1, 'b': NULL}, 'b')) AS present_null_len",
-      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference.",
+      "why": "Pins that DataFusion's `element_at` is `map_extract` rather than DuckDB's array access, and asserts the absent-key result by length rather than by rendering, which is the only way to see the difference. FLIPPED 2026-11-24 on the 56.0.0 pin: the absent-key length is now 0, matching DuckDB, so the #24981 fix is in the release. The alias-vs-array-access point still stands.",
       "ordered": false,
       "session_options": [],
-      "status": "KNOWN_DIFF",
-      "details": [
-        "documented divergence: datafusion [1 row(s)] [1],1,1 vs duckdb [1 row(s)] [1],0,1"
-      ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "status": "OK",
+      "details": []
     },
     {
       "id": "decimal_mul_add_scale",
@@ -1053,7 +1036,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 0.333333 vs duckdb [1 row(s)] 0.3333333333"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "grouping_sets_grand_total",
@@ -1090,7 +1073,7 @@
       "details": [
         "documented divergence: duckdb errored (Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 1)!)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "rollup_with_grouping_flag",
@@ -1123,7 +1106,7 @@
       "details": [
         "documented divergence: datafusion [4 row(s)] except_all,2 | intersect_all,1 | intersect_all,1 | intersect_all,1 vs duckdb [4 row(s)] except_all,1 | except_all,2 | intersect_all,1 | intersect_all,1"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "table_function_int_series",
@@ -1216,7 +1199,7 @@
       "details": [
         "documented divergence: datafusion [3 row(s)] -0.0,1 | 0.0,1 | 1.0,1 vs duckdb [3 row(s)] 1.0,1 | 0.0,2 | 0.0,2"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "is_distinct_from_three_valued",
@@ -1239,7 +1222,7 @@
       "details": [
         "documented divergence: duckdb errored (Catalog Error: Scalar Function with name date_bin does not exist!)"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "percent_rank_cume_dist_with_ties",
@@ -1482,7 +1465,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] false,false,true vs duckdb [1 row(s)] true,true,false"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "full_outer_join_using_key_not_coalesced",
@@ -1495,7 +1478,7 @@
       "details": [
         "documented divergence: datafusion [3 row(s)] false,l1,NULL | false,l2,r2 | true,NULL,r3 vs duckdb [3 row(s)] false,l1,NULL | false,l2,r2 | false,NULL,r3"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "interval_comparison_is_component_wise",
@@ -1508,7 +1491,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] true,false,true vs duckdb [1 row(s)] false,true,true"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "list_length_counts_nulls_and_contains_is_three_valued",
@@ -1621,7 +1604,7 @@
       "details": [
         "documented divergence: datafusion [1 row(s)] 0.666666,1.5 vs duckdb [1 row(s)] 0.6666666667,1.5"
       ],
-      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
+      "stderr": "lakewatch: Optimizer rule 'simplify_expressions' failed\ncaused by\nFailed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Failed to cast field 'lit' from Utf8 to Date32\ncaused by\nArrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Arrow error: Cast error: Cannot cast string '2024-02-30' to value of Date32 type: Cast error: Cannot cast string '2024-02-30' to value of Date32 type"
     },
     {
       "id": "non_equi_join_matches_by_predicate",
@@ -1801,13 +1784,16 @@
       "id": "materialized_cte_not_limited_by_outer_order_by_limit",
       "category": "cte",
       "sql": "SELECT * FROM (WITH c AS MATERIALIZED (SELECT i AS x FROM generate_series(1, 200) g(i) GROUP BY i) SELECT x FROM c WHERE x > 100) s ORDER BY x LIMIT 3",
-      "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- upstream #27219 saw ZERO rows returned from exactly this shape, and #27416 fixed it on main. Three ascending rows is the assertion. MATERIALIZED needs the PostgreSQL dialect to parse.",
+      "why": "The MATERIALIZED CTE body groups by x, and an ORDER BY ... LIMIT above it must not push a row limit into that body -- see known_difference: this DOES reproduce on the 56.0.0 pin although it did not on 55.2.0. An ORDER BY ... LIMIT above the CTE must not push a row limit into the CTE body.",
       "ordered": true,
       "session_options": [
         "datafusion.sql_parser.dialect=PostgreSQL"
       ],
-      "status": "OK",
-      "details": []
+      "status": "KNOWN_DIFF",
+      "details": [
+        "documented divergence: datafusion [0 row(s)]  vs duckdb [3 row(s)] 101 | 102 | 103"
+      ],
+      "stderr": "lakewatch: Internal error: array_slice got invalid stride: 9223372036854775807.\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues"
     },
     {
       "id": "duplicate_named_group_keys_survive_join_key_reorder",
