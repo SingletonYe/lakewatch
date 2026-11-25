@@ -4046,3 +4046,69 @@ TopK 按名字追键（#27430）、`OR` 不短路（#27471）。这些修复合�
 4. **每日固定两步**：①闸门 + 目录回归（防线）；②采集上游近 10 天 fix PR，逐个把复现打到 pin 上（发现）。
 5. **翻转判据**：看"修复是否进了 pin 的版本"；升 pin 前看 `compare/<pin>...<新版本>` 提交清单。**当前 pin = 56.0.0。**
 6. **`#27302`（AND 不短路）是最有价值的金丝雀** —— 它仍是 open PR；pin 越过它时那条探针应停止报错。
+
+## 2026-11-25 09:00 — 144 探针 · 找到 `lpad`/`rpad` 自相矛盾一条（射程外）· 定位两个覆盖缺口
+
+**新 pin 首个整天**：闸门 **7/7**；144 探针 OK=118 · KNOWN_DIFF=24 · BOTH_ERROR=2 · **0 候选**；
+标量 Tier-A **NOT_IMPL=22 / INTERNAL=0**（新基线成立）；**无 PR 动作**（按 11-12 决定）。
+本次核查输出：`#26704`=open `#22881`=open `#12955`=open `#12956`=open `#12907`=open `#27219`=closed；`#27302`(AND)=open；发布版 `56.0.0`。
+
+### ① 找到并原样复现：`lpad`/`rpad` 在"长度为字面量"时报错，而"长度来自列"时返回 NULL
+
+```
+56.0.0 : SELECT lpad(s, 2147483648) FROM (VALUES (CAST(NULL AS TEXT))) t(s)   → Execution error: length too large  ❌
+56.0.0 : SELECT lpad(s, n)          FROM (VALUES (NULL, 2147483648)) t(s, n)  → NULL  ✓
+```
+`rpad` 同样；`NULL` 填充同样（字面量报错 / 列返回 NULL）。**同一个逻辑行、只因为长度是"字面量"还是"列"就给出不同答案**，
+而且报错那一路违反了 DataFusion 自己的 `NULL` 输入契约（NULL 输入 → NULL 输出）。
+机理：标量快捷路径在**看任何行之前**就按 `i32::MAX` 拒绝长度，数组路径则先跳过 NULL 行再查长度。
+
+上游 **#27482**（closed）、修复 **#27496**（合入 2026-11-24T14:25Z，**晚于 56.0.0 的发版切点**）→ **known_difference，不重复上报**。
+
+**但这条进不了差分目录** —— **DuckDB 的 `lpad`/`rpad` 只接受 `INTEGER` 长度**，
+`lpad(VARCHAR, BIGINT)` 直接 Binder Error，**超过 `i32::MAX` 的长度在 oracle 里根本无法表达**。
+与 `MERGE`、`LEAD/LAG IGNORE NULLS` 同属**射程外**；这里的判据是**引擎内部自相矛盾**（字面量路径 vs 列路径必须一致），不需要 oracle。
+
+### ② 顺手确认：`#27573`（重名 UNION 分支）**在我们 pin 上是对的，且够不着**
+
+给的复现 `(... LIMIT 1) UNION ALL ...` 在 56.0.0 上返回 `a, a_2 | 1,2 | 3,4` ✓（与 DuckDB 一致）。
+上游那条失败发生在 **Substrait 往返之后**（`Input field name column1 does not match with projection expression column1_1`），
+**我们不跑 Substrait**，所以够不着，记为射程外。
+
+### ③ 新基线为什么能"一夜之间"干净：把 369 条的成分查清楚了
+
+`git show 46fb58b~1:reports/df-robust.json` 取回 55.2.0 的旧结果，按 message 归类：
+
+| 条数 | 报的 message |
+|---|---|
+| **150** | `date_trunc(String, Time)` |
+| 30 | `date_part(String, Duration)` |
+| 30 | `string_to_array(String, String, String)` |
+| 25 | `generate_series(Timestamp, Timestamp, Interval(MonthDay…))` |
+| 25 | `range(Timestamp, Timestamp, Interval(MonthDayNano))` |
+| 20 | `round(Float64)` |
+
+**前 6 个族就占 280/369**，全是"**用函数不接受（但能解析）的参数类型去调用它**"这一类；
+55.2.0 把这类**用户输入错误**标成 `Internal error`，56.0.0 不再标 → 扫描自然归零。**不是我们变盲，是它变诚实。**
+
+### ④ 两个**覆盖缺口**（有证据，**提议**，未擅自改）
+
+发现 `lpad`/`rpad` 在 55.2.0 的 369 条里**一条都没有**。查了成因，是**设计层面**的两点叠加：
+
+1. **PROFILES 是"同一个值套到每个参数位"** → 只会产生 `lpad(bigint, bigint)`、`lpad(text, text)` 这类**同型调用**；
+   而触发 #27482 的形状是 `lpad(text, bigint)`—— **逐位不同类型**。**同型剖面在结构上到不了逐位类型组合。**
+2. **分类器只认 `PANIC` / `INTERNAL` / `NOT_IMPL`** → `Execution error: length too large` **一条都不匹配**，
+   即使调用到了也只会被当作 `CLEAN_ERROR` 丢掉。**"引擎干净地拒绝了一个它应接受的调用"不是我们的判据。**
+
+**提议（等用户定夺）**：①剖面改为**逐位独立**（或至少数字位用 `int_max`、文本位用 `text` 的组合）；
+②增加一条判据："**NULL 输入导致执行错误**"本身应记为 finding（NULL 契约是文档承诺过的）。
+不做这两条也能跑，但这一类缺陷我们**永远看不见**。
+
+### Next（本节是唯一有效的版本）
+
+1. **没有开着的 PR、没有待开的分支** —— PR 位空闲，**不主动备新 PR**，除非用户明确要。
+2. **`JOIN … ON` 里的相关子查询**：草稿在 `findings/correlated-subquery-in-join-condition-issue.md`，**不催、不重复提**。
+3. **三个战略选项待用户决定**：投 fuzz / 降级成看守模式 / 维持现状（连续第 12 天按现状执行）；见 ④ 的两个具体提案。
+4. **每日固定两步**：①闸门 + 目录回归（防线）；②采集上游近 10 天 fix PR，逐个把复现打到 pin 上（发现）。
+5. **射程外清单（累积）**：`MERGE`、`UNPIVOT`、`LEAD/LAG IGNORE NULLS`、**`lpad/rpad` 超 `i32::MAX` 长度**、**Substrait 往返相关**。
+6. **翻转判据**：看"修复是否进了 pin 的版本"；**当前 pin = 56.0.0**；最有价值的金丝雀仍是 `#27302`（AND 不短路，PR 仍 open）。
