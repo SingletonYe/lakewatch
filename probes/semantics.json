@@ -1787,6 +1787,20 @@
       "sql": "SELECT x FROM (VALUES (0),(2)) t(x) WHERE x <> 0 AND 1 / x > 1",
       "known_difference": "DataFusion 55.2.0 raises 'Arrow error: Divide by zero error' for a query that is valid, and upstream main STILL does: the AND counterpart of the OR fix above is only in OPEN PR #27302, related to #8927. So the flip this probe watches is 'pin moves past #27302'. Nothing to report -- the fix is already written and in review upstream.",
       "why": "`x <> 0 AND 1 / x > 1` is the guard idiom for AND. This one is NOT fixed upstream yet -- the PR that fixes it is open -- so it is both a live defect in our pin and a canary for the next pin bump."
+    },
+    {
+      "id": "order_by_keeps_every_key_when_a_volatile_expression_is_projected_twice",
+      "category": "sql_surface",
+      "sql": "WITH s AS (SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 120) g(i)) t ORDER BY x, y), w AS (SELECT x, y, lag(x) OVER () AS px, lag(y) OVER () AS py FROM s) SELECT count(*) AS out_of_order FROM w WHERE x < px OR (x = px AND y < py)",
+      "known_difference": "DataFusion 56.0.0 drops `y` from the SortExec: projecting the SAME volatile expression twice (`floor(random() * 3)` as x and as y) makes EquivalenceProperties group both targets under one source key and assert the false equality x = y, so `ORDER BY x, y` sorts on x alone. Measured 2026-11-26: the probe returns a NON-ZERO violation count (24 on a 60-row fixture) where 0 is the only correct answer, and DuckDB returns 0. Upstream #27418, fixed by #27646 (merged 2026-11-23, after the 56.0.0 cut): already known, NOT re-filed. When a later pin carries that fix the query returns 0 and this probe goes OK on its own.",
+      "why": "The query asserts its OWN ordering instead of comparing values: it LAGs the sorted result and counts rows where (x, y) decreases. That makes a volatile expression testable with a deterministic answer -- 0 -- because the random values themselves never have to match any oracle. No expect_rows on purpose: the pin is wrong here for a documented reason, and pinning 0 would report EXPECTATION_FAILED every day."
+    },
+    {
+      "id": "order_by_keeps_every_key_across_union_all_after_volatile_projection",
+      "category": "set_operators",
+      "sql": "WITH s AS (SELECT x, y FROM (SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 40) g(i)) UNION ALL SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 40) g(i))) ORDER BY x, y), w AS (SELECT x, y, lag(x) OVER () AS px, lag(y) OVER () AS py FROM s) SELECT count(*) AS out_of_order FROM w WHERE x < px OR (x = px AND y < py)",
+      "known_difference": "DataFusion 56.0.0 drops `y` from the SortExec: projecting the SAME volatile expression twice (`floor(random() * 3)` as x and as y) makes EquivalenceProperties group both targets under one source key and assert the false equality x = y, so `ORDER BY x, y` sorts on x alone. Measured 2026-11-26: the probe returns a NON-ZERO violation count (24 on a 60-row fixture) where 0 is the only correct answer, and DuckDB returns 0. Upstream #27418, fixed by #27646 (merged 2026-11-23, after the 56.0.0 cut): already known, NOT re-filed. When a later pin carries that fix the query returns 0 and this probe goes OK on its own.",
+      "why": "The same defect across a UNION ALL: the false x = y equivalence is carried through the set operation, so the sort above it still loses y. Separate from the probe above because the PR names the UNION ALL path explicitly, and a fix that only covers a plain projection would otherwise look complete."
     }
   ]
 }

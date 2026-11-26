@@ -3,7 +3,7 @@
   "binary": "/home/user/workspace/lakewatch-daily/lakewatch/target/debug/lakewatch",
   "counts": {
     "OK": 118,
-    "KNOWN_DIFF": 24,
+    "KNOWN_DIFF": 26,
     "BOTH_ERROR": 2
   },
   "findings": [
@@ -353,6 +353,36 @@
       "details": [
         "datafusion errored both ways: lakewatch: Arrow error: Divide by zero error",
         "documented divergence: datafusion errored (lakewatch: Arrow error: Divide by zero error)"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
+    },
+    {
+      "id": "order_by_keeps_every_key_when_a_volatile_expression_is_projected_twice",
+      "category": "sql_surface",
+      "sql": "WITH s AS (SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 120) g(i)) t ORDER BY x, y), w AS (SELECT x, y, lag(x) OVER () AS px, lag(y) OVER () AS py FROM s) SELECT count(*) AS out_of_order FROM w WHERE x < px OR (x = px AND y < py)",
+      "why": "The query asserts its OWN ordering instead of comparing values: it LAGs the sorted result and counts rows where (x, y) decreases. That makes a volatile expression testable with a deterministic answer -- 0 -- because the random values themselves never have to match any oracle. No expect_rows on purpose: the pin is wrong here for a documented reason, and pinning 0 would report EXPECTATION_FAILED every day.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "partitions=1 [1 row(s)] 52 vs partitions=4 [1 row(s)] 56",
+        "documented divergence: datafusion [1 row(s)] 52 vs duckdb [1 row(s)] 0",
+        "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
+    },
+    {
+      "id": "order_by_keeps_every_key_across_union_all_after_volatile_projection",
+      "category": "set_operators",
+      "sql": "WITH s AS (SELECT x, y FROM (SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 40) g(i)) UNION ALL SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 40) g(i))) ORDER BY x, y), w AS (SELECT x, y, lag(x) OVER () AS px, lag(y) OVER () AS py FROM s) SELECT count(*) AS out_of_order FROM w WHERE x < px OR (x = px AND y < py)",
+      "why": "The same defect across a UNION ALL: the false x = y equivalence is carried through the set operation, so the sort above it still loses y. Separate from the probe above because the PR names the UNION ALL path explicitly, and a fix that only covers a plain projection would otherwise look complete.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "partitions=1 [1 row(s)] 35 vs partitions=4 [1 row(s)] 36",
+        "documented divergence: datafusion [1 row(s)] 35 vs duckdb [1 row(s)] 0",
+        "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
       ],
       "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
     }
@@ -1889,6 +1919,36 @@
       "details": [
         "datafusion errored both ways: lakewatch: Arrow error: Divide by zero error",
         "documented divergence: datafusion errored (lakewatch: Arrow error: Divide by zero error)"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
+    },
+    {
+      "id": "order_by_keeps_every_key_when_a_volatile_expression_is_projected_twice",
+      "category": "sql_surface",
+      "sql": "WITH s AS (SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 120) g(i)) t ORDER BY x, y), w AS (SELECT x, y, lag(x) OVER () AS px, lag(y) OVER () AS py FROM s) SELECT count(*) AS out_of_order FROM w WHERE x < px OR (x = px AND y < py)",
+      "why": "The query asserts its OWN ordering instead of comparing values: it LAGs the sorted result and counts rows where (x, y) decreases. That makes a volatile expression testable with a deterministic answer -- 0 -- because the random values themselves never have to match any oracle. No expect_rows on purpose: the pin is wrong here for a documented reason, and pinning 0 would report EXPECTATION_FAILED every day.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "partitions=1 [1 row(s)] 52 vs partitions=4 [1 row(s)] 56",
+        "documented divergence: datafusion [1 row(s)] 52 vs duckdb [1 row(s)] 0",
+        "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
+      ],
+      "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
+    },
+    {
+      "id": "order_by_keeps_every_key_across_union_all_after_volatile_projection",
+      "category": "set_operators",
+      "sql": "WITH s AS (SELECT x, y FROM (SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 40) g(i)) UNION ALL SELECT x, y FROM (SELECT floor(random() * 3) AS x, floor(random() * 3) AS y FROM generate_series(1, 40) g(i))) ORDER BY x, y), w AS (SELECT x, y, lag(x) OVER () AS px, lag(y) OVER () AS py FROM s) SELECT count(*) AS out_of_order FROM w WHERE x < px OR (x = px AND y < py)",
+      "why": "The same defect across a UNION ALL: the false x = y equivalence is carried through the set operation, so the sort above it still loses y. Separate from the probe above because the PR names the UNION ALL path explicitly, and a fix that only covers a plain projection would otherwise look complete.",
+      "ordered": false,
+      "session_options": [],
+      "status": "KNOWN_DIFF",
+      "details": [
+        "partitions=1 [1 row(s)] 35 vs partitions=4 [1 row(s)] 36",
+        "documented divergence: datafusion [1 row(s)] 35 vs duckdb [1 row(s)] 0",
+        "documented divergence: the engine disagrees with itself across partitioning, and known_difference explains why it is not re-filed"
       ],
       "stderr": "lakewatch: Arrow error: Divide by zero error: Divide by zero error"
     }
